@@ -17,6 +17,10 @@ interface Props {
   onAfterAssign: () => void;
   highlightedTableId?: string | null;
   violatingGuestIds?: Set<string>;
+  cohortColorMap?: Map<string, string>;
+  seatLabelMode?: "none" | "name" | "name+firm";
+  selectedSeat: { tableId: string; seatIndex: number } | null;
+  onSelectSeat: (sel: { tableId: string; seatIndex: number } | null) => void;
 }
 
 function SortableTable({ id, children }: { id: string; children: React.ReactNode }) {
@@ -33,14 +37,21 @@ function SortableTable({ id, children }: { id: string; children: React.ReactNode
   );
 }
 
-export function PlannerGrid({ selectedGuestId, onAfterAssign, highlightedTableId, violatingGuestIds }: Props) {
+export function PlannerGrid({
+  selectedGuestId,
+  onAfterAssign,
+  highlightedTableId,
+  violatingGuestIds,
+  cohortColorMap,
+  seatLabelMode,
+  selectedSeat,
+  onSelectSeat,
+}: Props) {
   const tables = usePlanStore((s) => s.tables);
   const guests = usePlanStore((s) => s.guests);
   const settings = usePlanStore((s) => s.settings);
   const assignGuest = usePlanStore((s) => s.assignGuest);
   const reorderTables = usePlanStore((s) => s.reorderTables);
-
-  const [selectedSeat, setSelectedSeat] = useState<{ tableId: string; seatIndex: number } | null>(null);
 
   const rowSizes = parseRowPattern(settings.rowPattern);
   const rows: { id: string; tables: typeof tables }[] = [];
@@ -93,11 +104,14 @@ export function PlannerGrid({ selectedGuestId, onAfterAssign, highlightedTableId
                     table={t}
                     guests={guests.filter((g) => g.tableId === t.id)}
                     selectedSeat={selectedSeat}
-                    onSelectSeat={setSelectedSeat}
+                    onSelectSeat={onSelectSeat}
                     selectedGuestId={selectedGuestId}
                     onAssignGuest={handleAssign}
                     highlighted={highlightedTableId === t.id}
                     violatingGuestIds={violatingGuestIds}
+                    cohortColorMap={cohortColorMap}
+                    seatLabelMode={seatLabelMode}
+                    showFirmInList={settings.showFirmInList}
                   />
                 </SortableTable>
               ))}

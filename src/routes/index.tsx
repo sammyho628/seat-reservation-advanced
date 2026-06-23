@@ -9,15 +9,20 @@ import {
   useTemporalStore,
   NAMING_VOCAB,
   type NamingScheme,
+  type SeatStrategy,
 } from "@/lib/plan-store";
 import { toast } from "sonner";
 import {
   Wand2, RotateCcw, Settings as SettingsIcon, Undo2, Redo2, Camera,
-  Search, BarChart2, ChevronUp, ChevronDown,
+  Search, BarChart2, ChevronUp, ChevronDown, Building2, Tag as TagIcon, X,
 } from "lucide-react";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -50,15 +55,42 @@ const SCHEME_LABELS: { value: NamingScheme; label: string }[] = [
   { value: "constellations", label: "✨ Constellations" },
 ];
 
+const STRATEGIES: { value: SeatStrategy; icon: string; label: string; description: string }[] = [
+  { value: "smart",        icon: "🧠", label: "Smart",         description: "Rules-driven, cohorts respected" },
+  { value: "spread",       icon: "🔀", label: "Spread",        description: "Mix everyone across tables" },
+  { value: "group",        icon: "🏢", label: "By company",    description: "Group same-firm guests together" },
+  { value: "alpha",        icon: "🔤", label: "Alphabetical",  description: "Assign guests A → Z" },
+  { value: "random",       icon: "🎲", label: "Random",        description: "Shuffle for spontaneous mixing" },
+  { value: "vip-first",    icon: "⭐", label: "VIP first",     description: "VIPs fill premium tables first" },
+  { value: "sequential",   icon: "📋", label: "Sequential",    description: "Fill each table before the next" },
+  { value: "cohort-first", icon: "👥", label: "Cohort first",  description: "Cohorts always intact above all" },
+];
+
+const COHORT_PALETTE = [
+  "oklch(0.7 0.15 30)",
+  "oklch(0.7 0.15 60)",
+  "oklch(0.7 0.15 145)",
+  "oklch(0.7 0.15 200)",
+  "oklch(0.7 0.15 250)",
+  "oklch(0.7 0.15 300)",
+  "oklch(0.7 0.15 320)",
+  "oklch(0.7 0.15 180)",
+];
+
 function PlannerPage() {
   const [selectedGuestId, setSelectedGuestId] = useState<string | null>(null);
+  const [selectedSeat, setSelectedSeat] = useState<{ tableId: string; seatIndex: number } | null>(null);
+  const [pendingSwap, setPendingSwap] = useState<{ a: typeof selectedSeat; b: typeof selectedSeat } | null>(null);
+
   const settings = usePlanStore((s) => s.settings);
   const setSettings = usePlanStore((s) => s.setSettings);
   const applyNamingScheme = usePlanStore((s) => s.applyNamingScheme);
   const autoSeat = usePlanStore((s) => s.autoSeat);
   const resetAssignments = usePlanStore((s) => s.resetAssignments);
+  const swapSeats = usePlanStore((s) => s.swapSeats);
   const guests = usePlanStore((s) => s.guests);
   const tables = usePlanStore((s) => s.tables);
+  const rules = usePlanStore((s) => s.rules);
 
   const pastStates = useTemporalStore((s) => s.pastStates) as any[];
   const futureStates = useTemporalStore((s) => s.futureStates) as any[];
@@ -67,7 +99,22 @@ function PlannerPage() {
   const [search, setSearch] = useState("");
   const [highlightedTableId, setHighlightedTableId] = useState<string | null>(null);
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
+  const [seatLabelMode, setSeatLabelMode] = useState<"none" | "name" | "name+firm">("none");
+  const [autoSeatOpen, setAutoSeatOpen] = useState(false);
+  const [strategy, setStrategy] = useState<SeatStrategy>("smart");
+  const [overwriteOpen, setOverwriteOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
+
+  // intercept seat clicks for swap confirmation
+  function handleSelectSeat(sel: typeof selectedSeat) {
+    if (sel && selectedSeat && (selectedSeat.tableId !== sel.tableId || selectedSeat.seatIndex !== sel.seatIndex)) {
+      // a swap was just triggered inside TableCircle; we override by NOT auto-swapping.
+      // TableCircle has already done the swap, so we just clear selection.
+      setSelectedSeat(null);
+      return;
+    }
+    setSelectedSeat(sel);
+  }
 
   // keyboard shortcuts
   useEffect(() => {
@@ -84,6 +131,7 @@ function PlannerPage() {
         searchRef.current?.focus();
       } else if (e.key === "Escape") {
         setSelectedGuestId(null);
+        setSelectedSeat(null);
         setSearch("");
         setHighlightedTableId(null);
       }
@@ -92,11 +140,29 @@ function PlannerPage() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  function handleAuto() {
+  function openAutoSeat() {
     if (guests.length === 0) { toast.error("Add or import guests first."); return; }
-    const r = autoSeat();
+    setStrategy("smart");
+    setAutoSeatOpen(true);
+  }
+
+  function runAutoSeat() {
+    const hasSeated = guests.some((g) => g.tableId);
+    if (hasSeated) {
+      setAutoSeatOpen(false);
+      setOverwriteOpen(true);
+      return;
+    }
+    commitAutoSeat();
+  }
+
+  function commitAutoSeat() {
+    const r = autoSeat(strategy);
     setViolatingGuestIds(new Set(r.violatingGuestIds));
-    toast.success(`Seated ${r.assigned} of ${guests.length}`, {
+    setAutoSeatOpen(false);
+    setOverwriteOpen(false);
+    const label = STRATEGIES.find((s) => s.value === strategy)?.label ?? strategy;
+    toast.success(`${label}: seated ${r.assigned} of ${guests.length}`, {
       description: r.violations
         ? `${r.violations} guest(s) violate rules.`
         : "No constraint violations.",
@@ -127,7 +193,6 @@ function PlannerPage() {
     }
   }
 
-  // search matching
   const matches = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return [];
@@ -137,14 +202,6 @@ function PlannerPage() {
       )
       .slice(0, 8);
   }, [search, guests]);
-
-  useEffect(() => {
-    if (matches.length === 1 && matches[0].tableId) {
-      setHighlightedTableId(matches[0].tableId);
-      const t = setTimeout(() => setHighlightedTableId(null), 1500);
-      return () => clearTimeout(t);
-    }
-  }, [matches]);
 
   // analytics
   const stats = useMemo(() => {
@@ -172,10 +229,17 @@ function PlannerPage() {
 
   const fillPct = stats.capacity ? Math.round((stats.seated / stats.capacity) * 100) : 0;
 
+  const cohortColorMap = useMemo(() => {
+    const m = new Map<string, string>();
+    const cohorts = [...new Set(guests.map((g) => g.cohort).filter(Boolean) as string[])];
+    cohorts.sort();
+    cohorts.forEach((c, i) => m.set(c, COHORT_PALETTE[i % COHORT_PALETTE.length]));
+    return m;
+  }, [guests]);
+
   const schemePreview = useMemo(() => {
     const vocab = NAMING_VOCAB[settings.namingScheme];
     if (vocab) return vocab.slice(0, 4).join(" · ");
-    // generate first 4 labels using same helpers as store (simple inline)
     const labels: string[] = [];
     for (let i = 0; i < 4; i++) labels.push(tables[i]?.label ?? "—");
     return labels.join(" · ");
@@ -189,6 +253,19 @@ function PlannerPage() {
     reader.readAsDataURL(f);
   }
 
+  const activeRules = rules.filter((r) => r.enabled);
+  const eligibleCount = guests.filter((g) => g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show").length;
+  const totalSeats = tables.reduce((a, t) => a + t.seats, 0);
+
+  const selectedSeatGuest = selectedSeat
+    ? guests.find((g) => g.tableId === selectedSeat.tableId && g.seatIndex === selectedSeat.seatIndex)
+    : null;
+  const selectedSeatTableLabel = selectedSeat ? tables.find((t) => t.id === selectedSeat.tableId)?.label : undefined;
+
+  function nextSeatLabelMode() {
+    setSeatLabelMode((m) => (m === "none" ? "name" : m === "name" ? "name+firm" : "none"));
+  }
+
   return (
     <AppShell>
       <WelcomeGate />
@@ -200,7 +277,7 @@ function PlannerPage() {
               <div className="flex-1 min-w-[260px]">
                 <h1 className="font-display text-4xl">{settings.eventTitle}</h1>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {tables.length} tables · {tables.reduce((a, t) => a + t.seats, 0)} seats
+                  {tables.length} tables · {totalSeats} seats
                 </p>
               </div>
 
@@ -320,7 +397,7 @@ function PlannerPage() {
                   <Camera className="h-4 w-4" /> PNG
                 </button>
                 <button
-                  onClick={handleAuto}
+                  onClick={openAutoSeat}
                   className="h-10 px-4 rounded-md bg-primary text-primary-foreground text-sm inline-flex items-center gap-1.5 hover:opacity-90"
                 >
                   <Wand2 className="h-4 w-4" /> Auto-seat
@@ -328,9 +405,9 @@ function PlannerPage() {
               </div>
             </div>
 
-            {/* Search + analytics toggle */}
-            <div className="flex items-center gap-3 mb-4">
-              <div className="relative flex-1 max-w-md">
+            {/* Row 2 — search + view controls */}
+            <div className="flex items-center gap-3 mb-4 flex-wrap">
+              <div className="relative flex-1 max-w-md min-w-[240px]">
                 <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   ref={searchRef}
@@ -372,6 +449,21 @@ function PlannerPage() {
                 <BarChart2 className="h-4 w-4" /> Analytics
                 {analyticsOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
               </button>
+              <button
+                onClick={() => setSettings({ showFirmInList: !settings.showFirmInList })}
+                className={`h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 ${settings.showFirmInList ? "bg-accent" : "hover:bg-accent"}`}
+                title="Show company in per-table guest lists"
+              >
+                <Building2 className="h-4 w-4" /> Show firms
+              </button>
+              <button
+                onClick={nextSeatLabelMode}
+                className={`h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 ${seatLabelMode !== "none" ? "bg-accent" : "hover:bg-accent"}`}
+                title="Cycle seat label display"
+              >
+                <TagIcon className="h-4 w-4" />
+                {seatLabelMode === "none" ? "Labels: off" : seatLabelMode === "name" ? "Labels: name" : "Labels: name+firm"}
+              </button>
             </div>
 
             {analyticsOpen && (
@@ -410,6 +502,17 @@ function PlannerPage() {
               </div>
             )}
 
+            {cohortColorMap.size > 0 && (
+              <div className="flex flex-wrap gap-2 mb-4">
+                {[...cohortColorMap.entries()].map(([c, color]) => (
+                  <span key={c} className="text-[11px] inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-muted">
+                    <span className="h-2.5 w-2.5 rounded-full" style={{ background: color }} />
+                    {c}
+                  </span>
+                ))}
+              </div>
+            )}
+
             <p className="text-xs text-muted-foreground mb-4">
               Click a seat to select · click another seat to swap · select a guest then click an empty seat · click a table label to edit details · drag tables to reorder.
             </p>
@@ -419,11 +522,116 @@ function PlannerPage() {
               onAfterAssign={() => setSelectedGuestId(null)}
               highlightedTableId={highlightedTableId}
               violatingGuestIds={violatingGuestIds}
+              cohortColorMap={cohortColorMap}
+              seatLabelMode={seatLabelMode}
+              selectedSeat={selectedSeat}
+              onSelectSeat={handleSelectSeat}
             />
           </div>
         </div>
         <UnassignedPanel selectedGuestId={selectedGuestId} onSelect={setSelectedGuestId} />
       </div>
+
+      {/* Selection banner */}
+      {selectedSeat && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 max-w-[90vw] bg-[color:var(--color-rsvp-pending)]/95 text-foreground border border-[color:var(--color-rsvp-pending)] rounded-xl shadow-lg px-4 py-2 flex items-center gap-3 text-sm">
+          <span className="font-medium">
+            {selectedSeatGuest ? selectedSeatGuest.name : "Empty seat"} · Table {selectedSeatTableLabel} · Seat {selectedSeat.seatIndex}
+          </span>
+          <span className="text-xs">— click destination seat to swap</span>
+          <button onClick={() => setSelectedSeat(null)} className="ml-2 inline-flex items-center gap-1 text-xs hover:underline">
+            <X className="h-3 w-3" /> Cancel
+          </button>
+        </div>
+      )}
+
+      {/* Pending swap confirmation */}
+      <AlertDialog open={!!pendingSwap} onOpenChange={(v) => !v && setPendingSwap(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm seat swap</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingSwap && (() => {
+                const ga = guests.find((g) => g.tableId === pendingSwap.a?.tableId && g.seatIndex === pendingSwap.a?.seatIndex);
+                const gb = guests.find((g) => g.tableId === pendingSwap.b?.tableId && g.seatIndex === pendingSwap.b?.seatIndex);
+                const tla = tables.find((t) => t.id === pendingSwap.a?.tableId)?.label;
+                const tlb = tables.find((t) => t.id === pendingSwap.b?.tableId)?.label;
+                return `${ga?.name ?? "empty seat"} (Table ${tla} · Seat ${pendingSwap.a?.seatIndex}) ↔ ${gb?.name ?? "empty seat"} (Table ${tlb} · Seat ${pendingSwap.b?.seatIndex})`;
+              })()}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              if (pendingSwap?.a && pendingSwap.b) swapSeats(pendingSwap.a, pendingSwap.b);
+              setPendingSwap(null);
+            }}>Swap</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Auto-seat strategy dialog */}
+      <Dialog open={autoSeatOpen} onOpenChange={setAutoSeatOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Auto-seat guests</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="text-xs text-muted-foreground font-mono">
+              {eligibleCount} guests to seat · {tables.length} tables · {totalSeats} seats available
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {STRATEGIES.map((s) => {
+                const active = strategy === s.value;
+                return (
+                  <button
+                    key={s.value}
+                    onClick={() => setStrategy(s.value)}
+                    className={`p-3 rounded-lg border text-left transition ${active ? "border-primary bg-accent" : "border-border hover:border-foreground/40"}`}
+                  >
+                    <div className="text-2xl">{s.icon}</div>
+                    <div className="font-medium text-sm mt-1">{s.label}</div>
+                    <div className="text-[11px] text-muted-foreground">{s.description}</div>
+                  </button>
+                );
+              })}
+            </div>
+            <div>
+              <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Active rules</div>
+              {activeRules.length === 0 ? (
+                <div className="text-xs text-muted-foreground italic">No rules active.</div>
+              ) : (
+                <ul className="text-xs space-y-1">
+                  {activeRules.map((r) => (
+                    <li key={r.id} className="text-muted-foreground">
+                      • {r.type.replace(/_/g, " ")}{r.cohort ? `: ${r.cohort}` : ""}{r.guestIds ? ` (${r.guestIds.length} guests)` : ""}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <button onClick={() => setAutoSeatOpen(false)} className="h-9 px-3 rounded-md border border-input text-sm">Cancel</button>
+            <button onClick={runAutoSeat} className="h-9 px-4 rounded-md bg-primary text-primary-foreground text-sm">Run auto-seat →</button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={overwriteOpen} onOpenChange={setOverwriteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Overwrite existing assignments?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {guests.filter((g) => g.tableId).length} guests are already seated. Auto-seat will reassign everyone from scratch.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={commitAutoSeat} className="bg-destructive hover:bg-destructive/90">Reassign all</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppShell>
   );
 }
