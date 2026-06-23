@@ -6,8 +6,20 @@ export type Tag = "VIP" | "Wheelchair" | "Child" | "Speaker" | "Sponsor";
 export type Meal = "Chicken" | "Fish" | "Vegetarian" | "Vegan" | "Kids" | "None";
 export type RsvpStatus = "Confirmed" | "Pending" | "Declined" | "Waitlist" | "No-show";
 
+export type SeatStrategy =
+  | "smart"
+  | "spread"
+  | "group"
+  | "alpha"
+  | "random"
+  | "vip-first"
+  | "sequential"
+  | "cohort-first";
+
 export interface Guest {
   id: string;
+  firstName?: string;
+  lastName?: string;
   name: string;
   company?: string;
   title?: string;
@@ -27,6 +39,7 @@ export interface Table {
   label: string;
   seats: number;
   hostName?: string;
+  hostGuestId?: string;
   notes?: string;
   hostTag?: string;
 }
@@ -68,6 +81,7 @@ export interface Settings {
   logoDataUrl?: string;
   showStage: boolean;
   namingScheme: NamingScheme;
+  showFirmInList: boolean;
 }
 
 export const NAMING_VOCAB: Record<NamingScheme, string[] | null> = {
@@ -84,6 +98,17 @@ export const NAMING_VOCAB: Record<NamingScheme, string[] | null> = {
   constellations: ["Orion","Lyra","Cygnus","Draco","Cassiopeia","Aquila","Perseus","Andromeda","Hercules","Pegasus","Leo","Gemini","Taurus","Scorpius","Sagittarius","Capricorn","Aquarius","Pisces","Aries","Libra","Virgo","Cancer","Bootes","Corona","Corvus","Crater","Eridanus","Hydra","Lepus","Lupus"],
 };
 
+export function sortKey(g: Guest): string {
+  return (g.lastName?.trim() || g.name).toLowerCase();
+}
+
+function deriveName(g: Partial<Guest>): string | undefined {
+  const fn = g.firstName?.trim();
+  const ln = g.lastName?.trim();
+  if (fn || ln) return [fn, ln].filter(Boolean).join(" ");
+  return undefined;
+}
+
 interface PlanState {
   settings: Settings;
   tables: Table[];
@@ -95,6 +120,8 @@ interface PlanState {
   updateTable: (id: string, patch: Partial<Table>) => void;
   reorderTables: (orderedIds: string[]) => void;
   applyNamingScheme: (scheme: NamingScheme) => void;
+  setTableHost: (tableId: string, guestId: string | undefined) => void;
+  rotateTable: (tableId: string, direction: "cw" | "ccw") => void;
 
   addGuests: (guests: Omit<Guest, "id">[]) => void;
   updateGuest: (id: string, patch: Partial<Guest>) => void;
@@ -113,7 +140,12 @@ interface PlanState {
   updateRule: (id: string, patch: Partial<Rule>) => void;
   removeRule: (id: string) => void;
 
-  autoSeat: (commit?: boolean) => { assigned: number; unassigned: number; violations: number; violatingGuestIds: string[] };
+  autoSeat: (strategy?: SeatStrategy, commit?: boolean) => {
+    assigned: number;
+    unassigned: number;
+    violations: number;
+    violatingGuestIds: string[];
+  };
   resetAssignments: () => void;
   importPlan: (data: Partial<PlanState>) => boolean;
 }
@@ -171,6 +203,7 @@ function buildTables(pattern: string, defaultSeats: number, existing: Table[], s
       label: prev?.label ?? labelFor(i, scheme),
       seats: prev?.seats ?? defaultSeats,
       hostName: prev?.hostName,
+      hostGuestId: prev?.hostGuestId,
       notes: prev?.notes,
       hostTag: prev?.hostTag,
     });
@@ -185,6 +218,7 @@ const initialSettings: Settings = {
   primaryColor: "#7c3aed",
   showStage: true,
   namingScheme: "alpha",
+  showFirmInList: false,
 };
 
 export const usePlanStore = create<PlanState>()(
@@ -216,7 +250,6 @@ export const usePlanStore = create<PlanState>()(
         set((s) => {
           const byId = new Map(s.tables.map((t) => [t.id, t]));
           const next = orderedIds.map((id) => byId.get(id)).filter(Boolean) as Table[];
-          // include any tables not in the list (safety)
           s.tables.forEach((t) => {
             if (!orderedIds.includes(t.id)) next.push(t);
           });
@@ -229,19 +262,67 @@ export const usePlanStore = create<PlanState>()(
           return { tables, settings: { ...s.settings, namingScheme: scheme } };
         }),
 
+      setTableHost: (tableId, guestId) =>
+        set((s) => ({
+          tables: s.tables.map((t) => (t.id === tableId ? { ...t, hostGuestId: guestId } : t)),
+        })),
+
+      rotateTable: (tableId, direction) =>
+        set((s) => {
+          const table = s.tables.find((t) => t.id === tableId);
+          if (!table) return s;
+          const n = table.seats;
+          return {
+            guests: s.guests.map((g) => {
+              if (g.tableId !== tableId || !g.seatIndex) return g;
+              const next =
+                direction === "cw"
+                  ? (g.seatIndex % n) + 1
+                  : ((g.seatIndex - 2 + n) % n) + 1;
+              return { ...g, seatIndex: next };
+            }),
+          };
+        }),
+
       addGuests: (guests) =>
         set((s) => ({
           guests: [
             ...s.guests,
-            ...guests.map((g) => ({ ...(g as any), rsvpStatus: g.rsvpStatus ?? "Confirmed", id: uid() } as Guest)),
+            ...guests.map((g) => {
+              const derived = deriveName(g);
+              return {
+                ...(g as any),
+                name: derived ?? g.name ?? "",
+                rsvpStatus: g.rsvpStatus ?? "Confirmed",
+                id: uid(),
+              } as Guest;
+            }),
           ],
         })),
 
       updateGuest: (id, patch) =>
-        set((s) => ({ guests: s.guests.map((g) => (g.id === id ? { ...g, ...patch } : g)) })),
+        set((s) => ({
+          guests: s.guests.map((g) => {
+            if (g.id !== id) return g;
+            const merged = { ...g, ...patch };
+            if (patch.firstName !== undefined || patch.lastName !== undefined) {
+              const derived = deriveName(merged);
+              if (derived) merged.name = derived;
+            }
+            return merged;
+          }),
+        })),
 
-      removeGuest: (id) => set((s) => ({ guests: s.guests.filter((g) => g.id !== id) })),
-      clearGuests: () => set({ guests: [] }),
+      removeGuest: (id) =>
+        set((s) => ({
+          guests: s.guests.filter((g) => g.id !== id),
+          tables: s.tables.map((t) => (t.hostGuestId === id ? { ...t, hostGuestId: undefined } : t)),
+        })),
+      clearGuests: () =>
+        set((s) => ({
+          guests: [],
+          tables: s.tables.map((t) => ({ ...t, hostGuestId: undefined })),
+        })),
 
       setGuestArrived: (guestId, arrived) =>
         set((s) => ({ guests: s.guests.map((g) => (g.id === guestId ? { ...g, arrived } : g)) })),
@@ -300,15 +381,24 @@ export const usePlanStore = create<PlanState>()(
           guests: s.guests.map((g) => ({ ...g, tableId: undefined, seatIndex: undefined })),
         })),
 
-      autoSeat: (commit = true) => {
+      autoSeat: (strategy = "smart", commit = true) => {
         const state = get();
         const tables = state.tables.map((t) => ({ ...t }));
-        // Skip declined/no-show entirely; reset assignments for the rest
         const eligible = state.guests.filter(
           (g) => g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show",
         );
-        const guests = eligible.map((g) => ({ ...g, tableId: undefined, seatIndex: undefined as number | undefined }));
+        let guests = eligible.map((g) => ({ ...g, tableId: undefined, seatIndex: undefined as number | undefined }));
         const rules = state.rules.filter((r) => r.enabled);
+
+        // strategy ordering for singletons
+        if (strategy === "alpha") {
+          guests.sort((a, b) => sortKey(a as Guest).localeCompare(sortKey(b as Guest)));
+        } else if (strategy === "random") {
+          for (let i = guests.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [guests[i], guests[j]] = [guests[j], guests[i]];
+          }
+        }
 
         const cap: Record<string, number> = {};
         const occupants: Record<string, string[]> = {};
@@ -350,7 +440,6 @@ export const usePlanStore = create<PlanState>()(
         });
         byCohort.forEach((ids) => makeGroup(ids));
 
-        // keep_cohort_together rules
         rules.filter((r) => r.type === "keep_cohort_together" && r.cohort).forEach((r) => {
           const ids = byCohort.get(r.cohort!) ?? [];
           if (ids.length > 1) {
@@ -384,6 +473,30 @@ export const usePlanStore = create<PlanState>()(
             }
           });
 
+        // group strategy: bind same-company guests
+        if (strategy === "group") {
+          const byCompany = new Map<string, string[]>();
+          guests.forEach((g) => {
+            if (g.company) {
+              if (!byCompany.has(g.company)) byCompany.set(g.company, []);
+              byCompany.get(g.company)!.push(g.id);
+            }
+          });
+          byCompany.forEach((ids) => {
+            if (ids.length < 2) return;
+            const existing = ids.map(getGroup).filter(Boolean) as string[];
+            if (existing.length === 0) makeGroup(ids);
+            else {
+              const target = existing[0];
+              ids.forEach((id) => {
+                const cur = getGroup(id);
+                if (!cur) addToGroup(target, id);
+                else if (cur !== target) mergeInto(target, cur);
+              });
+            }
+          });
+        }
+
         guests.forEach((g) => {
           if (!getGroup(g.id)) makeGroup([g.id]);
         });
@@ -406,21 +519,35 @@ export const usePlanStore = create<PlanState>()(
           cursor += count;
         });
 
-        const vipPref = rules.some((r) => r.type === "vip_near_stage");
+        const vipPref = rules.some((r) => r.type === "vip_near_stage") || strategy === "vip-first";
         const accPref = rules.some((r) => r.type === "accessibility_edge");
-        const balanceCompany = rules.some((r) => r.type === "balance_company");
+        const balanceCompany = rules.some((r) => r.type === "balance_company") || strategy === "spread";
+        const companyPenalty = strategy === "spread" ? 20 : 10;
+        const companyBonus = strategy === "group" ? 20 : 0;
 
-        const groups = Array.from(groupMap.entries()).map(([gid, ids]) => {
+        let groups = Array.from(groupMap.entries()).map(([gid, ids]) => {
           const list = [...ids];
           const hasVip = list.some((id) => guests.find((x) => x.id === id)?.tags.includes("VIP"));
           const hasAcc = list.some((id) => guests.find((x) => x.id === id)?.tags.includes("Wheelchair"));
-          return { gid, ids: list, hasVip, hasAcc, size: list.length };
+          const isCohort = list.length > 1 && list.every((id) => {
+            const g = guests.find((x) => x.id === id);
+            return !!g?.cohort;
+          });
+          return { gid, ids: list, hasVip, hasAcc, isCohort, size: list.length };
         });
-        groups.sort((a, b) => {
-          if (vipPref && a.hasVip !== b.hasVip) return a.hasVip ? -1 : 1;
-          if (accPref && a.hasAcc !== b.hasAcc) return a.hasAcc ? -1 : 1;
-          return b.size - a.size;
-        });
+
+        if (strategy === "cohort-first") {
+          groups.sort((a, b) => {
+            if (a.isCohort !== b.isCohort) return a.isCohort ? -1 : 1;
+            return b.size - a.size;
+          });
+        } else {
+          groups.sort((a, b) => {
+            if (vipPref && a.hasVip !== b.hasVip) return a.hasVip ? -1 : 1;
+            if (accPref && a.hasAcc !== b.hasAcc) return a.hasAcc ? -1 : 1;
+            return b.size - a.size;
+          });
+        }
 
         function violatesApart(tableId: string, candidateId: string): boolean {
           const here = new Set(occupants[tableId]);
@@ -436,9 +563,9 @@ export const usePlanStore = create<PlanState>()(
         function scoreTable(tableId: string, group: typeof groups[number]): number {
           let score = 0;
           if (cap[tableId] < group.size) return -Infinity;
-          if (vipPref && group.hasVip && frontRowIds.has(tableId)) score += 50;
+          if (vipPref && group.hasVip && frontRowIds.has(tableId)) score += strategy === "vip-first" ? 100 : 50;
           if (accPref && group.hasAcc && edgeIds.has(tableId)) score += 30;
-          if (balanceCompany) {
+          if (balanceCompany || companyBonus) {
             const companies = occupants[tableId]
               .map((id) => guests.find((g) => g.id === id)?.company)
               .filter(Boolean) as string[];
@@ -446,7 +573,8 @@ export const usePlanStore = create<PlanState>()(
               .map((id) => guests.find((g) => g.id === id)?.company)
               .filter(Boolean) as string[];
             const overlap = groupCompanies.filter((c) => companies.includes(c)).length;
-            score -= overlap * 10;
+            if (companyBonus) score += overlap * companyBonus;
+            else score -= overlap * companyPenalty;
           }
           score += cap[tableId];
           return score;
@@ -455,14 +583,20 @@ export const usePlanStore = create<PlanState>()(
         const violatingGuestIds: string[] = [];
         for (const group of groups) {
           let bestId: string | null = null;
-          let bestScore = -Infinity;
-          for (const t of tables) {
-            const s = scoreTable(t.id, group);
-            if (s > bestScore) {
-              const ok = group.ids.every((id) => !violatesApart(t.id, id));
-              if (ok) {
-                bestScore = s;
-                bestId = t.id;
+
+          if (strategy === "sequential") {
+            const t = tables.find((t) => cap[t.id] >= group.size);
+            if (t) bestId = t.id;
+          } else {
+            let bestScore = -Infinity;
+            for (const t of tables) {
+              const s = scoreTable(t.id, group);
+              if (s > bestScore) {
+                const ok = group.ids.every((id) => !violatesApart(t.id, id));
+                if (ok) {
+                  bestScore = s;
+                  bestId = t.id;
+                }
               }
             }
           }
@@ -536,7 +670,6 @@ const STORAGE_KEY = "seating-plan-v2";
 function applyPrimary(hex: string) {
   try {
     document.documentElement.style.setProperty("--primary", hex);
-    // luminance check for foreground
     const m = hex.replace("#", "");
     if (m.length >= 6) {
       const r = parseInt(m.slice(0, 2), 16) / 255;
@@ -552,7 +685,6 @@ function applyPrimary(hex: string) {
 }
 
 if (typeof window !== "undefined") {
-  // v1 → v2 migration
   try {
     const v1 = window.localStorage.getItem("seating-plan-v1");
     if (v1 && !window.localStorage.getItem(STORAGE_KEY)) {
@@ -579,6 +711,8 @@ if (typeof window !== "undefined") {
           rsvpStatus: "Confirmed" as RsvpStatus,
           tags: [],
           meal: "None" as Meal,
+          firstName: g.firstName,
+          lastName: g.lastName,
           ...g,
         })),
         rules: data.rules ?? [],
