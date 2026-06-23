@@ -1,20 +1,19 @@
 import * as XLSX from "xlsx";
 import Papa from "papaparse";
-import type { Guest, Meal, Tag } from "./plan-store";
+import type { Guest, Meal, RsvpStatus, Tag } from "./plan-store";
 
 export type GuestDraft = Omit<Guest, "id">;
 
-const HEADER_ALIASES: Record<keyof GuestDraft, string[]> = {
+const HEADER_ALIASES: Record<string, string[]> = {
   name: ["name", "guest", "guest name", "full name", "attendee"],
   company: ["company", "firm", "organization", "org", "employer"],
   title: ["title", "role", "position", "job"],
-  group: ["group", "party", "table group", "sponsor"],
+  cohort: ["cohort", "group", "party", "table group", "sponsor"],
   meal: ["meal", "menu", "entree", "food"],
   tags: ["tags", "tag", "labels"],
   dietary: ["dietary", "diet", "allergy", "allergies", "restrictions"],
   notes: ["notes", "note", "comment", "comments"],
-  tableId: [],
-  seatIndex: [],
+  rsvpStatus: ["rsvp", "rsvp status", "status"],
 };
 
 function normalizeMeal(v: string | undefined): Meal {
@@ -28,12 +27,20 @@ function normalizeMeal(v: string | undefined): Meal {
   return "None";
 }
 
+function normalizeRsvp(v: string | undefined): RsvpStatus {
+  if (!v) return "Confirmed";
+  const s = v.toLowerCase().trim();
+  if (s.startsWith("conf") || s === "yes" || s === "y") return "Confirmed";
+  if (s.startsWith("pend") || s === "maybe") return "Pending";
+  if (s.startsWith("dec") || s === "no" || s === "n") return "Declined";
+  if (s.startsWith("wait")) return "Waitlist";
+  if (s.includes("no-show") || s.includes("noshow")) return "No-show";
+  return "Confirmed";
+}
+
 function normalizeTags(v: string | undefined): Tag[] {
   if (!v) return [];
-  const parts = v
-    .split(/[,;|]/)
-    .map((p) => p.trim().toLowerCase())
-    .filter(Boolean);
+  const parts = v.split(/[,;|]/).map((p) => p.trim().toLowerCase()).filter(Boolean);
   const out: Tag[] = [];
   parts.forEach((p) => {
     if (p === "vip") out.push("VIP");
@@ -45,18 +52,20 @@ function normalizeTags(v: string | undefined): Tag[] {
   return out;
 }
 
-export function mapRowsToGuests(rows: Record<string, unknown>[]): GuestDraft[] {
-  if (rows.length === 0) return [];
-  const headers = Object.keys(rows[0]);
-  const fieldMap: Partial<Record<keyof GuestDraft, string>> = {};
-  (Object.keys(HEADER_ALIASES) as (keyof GuestDraft)[]).forEach((field) => {
+export function detectColumnMap(headers: string[]): Record<string, string | undefined> {
+  const map: Record<string, string | undefined> = {};
+  Object.keys(HEADER_ALIASES).forEach((field) => {
     const aliases = HEADER_ALIASES[field];
-    const match = headers.find((h) =>
-      aliases.includes(h.toLowerCase().trim()),
-    );
-    if (match) fieldMap[field] = match;
+    const match = headers.find((h) => aliases.includes(h.toLowerCase().trim()));
+    if (match) map[field] = match;
   });
+  return map;
+}
 
+export function rowsToGuestsWithMap(
+  rows: Record<string, unknown>[],
+  fieldMap: Record<string, string | undefined>,
+): GuestDraft[] {
   return rows
     .map((row) => {
       const name = String((fieldMap.name && row[fieldMap.name]) ?? "").trim();
@@ -65,62 +74,95 @@ export function mapRowsToGuests(rows: Record<string, unknown>[]): GuestDraft[] {
         name,
         company: fieldMap.company ? String(row[fieldMap.company] ?? "").trim() || undefined : undefined,
         title: fieldMap.title ? String(row[fieldMap.title] ?? "").trim() || undefined : undefined,
-        group: fieldMap.group ? String(row[fieldMap.group] ?? "").trim() || undefined : undefined,
+        cohort: fieldMap.cohort ? String(row[fieldMap.cohort] ?? "").trim() || undefined : undefined,
         meal: normalizeMeal(fieldMap.meal ? String(row[fieldMap.meal] ?? "") : undefined),
         tags: normalizeTags(fieldMap.tags ? String(row[fieldMap.tags] ?? "") : undefined),
         dietary: fieldMap.dietary ? String(row[fieldMap.dietary] ?? "").trim() || undefined : undefined,
         notes: fieldMap.notes ? String(row[fieldMap.notes] ?? "").trim() || undefined : undefined,
+        rsvpStatus: normalizeRsvp(fieldMap.rsvpStatus ? String(row[fieldMap.rsvpStatus] ?? "") : undefined),
       } as GuestDraft;
     })
     .filter((g): g is GuestDraft => g !== null);
 }
 
-export async function parseFile(file: File): Promise<GuestDraft[]> {
+export function mapRowsToGuests(rows: Record<string, unknown>[]): GuestDraft[] {
+  if (rows.length === 0) return [];
+  const headers = Object.keys(rows[0]);
+  return rowsToGuestsWithMap(rows, detectColumnMap(headers));
+}
+
+export async function parseFileRows(file: File): Promise<{ rows: Record<string, unknown>[]; headers: string[] }> {
   const name = file.name.toLowerCase();
   if (name.endsWith(".csv")) {
     const text = await file.text();
-    const parsed = Papa.parse<Record<string, unknown>>(text, {
-      header: true,
-      skipEmptyLines: true,
-    });
-    return mapRowsToGuests(parsed.data);
+    const parsed = Papa.parse<Record<string, unknown>>(text, { header: true, skipEmptyLines: true });
+    const rows = parsed.data;
+    return { rows, headers: rows.length ? Object.keys(rows[0]) : [] };
   }
   const buf = await file.arrayBuffer();
   const wb = XLSX.read(buf, { type: "array" });
   const sheet = wb.Sheets[wb.SheetNames[0]];
   const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
+  return { rows, headers: rows.length ? Object.keys(rows[0]) : [] };
+}
+
+export async function parseFile(file: File): Promise<GuestDraft[]> {
+  const { rows } = await parseFileRows(file);
   return mapRowsToGuests(rows);
+}
+
+export interface ReconciliationDiff {
+  added: GuestDraft[];
+  removed: Guest[];
+  changed: { existing: Guest; incoming: GuestDraft; diffs: string[] }[];
+  unchanged: number;
+}
+
+export function reconcileGuests(existing: Guest[], incoming: GuestDraft[]): ReconciliationDiff {
+  const norm = (s: string) => s.toLowerCase().trim();
+  const existingByName = new Map(existing.map((g) => [norm(g.name), g]));
+  const incomingByName = new Map(incoming.map((g) => [norm(g.name), g]));
+  const added: GuestDraft[] = [];
+  const removed: Guest[] = [];
+  const changed: ReconciliationDiff["changed"] = [];
+  let unchanged = 0;
+
+  incoming.forEach((g) => {
+    const ex = existingByName.get(norm(g.name));
+    if (!ex) added.push(g);
+    else {
+      const diffs: string[] = [];
+      if ((ex.meal ?? "None") !== (g.meal ?? "None")) diffs.push(`meal: ${ex.meal} → ${g.meal}`);
+      if ((ex.dietary ?? "") !== (g.dietary ?? "")) diffs.push(`dietary: ${ex.dietary ?? "—"} → ${g.dietary ?? "—"}`);
+      if ((ex.rsvpStatus ?? "Confirmed") !== (g.rsvpStatus ?? "Confirmed"))
+        diffs.push(`RSVP: ${ex.rsvpStatus} → ${g.rsvpStatus}`);
+      if ((ex.cohort ?? "") !== (g.cohort ?? "")) diffs.push(`cohort: ${ex.cohort ?? "—"} → ${g.cohort ?? "—"}`);
+      if (diffs.length) changed.push({ existing: ex, incoming: g, diffs });
+      else unchanged++;
+    }
+  });
+
+  existing.forEach((g) => {
+    if (!incomingByName.has(norm(g.name))) removed.push(g);
+  });
+
+  return { added, removed, changed, unchanged };
 }
 
 export function exportGuestsCSV(guests: Guest[], tableLabelById: Record<string, string>) {
   const rows = guests.map((g) => ({
-    Name: g.name,
-    Company: g.company ?? "",
-    Title: g.title ?? "",
-    Group: g.group ?? "",
-    Meal: g.meal,
-    Tags: g.tags.join(", "),
-    Dietary: g.dietary ?? "",
-    Notes: g.notes ?? "",
-    Table: g.tableId ? tableLabelById[g.tableId] ?? "" : "",
-    Seat: g.seatIndex ?? "",
+    Name: g.name, Company: g.company ?? "", Title: g.title ?? "", Cohort: g.cohort ?? "",
+    Meal: g.meal, Tags: g.tags.join(", "), Dietary: g.dietary ?? "", Notes: g.notes ?? "",
+    RSVP: g.rsvpStatus, Table: g.tableId ? tableLabelById[g.tableId] ?? "" : "", Seat: g.seatIndex ?? "",
   }));
-  const csv = Papa.unparse(rows);
-  download(csv, "seating-plan.csv", "text/csv");
+  download(Papa.unparse(rows), "seating-plan.csv", "text/csv");
 }
 
 export function exportGuestsXLSX(guests: Guest[], tableLabelById: Record<string, string>) {
   const rows = guests.map((g) => ({
-    Name: g.name,
-    Company: g.company ?? "",
-    Title: g.title ?? "",
-    Group: g.group ?? "",
-    Meal: g.meal,
-    Tags: g.tags.join(", "),
-    Dietary: g.dietary ?? "",
-    Notes: g.notes ?? "",
-    Table: g.tableId ? tableLabelById[g.tableId] ?? "" : "",
-    Seat: g.seatIndex ?? "",
+    Name: g.name, Company: g.company ?? "", Title: g.title ?? "", Cohort: g.cohort ?? "",
+    Meal: g.meal, Tags: g.tags.join(", "), Dietary: g.dietary ?? "", Notes: g.notes ?? "",
+    RSVP: g.rsvpStatus, Table: g.tableId ? tableLabelById[g.tableId] ?? "" : "", Seat: g.seatIndex ?? "",
   }));
   const ws = XLSX.utils.json_to_sheet(rows);
   const wb = XLSX.utils.book_new();

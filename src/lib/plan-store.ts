@@ -1,32 +1,40 @@
 import { create } from "zustand";
+import { temporal } from "zundo";
+import { useStore } from "zustand";
 
 export type Tag = "VIP" | "Wheelchair" | "Child" | "Speaker" | "Sponsor";
 export type Meal = "Chicken" | "Fish" | "Vegetarian" | "Vegan" | "Kids" | "None";
+export type RsvpStatus = "Confirmed" | "Pending" | "Declined" | "Waitlist" | "No-show";
 
 export interface Guest {
   id: string;
   name: string;
   company?: string;
   title?: string;
-  group?: string; // party / sponsor table id
+  cohort?: string;
   meal: Meal;
   tags: Tag[];
   dietary?: string;
   notes?: string;
+  rsvpStatus: RsvpStatus;
+  arrived?: boolean;
   tableId?: string;
-  seatIndex?: number; // 1-based
+  seatIndex?: number;
 }
 
 export interface Table {
   id: string;
-  label: string; // letter or custom
+  label: string;
   seats: number;
-  hostTag?: string; // sponsor/host
+  hostName?: string;
+  notes?: string;
+  hostTag?: string;
 }
 
 export type RuleType =
   | "keep_together"
   | "keep_apart"
+  | "keep_cohort_together"
   | "vip_near_stage"
   | "accessibility_edge"
   | "balance_company";
@@ -34,17 +42,47 @@ export type RuleType =
 export interface Rule {
   id: string;
   type: RuleType;
-  guestIds?: string[]; // for together / apart
+  guestIds?: string[];
+  cohort?: string;
   enabled: boolean;
 }
 
+export type NamingScheme =
+  | "alpha"
+  | "numeric"
+  | "numeric-skip13"
+  | "numeric-skip4"
+  | "numeric-skip-both"
+  | "flowers"
+  | "colors"
+  | "llm-models"
+  | "wines"
+  | "cities"
+  | "constellations";
+
 export interface Settings {
-  rowPattern: string; // e.g. "4:4:4:4"
+  rowPattern: string;
   defaultSeats: number;
   eventTitle: string;
   primaryColor: string;
+  logoDataUrl?: string;
   showStage: boolean;
+  namingScheme: NamingScheme;
 }
+
+export const NAMING_VOCAB: Record<NamingScheme, string[] | null> = {
+  alpha: null,
+  numeric: null,
+  "numeric-skip13": null,
+  "numeric-skip4": null,
+  "numeric-skip-both": null,
+  flowers: ["Rose","Lily","Iris","Dahlia","Jasmine","Orchid","Peony","Tulip","Violet","Magnolia","Poppy","Camellia","Lavender","Hibiscus","Lotus","Marigold","Freesia","Wisteria","Begonia","Azalea","Zinnia","Primrose","Aster","Bluebell","Daffodil","Foxglove","Gardenia","Heather","Indigo","Juniper"],
+  colors: ["Ivory","Amber","Coral","Sage","Slate","Indigo","Teal","Crimson","Ochre","Sienna","Azure","Cobalt","Emerald","Fuchsia","Goldenrod","Heliotrope","Jade","Khaki","Lavender","Magenta","Navy","Olive","Periwinkle","Quartz","Ruby","Sapphire","Topaz","Umber","Vermilion","Wisteria"],
+  "llm-models": ["Claude","GPT","Gemini","Llama","Mistral","Grok","Copilot","Falcon","Phi","Nova","Cohere","Titan","Jurassic","Bloom","Vicuna","Alpaca","Orca","Dolly","Guanaco","Platypus","WizardLM","Zephyr","Qwen","Yi","Mixtral","Gemma","Solar","DeepSeek","Command","Granite"],
+  wines: ["Bordeaux","Champagne","Barolo","Rioja","Chablis","Merlot","Malbec","Riesling","Shiraz","Pinot","Chianti","Sancerre","Brunello","Prosecco","Grenache","Viognier","Tempranillo","Moscato","Amarone","Zinfandel","Cabernet","Chardonnay","Sauvignon","Gewurz","Barbera","Montepulciano","Primitivo","Nero","Vermentino","Frascati"],
+  cities: ["Paris","Vienna","Kyoto","Lisbon","Bruges","Milan","Havana","Marrakech","Prague","Dubrovnik","Reykjavik","Istanbul","Cape Town","Sydney","Montreal","Buenos Aires","Santorini","Florence","Amsterdam","Barcelona","Edinburgh","Budapest","Valletta","Tallinn","Bern","Salzburg","Porto","Queenstown","Amalfi","Bergen"],
+  constellations: ["Orion","Lyra","Cygnus","Draco","Cassiopeia","Aquila","Perseus","Andromeda","Hercules","Pegasus","Leo","Gemini","Taurus","Scorpius","Sagittarius","Capricorn","Aquarius","Pisces","Aries","Libra","Virgo","Cancer","Bootes","Corona","Corvus","Crater","Eridanus","Hydra","Lepus","Lupus"],
+};
 
 interface PlanState {
   settings: Settings;
@@ -55,11 +93,14 @@ interface PlanState {
   setSettings: (patch: Partial<Settings>) => void;
   regenerateTables: () => void;
   updateTable: (id: string, patch: Partial<Table>) => void;
+  reorderTables: (orderedIds: string[]) => void;
+  applyNamingScheme: (scheme: NamingScheme) => void;
 
   addGuests: (guests: Omit<Guest, "id">[]) => void;
   updateGuest: (id: string, patch: Partial<Guest>) => void;
   removeGuest: (id: string) => void;
   clearGuests: () => void;
+  setGuestArrived: (guestId: string, arrived: boolean) => void;
 
   assignGuest: (guestId: string, tableId: string, seatIndex?: number) => void;
   unassignGuest: (guestId: string) => void;
@@ -72,9 +113,9 @@ interface PlanState {
   updateRule: (id: string, patch: Partial<Rule>) => void;
   removeRule: (id: string) => void;
 
-  autoSeat: () => { assigned: number; unassigned: number; violations: number };
+  autoSeat: (commit?: boolean) => { assigned: number; unassigned: number; violations: number; violatingGuestIds: string[] };
   resetAssignments: () => void;
-  importPlan: (data: Partial<PlanState>) => void;
+  importPlan: (data: Partial<PlanState>) => boolean;
 }
 
 function uid() {
@@ -82,7 +123,6 @@ function uid() {
 }
 
 function letterLabel(i: number): string {
-  // A..Z, AA, AB, ...
   let s = "";
   let n = i;
   do {
@@ -92,6 +132,27 @@ function letterLabel(i: number): string {
   return s;
 }
 
+function getNumericLabel(index: number, scheme: NamingScheme): number {
+  let n = 0;
+  let i = 0;
+  while (i <= index) {
+    n++;
+    const s = String(n);
+    if (scheme === "numeric-skip13" && n === 13) continue;
+    if (scheme === "numeric-skip4" && s.includes("4")) continue;
+    if (scheme === "numeric-skip-both" && (n === 13 || s.includes("4"))) continue;
+    i++;
+  }
+  return n;
+}
+
+function labelFor(i: number, scheme: NamingScheme): string {
+  if (scheme === "alpha") return letterLabel(i);
+  if (scheme.startsWith("numeric")) return String(getNumericLabel(i, scheme));
+  const vocab = NAMING_VOCAB[scheme];
+  return vocab?.[i] ?? letterLabel(i);
+}
+
 function parsePattern(pattern: string): number[] {
   return pattern
     .split(":")
@@ -99,7 +160,7 @@ function parsePattern(pattern: string): number[] {
     .filter((n) => Number.isFinite(n) && n > 0);
 }
 
-function buildTables(pattern: string, defaultSeats: number, existing: Table[]): Table[] {
+function buildTables(pattern: string, defaultSeats: number, existing: Table[], scheme: NamingScheme): Table[] {
   const rows = parsePattern(pattern);
   const total = rows.reduce((a, b) => a + b, 0);
   const out: Table[] = [];
@@ -107,8 +168,10 @@ function buildTables(pattern: string, defaultSeats: number, existing: Table[]): 
     const prev = existing[i];
     out.push({
       id: prev?.id ?? uid(),
-      label: prev?.label ?? letterLabel(i),
+      label: prev?.label ?? labelFor(i, scheme),
       seats: prev?.seats ?? defaultSeats,
+      hostName: prev?.hostName,
+      notes: prev?.notes,
       hostTag: prev?.hostTag,
     });
   }
@@ -121,12 +184,14 @@ const initialSettings: Settings = {
   eventTitle: "Annual Gala",
   primaryColor: "#7c3aed",
   showStage: true,
+  namingScheme: "alpha",
 };
 
 export const usePlanStore = create<PlanState>()(
+  temporal(
     (set, get) => ({
       settings: initialSettings,
-      tables: buildTables(initialSettings.rowPattern, initialSettings.defaultSeats, []),
+      tables: buildTables(initialSettings.rowPattern, initialSettings.defaultSeats, [], initialSettings.namingScheme),
       guests: [],
       rules: [],
 
@@ -134,24 +199,42 @@ export const usePlanStore = create<PlanState>()(
         set((s) => ({ settings: { ...s.settings, ...patch } }));
         if (patch.rowPattern !== undefined || patch.defaultSeats !== undefined) {
           set((s) => ({
-            tables: buildTables(s.settings.rowPattern, s.settings.defaultSeats, s.tables),
+            tables: buildTables(s.settings.rowPattern, s.settings.defaultSeats, s.tables, s.settings.namingScheme),
           }));
         }
       },
 
       regenerateTables: () =>
         set((s) => ({
-          tables: buildTables(s.settings.rowPattern, s.settings.defaultSeats, s.tables),
+          tables: buildTables(s.settings.rowPattern, s.settings.defaultSeats, s.tables, s.settings.namingScheme),
         })),
 
       updateTable: (id, patch) =>
-        set((s) => ({
-          tables: s.tables.map((t) => (t.id === id ? { ...t, ...patch } : t)),
-        })),
+        set((s) => ({ tables: s.tables.map((t) => (t.id === id ? { ...t, ...patch } : t)) })),
+
+      reorderTables: (orderedIds) =>
+        set((s) => {
+          const byId = new Map(s.tables.map((t) => [t.id, t]));
+          const next = orderedIds.map((id) => byId.get(id)).filter(Boolean) as Table[];
+          // include any tables not in the list (safety)
+          s.tables.forEach((t) => {
+            if (!orderedIds.includes(t.id)) next.push(t);
+          });
+          return { tables: next };
+        }),
+
+      applyNamingScheme: (scheme) =>
+        set((s) => {
+          const tables = s.tables.map((t, i) => ({ ...t, label: labelFor(i, scheme) }));
+          return { tables, settings: { ...s.settings, namingScheme: scheme } };
+        }),
 
       addGuests: (guests) =>
         set((s) => ({
-          guests: [...s.guests, ...guests.map((g) => ({ ...g, id: uid() }))],
+          guests: [
+            ...s.guests,
+            ...guests.map((g) => ({ ...(g as any), rsvpStatus: g.rsvpStatus ?? "Confirmed", id: uid() } as Guest)),
+          ],
         })),
 
       updateGuest: (id, patch) =>
@@ -159,6 +242,9 @@ export const usePlanStore = create<PlanState>()(
 
       removeGuest: (id) => set((s) => ({ guests: s.guests.filter((g) => g.id !== id) })),
       clearGuests: () => set({ guests: [] }),
+
+      setGuestArrived: (guestId, arrived) =>
+        set((s) => ({ guests: s.guests.map((g) => (g.id === guestId ? { ...g, arrived } : g)) })),
 
       assignGuest: (guestId, tableId, seatIndex) =>
         set((s) => {
@@ -176,7 +262,7 @@ export const usePlanStore = create<PlanState>()(
               }
             }
           }
-          if (!seat) return s; // table full
+          if (!seat) return s;
           return {
             guests: s.guests.map((g) =>
               g.id === guestId ? { ...g, tableId, seatIndex: seat } : g,
@@ -214,14 +300,16 @@ export const usePlanStore = create<PlanState>()(
           guests: s.guests.map((g) => ({ ...g, tableId: undefined, seatIndex: undefined })),
         })),
 
-      autoSeat: () => {
+      autoSeat: (commit = true) => {
         const state = get();
         const tables = state.tables.map((t) => ({ ...t }));
-        // start fresh
-        const guests = state.guests.map((g) => ({ ...g, tableId: undefined, seatIndex: undefined as number | undefined }));
+        // Skip declined/no-show entirely; reset assignments for the rest
+        const eligible = state.guests.filter(
+          (g) => g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show",
+        );
+        const guests = eligible.map((g) => ({ ...g, tableId: undefined, seatIndex: undefined as number | undefined }));
         const rules = state.rules.filter((r) => r.enabled);
 
-        // capacity per table
         const cap: Record<string, number> = {};
         const occupants: Record<string, string[]> = {};
         tables.forEach((t) => {
@@ -229,17 +317,14 @@ export const usePlanStore = create<PlanState>()(
           occupants[t.id] = [];
         });
 
-        // build groups (keep_together rules + party / group field)
         const groupMap = new Map<string, Set<string>>();
         const groupOf = new Map<string, string>();
-        function getGroup(id: string) {
-          return groupOf.get(id);
-        }
+        const getGroup = (id: string) => groupOf.get(id);
         function makeGroup(ids: string[]) {
           const gid = uid();
-          const set = new Set(ids);
-          set.forEach((i) => groupOf.set(i, gid));
-          groupMap.set(gid, set);
+          const s = new Set(ids);
+          s.forEach((i) => groupOf.set(i, gid));
+          groupMap.set(gid, s);
           return gid;
         }
         function mergeInto(target: string, source: string) {
@@ -256,25 +341,40 @@ export const usePlanStore = create<PlanState>()(
           groupOf.set(id, gid);
         }
 
-        // party field
-        const byParty = new Map<string, string[]>();
+        const byCohort = new Map<string, string[]>();
         guests.forEach((g) => {
-          if (g.group) {
-            if (!byParty.has(g.group)) byParty.set(g.group, []);
-            byParty.get(g.group)!.push(g.id);
+          if (g.cohort) {
+            if (!byCohort.has(g.cohort)) byCohort.set(g.cohort, []);
+            byCohort.get(g.cohort)!.push(g.id);
           }
         });
-        byParty.forEach((ids) => makeGroup(ids));
+        byCohort.forEach((ids) => makeGroup(ids));
 
-        // keep_together rules
+        // keep_cohort_together rules
+        rules.filter((r) => r.type === "keep_cohort_together" && r.cohort).forEach((r) => {
+          const ids = byCohort.get(r.cohort!) ?? [];
+          if (ids.length > 1) {
+            const existing = ids.map(getGroup).filter(Boolean) as string[];
+            if (existing.length === 0) makeGroup(ids);
+            else {
+              const target = existing[0];
+              ids.forEach((id) => {
+                const cur = getGroup(id);
+                if (!cur) addToGroup(target, id);
+                else if (cur !== target) mergeInto(target, cur);
+              });
+            }
+          }
+        });
+
         rules
           .filter((r) => r.type === "keep_together" && r.guestIds && r.guestIds.length > 1)
           .forEach((r) => {
-            const ids = r.guestIds!;
+            const ids = r.guestIds!.filter((id) => guests.some((g) => g.id === id));
+            if (ids.length < 2) return;
             const existing = ids.map(getGroup).filter(Boolean) as string[];
-            if (existing.length === 0) {
-              makeGroup(ids);
-            } else {
+            if (existing.length === 0) makeGroup(ids);
+            else {
               const target = existing[0];
               ids.forEach((id) => {
                 const cur = getGroup(id);
@@ -284,17 +384,14 @@ export const usePlanStore = create<PlanState>()(
             }
           });
 
-        // singletons become own groups
         guests.forEach((g) => {
           if (!getGroup(g.id)) makeGroup([g.id]);
         });
 
-        // keep_apart sets
         const apart: Array<Set<string>> = rules
           .filter((r) => r.type === "keep_apart" && r.guestIds && r.guestIds.length > 1)
           .map((r) => new Set(r.guestIds!));
 
-        // VIP / accessibility: tag the front row tables / edge tables
         const rows = parsePattern(state.settings.rowPattern);
         const frontRowIds = new Set<string>();
         const edgeIds = new Set<string>();
@@ -313,17 +410,10 @@ export const usePlanStore = create<PlanState>()(
         const accPref = rules.some((r) => r.type === "accessibility_edge");
         const balanceCompany = rules.some((r) => r.type === "balance_company");
 
-        // sort groups: VIP first if rule active, then larger groups first
         const groups = Array.from(groupMap.entries()).map(([gid, ids]) => {
           const list = [...ids];
-          const hasVip = list.some((id) => {
-            const g = guests.find((x) => x.id === id);
-            return g?.tags.includes("VIP");
-          });
-          const hasAcc = list.some((id) => {
-            const g = guests.find((x) => x.id === id);
-            return g?.tags.includes("Wheelchair");
-          });
+          const hasVip = list.some((id) => guests.find((x) => x.id === id)?.tags.includes("VIP"));
+          const hasAcc = list.some((id) => guests.find((x) => x.id === id)?.tags.includes("Wheelchair"));
           return { gid, ids: list, hasVip, hasAcc, size: list.length };
         });
         groups.sort((a, b) => {
@@ -345,11 +435,9 @@ export const usePlanStore = create<PlanState>()(
 
         function scoreTable(tableId: string, group: typeof groups[number]): number {
           let score = 0;
-          // capacity must fit
           if (cap[tableId] < group.size) return -Infinity;
           if (vipPref && group.hasVip && frontRowIds.has(tableId)) score += 50;
           if (accPref && group.hasAcc && edgeIds.has(tableId)) score += 30;
-          // balance: penalty for repeating company
           if (balanceCompany) {
             const companies = occupants[tableId]
               .map((id) => guests.find((g) => g.id === id)?.company)
@@ -360,20 +448,17 @@ export const usePlanStore = create<PlanState>()(
             const overlap = groupCompanies.filter((c) => companies.includes(c)).length;
             score -= overlap * 10;
           }
-          // prefer tables with more remaining space (spread groups)
           score += cap[tableId];
           return score;
         }
 
-        let violations = 0;
+        const violatingGuestIds: string[] = [];
         for (const group of groups) {
-          // pick best table
           let bestId: string | null = null;
           let bestScore = -Infinity;
           for (const t of tables) {
             const s = scoreTable(t.id, group);
             if (s > bestScore) {
-              // check apart constraints (hard)
               const ok = group.ids.every((id) => !violatesApart(t.id, id));
               if (ok) {
                 bestScore = s;
@@ -382,11 +467,10 @@ export const usePlanStore = create<PlanState>()(
             }
           }
           if (!bestId) {
-            // place anyway (largest remaining capacity), count violations
             const t = [...tables].sort((a, b) => cap[b.id] - cap[a.id])[0];
-            if (cap[t.id] >= group.size) {
+            if (t && cap[t.id] >= group.size) {
               bestId = t.id;
-              violations += group.size;
+              violatingGuestIds.push(...group.ids);
             }
           }
           if (!bestId) continue;
@@ -396,10 +480,9 @@ export const usePlanStore = create<PlanState>()(
           }
         }
 
-        // commit: assign seat indices
         const updated = state.guests.map((g) => ({
           ...g,
-          tableId: undefined as string | undefined,
+          tableId: g.rsvpStatus === "Declined" || g.rsvpStatus === "No-show" ? undefined : (undefined as string | undefined),
           seatIndex: undefined as number | undefined,
         }));
         let assigned = 0;
@@ -413,17 +496,78 @@ export const usePlanStore = create<PlanState>()(
             }
           });
         }
-        set({ guests: updated });
-        return { assigned, unassigned: updated.length - assigned, violations };
+        if (commit) set({ guests: updated });
+        return {
+          assigned,
+          unassigned: eligible.length - assigned,
+          violations: violatingGuestIds.length,
+          violatingGuestIds,
+        };
       },
 
-      importPlan: (data) => set((s) => ({ ...s, ...data })),
+      importPlan: (data) => {
+        if (!data || typeof data !== "object") return false;
+        if (data.tables && !Array.isArray(data.tables)) return false;
+        if (data.guests && !Array.isArray(data.guests)) return false;
+        if (data.rules && !Array.isArray(data.rules)) return false;
+        set((s) => ({
+          settings: { ...s.settings, ...(data.settings ?? {}) },
+          tables: data.tables ?? s.tables,
+          guests: (data.guests ?? []).map((g: any) => ({
+            rsvpStatus: "Confirmed" as RsvpStatus,
+            tags: [],
+            meal: "None" as Meal,
+            ...g,
+          })),
+          rules: data.rules ?? [],
+        }));
+        return true;
+      },
     }),
+    { limit: 50, partialize: (s) => ({ settings: s.settings, tables: s.tables, guests: s.guests, rules: s.rules }) as any },
+  ),
 );
 
-const STORAGE_KEY = "seating-plan-v1";
+export const useTemporalStore = <T,>(selector: (state: any) => T) =>
+  useStore(usePlanStore.temporal as any, selector);
+
+const STORAGE_KEY = "seating-plan-v2";
+
+function applyPrimary(hex: string) {
+  try {
+    document.documentElement.style.setProperty("--primary", hex);
+    // luminance check for foreground
+    const m = hex.replace("#", "");
+    if (m.length >= 6) {
+      const r = parseInt(m.slice(0, 2), 16) / 255;
+      const g = parseInt(m.slice(2, 4), 16) / 255;
+      const b = parseInt(m.slice(4, 6), 16) / 255;
+      const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+      document.documentElement.style.setProperty(
+        "--primary-foreground",
+        lum < 0.5 ? "#ffffff" : "#111111",
+      );
+    }
+  } catch {}
+}
 
 if (typeof window !== "undefined") {
+  // v1 → v2 migration
+  try {
+    const v1 = window.localStorage.getItem("seating-plan-v1");
+    if (v1 && !window.localStorage.getItem(STORAGE_KEY)) {
+      const data = JSON.parse(v1);
+      if (data.guests) {
+        data.guests = data.guests.map((g: any) => {
+          const { group, ...rest } = g;
+          return { ...rest, cohort: group, rsvpStatus: g.rsvpStatus ?? "Confirmed" };
+        });
+      }
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+    window.localStorage.removeItem("seating-plan-v1");
+  } catch {}
+
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (raw) {
@@ -431,23 +575,46 @@ if (typeof window !== "undefined") {
       usePlanStore.setState({
         settings: { ...usePlanStore.getState().settings, ...(data.settings ?? {}) },
         tables: data.tables ?? usePlanStore.getState().tables,
-        guests: data.guests ?? [],
+        guests: (data.guests ?? []).map((g: any) => ({
+          rsvpStatus: "Confirmed" as RsvpStatus,
+          tags: [],
+          meal: "None" as Meal,
+          ...g,
+        })),
         rules: data.rules ?? [],
       });
     }
   } catch {}
+
+  applyPrimary(usePlanStore.getState().settings.primaryColor);
+
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let lastSavedAt = 0;
+  const listeners = new Set<(t: number) => void>();
+  (window as any).__seatcraftOnSave = (cb: (t: number) => void) => {
+    listeners.add(cb);
+    return () => listeners.delete(cb);
+  };
+  (window as any).__seatcraftLastSaved = () => lastSavedAt;
+
   usePlanStore.subscribe((s) => {
-    try {
-      window.localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({
-          settings: s.settings,
-          tables: s.tables,
-          guests: s.guests,
-          rules: s.rules,
-        }),
-      );
-    } catch {}
+    applyPrimary(s.settings.primaryColor);
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => {
+      try {
+        window.localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify({
+            settings: s.settings,
+            tables: s.tables,
+            guests: s.guests,
+            rules: s.rules,
+          }),
+        );
+        lastSavedAt = Date.now();
+        listeners.forEach((cb) => cb(lastSavedAt));
+      } catch {}
+    }, 150);
   });
 }
 
