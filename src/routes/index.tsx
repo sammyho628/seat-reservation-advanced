@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/")({ssr: false, ...{
   head: () => ({
     meta: [
       { title: "Planner · Seatcraft" },

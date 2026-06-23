@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { Printer } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/print")({
+export const Route = createFileRoute("/print")({ssr: false, ...{
   head: () => ({ meta: [{ title: "Print · Seatcraft" }] }),
   component: PrintPage,
 });
