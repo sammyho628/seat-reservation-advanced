@@ -66,7 +66,7 @@ function ListPage() {
         case "meal":
           return a.meal.localeCompare(b.meal);
         case "table":
-          return (tableLabel[a.tableId ?? ""] ?? "ZZZ").localeCompare(tableLabel[b.tableId ?? ""] ?? "ZZZ");
+          return ((tableLabel[a.tableId ?? ""] ?? "ZZZ")).localeCompare((tableLabel[b.tableId ?? ""] ?? "ZZZ"));
       }
     });
     return list;

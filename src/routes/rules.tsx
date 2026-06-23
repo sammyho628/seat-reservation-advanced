@@ -106,7 +106,7 @@ function RulesPage() {
   const [check, setCheck] = useState<{ violations: number; names: string[] } | null>(null);
 
   function runCheck() {
-    const r = autoSeat(false);
+    const r = autoSeat("smart", false);
     const names = r.violatingGuestIds.map((id) => guests.find((g) => g.id === id)?.name || id).slice(0, 20);
     setCheck({ violations: r.violations, names });
   }
