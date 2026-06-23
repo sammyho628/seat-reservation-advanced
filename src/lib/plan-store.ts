@@ -124,7 +124,6 @@ const initialSettings: Settings = {
 };
 
 export const usePlanStore = create<PlanState>()(
-  persist(
     (set, get) => ({
       settings: initialSettings,
       tables: buildTables(initialSettings.rowPattern, initialSettings.defaultSeats, []),
