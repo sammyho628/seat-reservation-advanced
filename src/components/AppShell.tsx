@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { LayoutGrid, Users, Sliders, Printer, UserCheck, MoreVertical, Plus, Copy, Download, Upload, RotateCcw } from "lucide-react";
+import { LayoutGrid, Users, Sliders, Printer, UserCheck, MoreVertical, Plus, Copy, Download, Upload, RotateCcw, ListFilter } from "lucide-react";
 import { usePlanStore } from "@/lib/plan-store";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
@@ -22,6 +22,7 @@ import { toast } from "sonner";
 const nav = [
   { to: "/", label: "Planner", icon: LayoutGrid },
   { to: "/guests", label: "Guests", icon: Users },
+  { to: "/list", label: "Lists", icon: ListFilter },
   { to: "/rules", label: "Rules", icon: Sliders },
   { to: "/checkin", label: "Check-in", icon: UserCheck },
   { to: "/print", label: "Print", icon: Printer },
