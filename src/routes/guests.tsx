@@ -14,7 +14,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export const Route = createFileRoute("/guests")({ssr: false, ...{
+export const Route = createFileRoute("/guests")({
+  ssr: false,
   head: () => ({
     meta: [{ title: "Guests · Seatcraft" }],
   }),

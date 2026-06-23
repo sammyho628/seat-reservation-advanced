@@ -4,7 +4,8 @@ import { usePlanStore, type RuleType } from "@/lib/plan-store";
 import { Plus, Trash2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 
-export const Route = createFileRoute("/rules")({ssr: false, ...{
+export const Route = createFileRoute("/rules")({
+  ssr: false,
   head: () => ({ meta: [{ title: "Rules · Seatcraft" }] }),
   component: RulesPage,
 });
