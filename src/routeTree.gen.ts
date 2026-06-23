@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as RulesRouteImport } from './routes/rules'
 import { Route as PrintRouteImport } from './routes/print'
 import { Route as GuestsRouteImport } from './routes/guests'
+import { Route as CheckinRouteImport } from './routes/checkin'
 import { Route as IndexRouteImport } from './routes/index'
 
 const RulesRoute = RulesRouteImport.update({
@@ -29,6 +30,11 @@ const GuestsRoute = GuestsRouteImport.update({
   path: '/guests',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CheckinRoute = CheckinRouteImport.update({
+  id: '/checkin',
+  path: '/checkin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -37,12 +43,14 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/checkin': typeof CheckinRoute
   '/guests': typeof GuestsRoute
   '/print': typeof PrintRoute
   '/rules': typeof RulesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/checkin': typeof CheckinRoute
   '/guests': typeof GuestsRoute
   '/print': typeof PrintRoute
   '/rules': typeof RulesRoute
@@ -50,20 +58,22 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/checkin': typeof CheckinRoute
   '/guests': typeof GuestsRoute
   '/print': typeof PrintRoute
   '/rules': typeof RulesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/guests' | '/print' | '/rules'
+  fullPaths: '/' | '/checkin' | '/guests' | '/print' | '/rules'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/guests' | '/print' | '/rules'
-  id: '__root__' | '/' | '/guests' | '/print' | '/rules'
+  to: '/' | '/checkin' | '/guests' | '/print' | '/rules'
+  id: '__root__' | '/' | '/checkin' | '/guests' | '/print' | '/rules'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CheckinRoute: typeof CheckinRoute
   GuestsRoute: typeof GuestsRoute
   PrintRoute: typeof PrintRoute
   RulesRoute: typeof RulesRoute
@@ -92,6 +102,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GuestsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/checkin': {
+      id: '/checkin'
+      path: '/checkin'
+      fullPath: '/checkin'
+      preLoaderRoute: typeof CheckinRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -104,6 +121,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CheckinRoute: CheckinRoute,
   GuestsRoute: GuestsRoute,
   PrintRoute: PrintRoute,
   RulesRoute: RulesRoute,
