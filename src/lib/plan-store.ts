@@ -233,11 +233,10 @@ export const usePlanStore = create<PlanState>()(
         set((s) => ({
           guests: [
             ...s.guests,
-            ...guests.map((g) => ({
-              rsvpStatus: "Confirmed" as RsvpStatus,
-              ...g,
-              id: uid(),
-            } as Guest)),
+            ...guests.map((g) => {
+              const withDefault = { rsvpStatus: "Confirmed" as RsvpStatus, ...g };
+              return { ...withDefault, id: uid() } as Guest;
+            }),
           ],
         })),
 
