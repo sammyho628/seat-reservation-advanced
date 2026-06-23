@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
 
 export type Tag = "VIP" | "Wheelchair" | "Child" | "Speaker" | "Sponsor";
 export type Meal = "Chicken" | "Fish" | "Vegetarian" | "Vegan" | "Kids" | "None";
