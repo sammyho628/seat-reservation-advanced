@@ -423,9 +423,17 @@ export const usePlanStore = create<PlanState>()(
     }),
     {
       name: "seating-plan-v1",
+      storage: createJSONStorage(() =>
+        typeof window !== "undefined" ? window.localStorage : (undefined as never),
+      ),
+      skipHydration: true,
     },
   ),
 );
+
+if (typeof window !== "undefined") {
+  void usePlanStore.persist.rehydrate();
+}
 
 export function parseRowPattern(p: string) {
   return parsePattern(p);
