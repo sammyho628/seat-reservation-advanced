@@ -13,8 +13,9 @@ const nav = [
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const eventTitle = usePlanStore((s) => s.settings.eventTitle);
-  const guestCount = usePlanStore((s) => s.guests.length);
-  const unassigned = usePlanStore((s) => s.guests.filter((g) => !g.tableId).length);
+  const allGuests = usePlanStore((s) => s.guests);
+  const guestCount = allGuests.length;
+  const unassigned = allGuests.filter((g) => !g.tableId).length;
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
