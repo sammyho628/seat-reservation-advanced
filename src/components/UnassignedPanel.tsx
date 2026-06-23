@@ -7,7 +7,8 @@ interface Props {
 }
 
 export function UnassignedPanel({ selectedGuestId, onSelect }: Props) {
-  const guests = usePlanStore((s) => s.guests.filter((g) => !g.tableId));
+  const allGuests = usePlanStore((s) => s.guests);
+  const guests = allGuests.filter((g) => !g.tableId);
 
   return (
     <aside className="w-72 shrink-0 border-l border-border bg-sidebar text-sidebar-foreground flex flex-col h-[calc(100vh-4rem)] sticky top-16">
