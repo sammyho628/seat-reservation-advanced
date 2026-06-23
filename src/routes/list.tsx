@@ -166,7 +166,7 @@ function ListPage() {
               {filtered.map((g) => (
                 <tr key={g.id} className="border-t border-border/60 hover:bg-muted/30">
                   <td className="p-3 font-medium">{g.lastName ?? g.name.split(" ").slice(-1)[0]}</td>
-                  <td className="p-3">{g.firstName ?? g.name.split(" ").slice(0, -1).join(" ") || g.name}</td>
+                  <td className="p-3">{g.firstName ?? (g.name.split(" ").slice(0, -1).join(" ") || g.name)}</td>
                   <td className="p-3 text-muted-foreground">{g.company ?? "—"}</td>
                   <td className="p-3 text-muted-foreground">{g.cohort ?? "—"}</td>
                   <td className="p-3"><span className="text-xs">{g.tags.join(", ") || "—"}</span></td>
