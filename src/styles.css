@@ -42,12 +42,16 @@
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-border: var(--sidebar-border);
+  --color-rsvp-confirmed: var(--rsvp-confirmed);
+  --color-rsvp-pending: var(--rsvp-pending);
+  --color-rsvp-declined: var(--rsvp-declined);
+  --color-rsvp-waitlist: var(--rsvp-waitlist);
+  --color-dietary-alert: var(--dietary-alert);
+  --color-violation: var(--violation);
 }
 
 :root {
   --radius: 0.75rem;
-
-  /* Editorial neutral palette - warm cream + charcoal */
   --background: oklch(0.985 0.005 80);
   --foreground: oklch(0.18 0.02 60);
   --card: oklch(1 0 0);
@@ -84,6 +88,13 @@
   --sidebar: oklch(0.97 0.008 75);
   --sidebar-foreground: oklch(0.22 0.04 60);
   --sidebar-border: oklch(0.9 0.01 75);
+
+  --rsvp-confirmed: oklch(0.55 0.15 145);
+  --rsvp-pending: oklch(0.7 0.15 75);
+  --rsvp-declined: oklch(0.55 0.2 25);
+  --rsvp-waitlist: oklch(0.6 0.02 70);
+  --dietary-alert: oklch(0.72 0.18 75);
+  --violation: oklch(0.55 0.22 25);
 }
 
 .dark {
@@ -118,32 +129,35 @@
 }
 
 @layer base {
-  * {
-    border-color: var(--color-border);
-  }
+  * { border-color: var(--color-border); }
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
     font-feature-settings: "ss01", "cv02";
   }
-  .font-display {
-    font-family: var(--font-display);
-    letter-spacing: -0.02em;
-  }
-  .font-mono {
-    font-family: var(--font-mono);
-  }
+  .font-display { font-family: var(--font-display); letter-spacing: -0.02em; }
+  .font-mono { font-family: var(--font-mono); }
 }
 
 @media print {
-  .no-print {
-    display: none !important;
+  .no-print { display: none !important; }
+  body { background: white; }
+  .print-page { page-break-after: always; }
+  .place-cards-grid {
+    columns: 2;
+    column-gap: 4mm;
   }
-  body {
-    background: white;
-  }
-  .print-page {
-    page-break-after: always;
+  .place-card {
+    width: 85mm;
+    height: 55mm;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    border: 0.5pt solid #ccc;
+    margin-bottom: 4mm;
+    padding: 6mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
   }
 }
