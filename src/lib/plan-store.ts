@@ -419,18 +419,36 @@ export const usePlanStore = create<PlanState>()(
 
       importPlan: (data) => set((s) => ({ ...s, ...data })),
     }),
-    {
-      name: "seating-plan-v1",
-      storage: createJSONStorage(() =>
-        typeof window !== "undefined" ? window.localStorage : (undefined as never),
-      ),
-      skipHydration: true,
-    },
-  ),
 );
 
+const STORAGE_KEY = "seating-plan-v1";
+
 if (typeof window !== "undefined") {
-  void usePlanStore.persist.rehydrate();
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const data = JSON.parse(raw) as Partial<PlanState>;
+      usePlanStore.setState({
+        settings: { ...usePlanStore.getState().settings, ...(data.settings ?? {}) },
+        tables: data.tables ?? usePlanStore.getState().tables,
+        guests: data.guests ?? [],
+        rules: data.rules ?? [],
+      });
+    }
+  } catch {}
+  usePlanStore.subscribe((s) => {
+    try {
+      window.localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          settings: s.settings,
+          tables: s.tables,
+          guests: s.guests,
+          rules: s.rules,
+        }),
+      );
+    } catch {}
+  });
 }
 
 export function parseRowPattern(p: string) {
