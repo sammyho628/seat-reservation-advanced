@@ -125,13 +125,19 @@ function PrintPage() {
               <table className="w-full text-sm border border-border">
                 <thead className="bg-muted">
                   <tr>
-                    <th className="text-left p-2">Table</th>
+                    <th className="text-left p-3 align-bottom">Table</th>
                     {Object.keys(MEAL_ICON).filter((m) => m !== "None").map((m) => (
-                      <th key={m} className="p-2 text-2xl">{MEAL_ICON[m]}</th>
+                      <th key={m} className="p-2 text-center align-bottom">
+                        <div className="flex flex-col items-center gap-0.5">
+                          <span className="text-2xl">{MEAL_ICON[m]}</span>
+                          <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{m}</span>
+                        </div>
+                      </th>
                     ))}
-                    <th className="text-left p-2">Dietary alerts</th>
+                    <th className="text-left p-3 align-bottom">Dietary alerts</th>
                   </tr>
                 </thead>
+
                 <tbody>
                   {tables.map((t) => {
                     const list = byTable.get(t.id) ?? [];

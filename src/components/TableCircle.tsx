@@ -150,15 +150,33 @@ function TableCircleInner({
         <div className="flex items-center gap-1 group/label flex-1 min-w-0">
           <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
             <PopoverTrigger asChild>
-              <button className="font-display text-sm tracking-wider hover:underline text-left truncate">
+              <button className="font-display text-sm tracking-wider hover:underline text-left">
                 TABLE {table.label}
-                {table.hostName && (
-                  <span className="block text-[10px] text-muted-foreground italic font-sans tracking-normal truncate">
-                    {table.hostName}
-                  </span>
-                )}
+                {(() => {
+                  const hostGuest = table.hostGuestId
+                    ? guests.find((g) => g.id === table.hostGuestId)
+                    : null;
+                  if (hostGuest) {
+                    return (
+                      <span className="flex items-center gap-1 mt-0.5">
+                        <span className="text-[10px] bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 px-1.5 py-0.5 rounded-full font-sans font-medium tracking-normal not-italic truncate max-w-[100px]">
+                          ♛ {hostGuest.name}
+                        </span>
+                      </span>
+                    );
+                  }
+                  if (table.hostName) {
+                    return (
+                      <span className="block text-[10px] text-muted-foreground italic font-sans tracking-normal truncate">
+                        {table.hostName}
+                      </span>
+                    );
+                  }
+                  return null;
+                })()}
               </button>
             </PopoverTrigger>
+
             <PopoverContent className="w-72 space-y-3" align="start">
               <div>
                 <Label className="text-xs">Label</Label>
@@ -434,7 +452,12 @@ function TableCircleInner({
               {guest ? (
                 <>
                   <span className="truncate flex-1">
-                    {isHost && <span className="text-[color:oklch(0.55_0.2_80)] mr-0.5">♛</span>}
+                    {isHost && (
+                      <>
+                        <span className="text-[color:oklch(0.55_0.2_80)] mr-0.5">♛</span>
+                        <span className="text-[8px] uppercase tracking-wider font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 px-1 py-0.5 rounded mr-0.5 inline-block leading-none align-middle">HOST</span>
+                      </>
+                    )}
                     {guest.name}
                     {showFirmInList && guest.company && (
                       <span className="text-muted-foreground"> · {guest.company}</span>

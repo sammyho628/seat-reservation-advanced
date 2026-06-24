@@ -276,7 +276,9 @@ function GuestsPage() {
               <thead className="bg-muted/50 text-xs uppercase tracking-wider text-muted-foreground">
                 <tr>
                   <th className="p-2 w-8"></th>
-                  <th className="text-left p-3">Name</th>
+                  <th className="text-left p-3">Name (combined)</th>
+                  <th className="text-left p-3">First</th>
+                  <th className="text-left p-3">Last</th>
                   <th className="text-left p-3">Company</th>
                   <th className="text-left p-3">Title</th>
                   <th className="text-left p-3">Cohort</th>
@@ -307,6 +309,23 @@ function GuestsPage() {
                       />
                     </td>
                     <td className="p-2">
+                      <input
+                        value={g.firstName ?? ""}
+                        onChange={(e) => updateGuest(g.id, { firstName: e.target.value || undefined })}
+                        placeholder="—"
+                        className="w-full bg-transparent px-1 py-1 rounded focus:bg-background focus:ring-1 focus:ring-ring focus:outline-none"
+                      />
+                    </td>
+                    <td className="p-2">
+                      <input
+                        value={g.lastName ?? ""}
+                        onChange={(e) => updateGuest(g.id, { lastName: e.target.value || undefined })}
+                        placeholder="—"
+                        className="w-full bg-transparent px-1 py-1 rounded focus:bg-background focus:ring-1 focus:ring-ring focus:outline-none"
+                      />
+                    </td>
+                    <td className="p-2">
+
                       <input
                         value={g.company ?? ""}
                         onChange={(e) => updateGuest(g.id, { company: e.target.value })}
