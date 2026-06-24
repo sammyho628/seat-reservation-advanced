@@ -239,7 +239,7 @@ function GuestsPage() {
           <div>
             <h1 className="font-display text-4xl">Guests</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              {guests.length} total · {guests.filter((g) => g.tableId).length} seated · {guests.filter((g) => !g.tableId).length} unassigned
+              {guests.length} total · {guests.filter((g) => g.tableId).length} seated · {guests.filter((g) => !g.tableId && g.rsvpStatus !== "Withdrawn").length} unassigned
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
