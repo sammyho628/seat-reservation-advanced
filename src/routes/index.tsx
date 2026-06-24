@@ -95,6 +95,30 @@ function PlannerPage() {
   const rules = usePlanStore((s) => s.rules);
   const addTable = usePlanStore((s) => s.addTable);
   const addGuests = usePlanStore((s) => s.addGuests);
+  const exportPlan = usePlanStore((s) => s.exportPlan);
+  const importPlan = usePlanStore((s) => s.importPlan);
+  const resetPlan = usePlanStore((s) => s.resetPlan);
+
+  const [newPlanOpen, setNewPlanOpen] = useState(false);
+
+  async function handleOpenFile() {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json,application/json";
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      try {
+        const data = JSON.parse(await file.text());
+        const ok = importPlan(data);
+        if (ok) toast.success(`Loaded "${file.name}"`);
+        else toast.error("Could not load file — invalid Seatcraft plan");
+      } catch {
+        toast.error("Could not load file — is it a valid Seatcraft plan?");
+      }
+    };
+    input.click();
+  }
 
   const pastStates = useTemporalStore((s) => s.pastStates) as any[];
   const futureStates = useTemporalStore((s) => s.futureStates) as any[];
