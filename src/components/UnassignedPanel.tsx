@@ -134,7 +134,13 @@ export function UnassignedPanel({ selectedGuestId, onSelect, onEditGuest }: Prop
                         }`}
                       >
                         <div className="flex-1 min-w-0">
-                          <div className="truncate font-medium">{g.name}</div>
+                          <div
+                            className="truncate font-medium cursor-pointer hover:underline"
+                            onClick={(e) => { e.stopPropagation(); onEditGuest?.(g.id); }}
+                            title="Click to edit guest details"
+                          >
+                            {g.name}
+                          </div>
                           {g.company && (
                             <div className={`truncate text-[11px] ${active ? "opacity-80" : "text-muted-foreground"}`}>
                               {g.company}
