@@ -63,6 +63,7 @@ function GuestsPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [lastChecked, setLastChecked] = useState<string | null>(null);
   const [clearOpen, setClearOpen] = useState(false);
+  const [tab, setTab] = useState<"edit" | "seating">("edit");
 
   // import state
   const [importRows, setImportRows] = useState<Record<string, unknown>[]>([]);
