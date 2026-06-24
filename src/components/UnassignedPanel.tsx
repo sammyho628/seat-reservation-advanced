@@ -6,6 +6,7 @@ import { toast } from "sonner";
 interface Props {
   selectedGuestId: string | null;
   onSelect: (id: string | null) => void;
+  onEditGuest?: (id: string) => void;
 }
 
 const RSVP_FILTERS: { label: string; value: "All" | RsvpStatus }[] = [
