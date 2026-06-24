@@ -267,6 +267,7 @@ function GuestsPage() {
           {([
             { id: "edit", label: "Edit" },
             { id: "seating", label: "Seating View" },
+            { id: "companies", label: "Companies" },
           ] as const).map((t) => (
             <button
               key={t.id}
@@ -280,7 +281,57 @@ function GuestsPage() {
           ))}
         </div>
 
-        {tab === "seating" ? <SeatingView /> : (<>
+        {tab === "seating" ? <SeatingView initialQuery={query} /> : tab === "companies" ? (
+          <div className="border border-border rounded-xl bg-card overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50 text-xs uppercase tracking-wider text-muted-foreground">
+                <tr>
+                  <th className="text-left p-3">Company</th>
+                  <th className="text-right p-3">Total</th>
+                  <th className="text-right p-3">Seated</th>
+                  <th className="text-right p-3">Unassigned</th>
+                  <th className="text-left p-3">Meals</th>
+                </tr>
+              </thead>
+              <tbody>
+                {companyStats.map(({ company, total, seated, unassigned, meals }) => (
+                  <tr
+                    key={company}
+                    onClick={() => { setQuery(company === "(No company)" ? "" : company); setTab("seating"); }}
+                    className="border-t border-border/60 hover:bg-muted/30 cursor-pointer"
+                    title="Click to view this company's guests"
+                  >
+                    <td className="p-3 font-medium">{company}</td>
+                    <td className="p-3 text-right font-mono">{total}</td>
+                    <td className="p-3 text-right font-mono">{seated}</td>
+                    <td className={`p-3 text-right font-mono ${unassigned > 0 ? "text-amber-600 font-semibold" : "text-muted-foreground"}`}>
+                      {unassigned || "—"}
+                    </td>
+                    <td className="p-3 text-xs text-muted-foreground">
+                      {Object.entries(meals).map(([m, n]) => `${MEAL_ICON[m] ?? m} ×${n}`).join("  ") || "—"}
+                    </td>
+                  </tr>
+                ))}
+                {companyStats.length === 0 && (
+                  <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">No guests yet.</td></tr>
+                )}
+              </tbody>
+              {companyStats.length > 0 && (
+                <tfoot className="bg-muted/30 text-xs font-mono">
+                  <tr className="border-t border-border">
+                    <td className="p-3">{companyStats.length} companies</td>
+                    <td className="p-3 text-right">{guests.length}</td>
+                    <td className="p-3 text-right">{guests.filter((g) => g.tableId).length}</td>
+                    <td className={`p-3 text-right ${guests.filter((g) => !g.tableId && g.rsvpStatus !== "Withdrawn" && g.rsvpStatus !== "Declined").length > 0 ? "text-amber-600" : ""}`}>
+                      {guests.filter((g) => !g.tableId && g.rsvpStatus !== "Withdrawn" && g.rsvpStatus !== "Declined").length || "—"}
+                    </td>
+                    <td className="p-3"></td>
+                  </tr>
+                </tfoot>
+              )}
+            </table>
+          </div>
+        ) : (<>
 
 
         <div className="flex items-center gap-2 mb-4 flex-wrap">
