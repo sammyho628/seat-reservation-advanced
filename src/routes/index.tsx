@@ -92,6 +92,8 @@ function PlannerPage() {
   const guests = usePlanStore((s) => s.guests);
   const tables = usePlanStore((s) => s.tables);
   const rules = usePlanStore((s) => s.rules);
+  const addTable = usePlanStore((s) => s.addTable);
+  const addGuests = usePlanStore((s) => s.addGuests);
 
   const pastStates = useTemporalStore((s) => s.pastStates) as any[];
   const futureStates = useTemporalStore((s) => s.futureStates) as any[];
@@ -104,13 +106,19 @@ function PlannerPage() {
   const [autoSeatOpen, setAutoSeatOpen] = useState(false);
   const [strategy, setStrategy] = useState<SeatStrategy>("smart");
   const [overwriteOpen, setOverwriteOpen] = useState(false);
+  const [rowPatternDraft, setRowPatternDraft] = useState(settings.rowPattern);
   const searchRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => setRowPatternDraft(settings.rowPattern), [settings.rowPattern]);
 
   // intercept seat clicks for swap confirmation
   function handleSelectSeat(sel: typeof selectedSeat) {
-    if (sel && selectedSeat && (selectedSeat.tableId !== sel.tableId || selectedSeat.seatIndex !== sel.seatIndex)) {
-      // a swap was just triggered inside TableCircle; we override by NOT auto-swapping.
-      // TableCircle has already done the swap, so we just clear selection.
+    if (
+      sel &&
+      selectedSeat &&
+      (selectedSeat.tableId !== sel.tableId || selectedSeat.seatIndex !== sel.seatIndex)
+    ) {
+      setPendingSwap({ a: selectedSeat, b: sel });
       setSelectedSeat(null);
       return;
     }
