@@ -484,8 +484,41 @@ function PlannerPage() {
             </AlertDialog>
 
 
-            {/* Row 2 — search + view controls */}
+            {/* Row 2 — secondary actions + search + view controls */}
             <div className="flex items-center gap-3 mb-4 flex-wrap">
+              <button
+                onClick={addTable}
+                className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent"
+                title="Add a table"
+              >
+                <Plus className="h-4 w-4" /> Table
+              </button>
+              <button
+                onClick={() => {
+                  addGuests([{ name: "New guest", meal: "None", tags: [], rsvpStatus: "Confirmed" }]);
+                  toast.success("Added blank guest");
+                }}
+                className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent"
+                title="Add a blank guest"
+              >
+                <UserPlus className="h-4 w-4" /> Guest
+              </button>
+              <button
+                onClick={resetAssignments}
+                className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent"
+              >
+                <RotateCcw className="h-4 w-4" /> Clear seats
+              </button>
+              <button
+                onClick={exportPNG}
+                className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent"
+              >
+                <Camera className="h-4 w-4" /> PNG
+              </button>
+
+              <div className="h-8 w-px bg-border mx-1" />
+
+
               <div className="relative flex-1 max-w-md min-w-[240px]">
                 <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <Input
