@@ -65,8 +65,13 @@ function ListPage() {
           return (a.cohort ?? "").localeCompare(b.cohort ?? "");
         case "meal":
           return a.meal.localeCompare(b.meal);
-        case "table":
-          return ((tableLabel[a.tableId ?? ""] ?? "ZZZ")).localeCompare((tableLabel[b.tableId ?? ""] ?? "ZZZ"));
+        case "table": {
+          const tA = tableLabel[a.tableId ?? ""] ?? "ZZZ";
+          const tB = tableLabel[b.tableId ?? ""] ?? "ZZZ";
+          const cmp = tA.localeCompare(tB, undefined, { numeric: true, sensitivity: "base" });
+          if (cmp !== 0) return cmp;
+          return (a.seatIndex ?? 9999) - (b.seatIndex ?? 9999);
+        }
       }
     });
     return list;
