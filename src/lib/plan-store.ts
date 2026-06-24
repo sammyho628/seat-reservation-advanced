@@ -341,6 +341,10 @@ export const usePlanStore = create<PlanState>()(
               const derived = deriveName(merged);
               if (derived) merged.name = derived;
             }
+            if (patch.rsvpStatus === "Withdrawn" && g.tableId) {
+              merged.tableId = undefined;
+              merged.seatIndex = undefined;
+            }
             return merged;
           }),
         })),
