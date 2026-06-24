@@ -78,7 +78,6 @@ function PrintPage() {
   }, [guests]);
 
   const tableLabel = Object.fromEntries(tables.map((t) => [t.id, t.label]));
-  const placeCardGuests = useMemo(() => guests.filter((g) => g.tableId), [guests]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -91,6 +90,13 @@ function PrintPage() {
               className="h-9 px-3 rounded-md border border-input text-sm"
             >
               🍽️ {view === "kitchen" ? "Full view" : "Kitchen sheet"}
+            </button>
+            <button
+              onClick={exportMailMerge}
+              className="h-9 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent"
+              title="Export CSV for Word/Excel mail merge"
+            >
+              📋 Mail merge CSV
             </button>
             <button
               onClick={() => window.print()}
