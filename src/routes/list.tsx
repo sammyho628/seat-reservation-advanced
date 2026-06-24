@@ -201,7 +201,7 @@ function ListPage() {
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">No guests match these filters.</td></tr>
+                <tr><td colSpan={9} className="p-8 text-center text-muted-foreground">No guests match these filters.</td></tr>
               )}
             </tbody>
           </table>
