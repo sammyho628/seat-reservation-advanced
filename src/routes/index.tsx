@@ -746,7 +746,14 @@ function PlannerPage() {
         strategy={strategy}
         setStrategy={setStrategy}
         onRun={runAutoSeat}
+        onFillGaps={() => {
+          const r = fillGaps(strategy);
+          toast.success(`Filled ${r.assigned} empty seat${r.assigned !== 1 ? "s" : ""} — existing assignments unchanged`);
+          setAutoSeatOpen(false);
+        }}
       />
+
+      <GuestEditSheet guestId={editingGuestId} onClose={() => setEditingGuestId(null)} />
 
       <AlertDialog open={overwriteOpen} onOpenChange={setOverwriteOpen}>
         <AlertDialogContent>
