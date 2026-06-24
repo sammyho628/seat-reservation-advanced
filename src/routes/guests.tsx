@@ -453,6 +453,15 @@ function GuestsPage() {
               {tables.map((t) => <SelectItem key={t.id} value={t.id}>Table {t.label}</SelectItem>)}
             </SelectContent>
           </Select>
+          <button
+            onClick={() => {
+              selected.forEach((id) => unassignGuest(id));
+              setSelected(new Set());
+            }}
+            className="h-8 px-3 rounded-md border border-input text-xs hover:bg-accent"
+          >
+            Unassign seats
+          </button>
           <Select onValueChange={(v) => bulkRsvp(v as RsvpStatus)}>
             <SelectTrigger className="h-8 w-32"><SelectValue placeholder="RSVP" /></SelectTrigger>
             <SelectContent>{RSVPS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
