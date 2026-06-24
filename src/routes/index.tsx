@@ -12,6 +12,7 @@ import {
   type SeatStrategy,
 } from "@/lib/plan-store";
 import { toast } from "sonner";
+import { AutoAssignDrawer } from "@/components/AutoAssignDrawer";
 import {
   Wand2, RotateCcw, Settings as SettingsIcon, Undo2, Redo2, Camera,
   Search, BarChart2, ChevronUp, ChevronDown, Building2, Tag as TagIcon, X,
@@ -436,7 +437,7 @@ function PlannerPage() {
                   onClick={openAutoSeat}
                   className="h-10 px-4 rounded-md bg-primary text-primary-foreground text-sm inline-flex items-center gap-1.5 hover:opacity-90"
                 >
-                  <Wand2 className="h-4 w-4" /> Auto-seat
+                  <Wand2 className="h-4 w-4" /> Auto-Assign
                 </button>
               </div>
             </div>
@@ -633,53 +634,13 @@ function PlannerPage() {
       )}
 
 
-      {/* Auto-seat strategy dialog */}
-      <Dialog open={autoSeatOpen} onOpenChange={setAutoSeatOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Auto-seat guests</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="text-xs text-muted-foreground font-mono">
-              {eligibleCount} guests to seat · {tables.length} tables · {totalSeats} seats available
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {STRATEGIES.map((s) => {
-                const active = strategy === s.value;
-                return (
-                  <button
-                    key={s.value}
-                    onClick={() => setStrategy(s.value)}
-                    className={`p-3 rounded-lg border text-left transition ${active ? "border-primary bg-accent" : "border-border hover:border-foreground/40"}`}
-                  >
-                    <div className="text-2xl">{s.icon}</div>
-                    <div className="font-medium text-sm mt-1">{s.label}</div>
-                    <div className="text-[11px] text-muted-foreground">{s.description}</div>
-                  </button>
-                );
-              })}
-            </div>
-            <div>
-              <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Active rules</div>
-              {activeRules.length === 0 ? (
-                <div className="text-xs text-muted-foreground italic">No rules active.</div>
-              ) : (
-                <ul className="text-xs space-y-1">
-                  {activeRules.map((r) => (
-                    <li key={r.id} className="text-muted-foreground">
-                      • {r.type.replace(/_/g, " ")}{r.cohort ? `: ${r.cohort}` : ""}{r.guestIds ? ` (${r.guestIds.length} guests)` : ""}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
-          <DialogFooter>
-            <button onClick={() => setAutoSeatOpen(false)} className="h-9 px-3 rounded-md border border-input text-sm">Cancel</button>
-            <button onClick={runAutoSeat} className="h-9 px-4 rounded-md bg-primary text-primary-foreground text-sm">Run auto-seat →</button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <AutoAssignDrawer
+        open={autoSeatOpen}
+        onOpenChange={setAutoSeatOpen}
+        strategy={strategy}
+        setStrategy={setStrategy}
+        onRun={runAutoSeat}
+      />
 
       <AlertDialog open={overwriteOpen} onOpenChange={setOverwriteOpen}>
         <AlertDialogContent>
