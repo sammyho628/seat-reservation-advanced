@@ -223,27 +223,45 @@ function PrintPage() {
             })}
 
             <section className="print-page">
-              <h2 className="font-display text-3xl mb-4 no-print">Place cards (preview)</h2>
-              <div className="place-cards-grid">
-                {placeCardGuests.map((g) => (
-                  <div key={g.id} className="place-card" style={{ borderColor: settings.primaryColor }}>
-                    <div className="text-[9pt] text-muted-foreground">{settings.eventTitle}</div>
-                    <div>
-                      <div className="font-display text-2xl leading-tight">{g.name}</div>
-                      {g.company && <div className="text-[10pt] text-muted-foreground">{g.company}</div>}
-                      {g.title && <div className="text-[8pt] text-muted-foreground italic">{g.title}</div>}
+              <h2 className="font-display text-3xl mb-4 no-print">Tent cards (fold along dashed line)</h2>
+              <div className="grid grid-cols-2 gap-3">
+                {eligibleGuests.map((g) => {
+                  const tbl = tables.find((t) => t.id === g.tableId);
+                  return (
+                    <div
+                      key={g.id}
+                      style={{ width: "105mm", height: "74mm", breakInside: "avoid", pageBreakInside: "avoid" }}
+                      className="border border-gray-300 relative flex flex-col bg-white text-black"
+                    >
+                      <div
+                        className="flex items-center justify-center border-b border-dashed border-gray-400"
+                        style={{ height: "35mm", transform: "rotate(180deg)" }}
+                      >
+                        <span className="font-display text-base font-bold text-center px-3">{g.name}</span>
+                      </div>
+                      <div className="flex flex-col items-center justify-center flex-1 gap-0.5 px-3 py-2">
+                        <span className="font-display text-xl font-bold text-center leading-tight">{g.name}</span>
+                        {g.company && <span className="text-xs text-gray-500 text-center">{g.company}</span>}
+                        {g.title && <span className="text-[10px] text-gray-400 text-center">{g.title}</span>}
+                        <div className="flex items-center gap-2 mt-1">
+                          {tbl && (
+                            <span className="text-[10px] font-mono bg-gray-100 px-1.5 py-0.5 rounded">
+                              Table {tbl.label} · Seat {g.seatIndex}
+                            </span>
+                          )}
+                          {g.meal !== "None" && (
+                            <span className="text-[10px] text-gray-400">
+                              {MEAL_ICON[g.meal] ?? ""} {g.meal}{g.dietary ? ` · ${g.dietary}` : ""}
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex justify-between items-end text-[9pt]">
-                      <span>{MEAL_ICON[g.meal] ?? ""} {g.meal !== "None" ? g.meal : ""}</span>
-                      <span className="font-mono">{tableLabel[g.tableId!]} · {g.seatIndex}</span>
-                    </div>
-                    {g.dietary && (
-                      <div className="text-[8pt]" style={{ color: "var(--color-dietary-alert)" }}>⚠️ {g.dietary}</div>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </section>
+
           </>
         )}
       </div>
