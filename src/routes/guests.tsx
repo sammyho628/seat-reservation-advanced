@@ -276,7 +276,9 @@ function GuestsPage() {
               <thead className="bg-muted/50 text-xs uppercase tracking-wider text-muted-foreground">
                 <tr>
                   <th className="p-2 w-8"></th>
-                  <th className="text-left p-3">Name</th>
+                  <th className="text-left p-3">Name (combined)</th>
+                  <th className="text-left p-3">First</th>
+                  <th className="text-left p-3">Last</th>
                   <th className="text-left p-3">Company</th>
                   <th className="text-left p-3">Title</th>
                   <th className="text-left p-3">Cohort</th>
