@@ -24,6 +24,40 @@ function PrintPage() {
     [allGuests],
   );
 
+  const eligibleGuests = useMemo(() => guests.filter((g) => g.tableId), [guests]);
+
+  function exportMailMerge() {
+    const rows = [
+      ["Name", "FirstName", "LastName", "Company", "Title", "Table", "Seat", "Meal", "Dietary", "Tags", "RSVP"],
+      ...eligibleGuests.map((g) => {
+        const tbl = tables.find((t) => t.id === g.tableId);
+        return [
+          g.name,
+          g.firstName ?? "",
+          g.lastName ?? "",
+          g.company ?? "",
+          g.title ?? "",
+          tbl?.label ?? "",
+          String(g.seatIndex ?? ""),
+          g.meal,
+          g.dietary ?? "",
+          g.tags.join("; "),
+          g.rsvpStatus,
+        ];
+      }),
+    ];
+    const csv = rows
+      .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${settings.eventTitle.replace(/\s+/g, "-").toLowerCase()}-mail-merge.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   const byTable = useMemo(() => {
     const m = new Map<string, typeof guests>();
     tables.forEach((t) => m.set(t.id, []));
