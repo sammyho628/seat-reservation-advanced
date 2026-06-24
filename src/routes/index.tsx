@@ -13,6 +13,7 @@ import {
 } from "@/lib/plan-store";
 import { toast } from "sonner";
 import { AutoAssignDrawer } from "@/components/AutoAssignDrawer";
+import { GuestEditSheet } from "@/components/GuestEditSheet";
 import {
   Wand2, RotateCcw, Settings as SettingsIcon, Undo2, Redo2, Camera,
   Search, BarChart2, ChevronUp, ChevronDown, Building2, Tag as TagIcon, X,
@@ -98,8 +99,10 @@ function PlannerPage() {
   const exportPlan = usePlanStore((s) => s.exportPlan);
   const importPlan = usePlanStore((s) => s.importPlan);
   const resetPlan = usePlanStore((s) => s.resetPlan);
+  const fillGaps = usePlanStore((s) => s.fillGaps);
 
   const [newPlanOpen, setNewPlanOpen] = useState(false);
+  const [editingGuestId, setEditingGuestId] = useState<string | null>(null);
 
   async function handleOpenFile() {
     const input = document.createElement("input");
@@ -207,20 +210,15 @@ function PlannerPage() {
     const node = document.getElementById("planner-grid-capture");
     if (!node) return;
     try {
-      const mod = await import("html2canvas");
-      const canvas = await mod.default(node, {
-        backgroundColor: getComputedStyle(document.body).backgroundColor,
-        scale: 2,
-      });
-      canvas.toBlob((blob) => {
-        if (!blob) return;
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `${settings.eventTitle.replace(/\s+/g, "-").toLowerCase()}-seating-map.png`;
-        a.click();
-        URL.revokeObjectURL(url);
-      });
+      const domtoimage = (await import("dom-to-image-more")).default;
+      const blob = await domtoimage.toBlob(node, { scale: 2 });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${settings.eventTitle.replace(/\s+/g, "-").toLowerCase()}-seating-map.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("PNG downloaded");
     } catch (e) {
       console.error(e);
       toast.error("PNG export failed");
@@ -671,11 +669,12 @@ function PlannerPage() {
                 seatLabelMode={seatLabelMode}
                 selectedSeat={selectedSeat}
                 onSelectSeat={handleSelectSeat}
+                onEditGuest={setEditingGuestId}
               />
             )}
           </div>
         </div>
-        <UnassignedPanel selectedGuestId={selectedGuestId} onSelect={setSelectedGuestId} />
+        <UnassignedPanel selectedGuestId={selectedGuestId} onSelect={setSelectedGuestId} onEditGuest={setEditingGuestId} />
       </div>
 
       {/* Persistent swap status bar */}
@@ -749,7 +748,14 @@ function PlannerPage() {
         strategy={strategy}
         setStrategy={setStrategy}
         onRun={runAutoSeat}
+        onFillGaps={() => {
+          const r = fillGaps(strategy);
+          toast.success(`Filled ${r.assigned} empty seat${r.assigned !== 1 ? "s" : ""} — existing assignments unchanged`);
+          setAutoSeatOpen(false);
+        }}
       />
+
+      <GuestEditSheet guestId={editingGuestId} onClose={() => setEditingGuestId(null)} />
 
       <AlertDialog open={overwriteOpen} onOpenChange={setOverwriteOpen}>
         <AlertDialogContent>

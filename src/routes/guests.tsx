@@ -34,8 +34,11 @@ export const Route = createFileRoute("/guests")({
 });
 
 const MEALS: Meal[] = ["None", "Chicken", "Fish", "Vegetarian", "Vegan", "Kids"];
+const MEAL_ICON: Record<string, string> = {
+  Chicken: "🍗", Fish: "🐟", Vegetarian: "🥦", Vegan: "🌱", Kids: "👶",
+};
 const TAGS: Tag[] = ["VIP", "Wheelchair", "Child", "Speaker", "Sponsor"];
-const RSVPS: RsvpStatus[] = ["Confirmed", "Pending", "Declined", "Waitlist", "No-show"];
+const RSVPS: RsvpStatus[] = ["Confirmed", "Pending", "Declined", "Waitlist", "No-show", "Withdrawn"];
 
 const RSVP_COLOR: Record<RsvpStatus, string> = {
   Confirmed: "bg-[color:var(--color-rsvp-confirmed)]/15 text-[color:var(--color-rsvp-confirmed)]",
@@ -43,6 +46,7 @@ const RSVP_COLOR: Record<RsvpStatus, string> = {
   Declined: "bg-[color:var(--color-rsvp-declined)]/15 text-[color:var(--color-rsvp-declined)]",
   Waitlist: "bg-muted text-muted-foreground",
   "No-show": "bg-muted text-muted-foreground line-through",
+  Withdrawn: "bg-muted text-muted-foreground line-through opacity-60",
 };
 
 const FIELDS = ["name", "firstName", "lastName", "company", "title", "cohort", "meal", "tags", "dietary", "notes", "rsvpStatus"];
@@ -63,7 +67,7 @@ function GuestsPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [lastChecked, setLastChecked] = useState<string | null>(null);
   const [clearOpen, setClearOpen] = useState(false);
-  const [tab, setTab] = useState<"edit" | "seating">("edit");
+  const [tab, setTab] = useState<"edit" | "seating" | "companies">("edit");
 
   // import state
   const [importRows, setImportRows] = useState<Record<string, unknown>[]>([]);
@@ -83,6 +87,21 @@ function GuestsPage() {
     const m: Record<string, number> = {};
     guests.forEach((g) => { if (g.cohort) m[g.cohort] = (m[g.cohort] || 0) + 1; });
     return m;
+  }, [guests]);
+
+  const companyStats = useMemo(() => {
+    const m = new Map<string, { total: number; seated: number; meals: Record<string, number> }>();
+    guests.forEach((g) => {
+      const key = g.company?.trim() || "(No company)";
+      if (!m.has(key)) m.set(key, { total: 0, seated: 0, meals: {} });
+      const e = m.get(key)!;
+      e.total++;
+      if (g.tableId) e.seated++;
+      if (g.meal !== "None") e.meals[g.meal] = (e.meals[g.meal] || 0) + 1;
+    });
+    return [...m.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([company, stats]) => ({ company, ...stats, unassigned: stats.total - stats.seated }));
   }, [guests]);
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -220,7 +239,7 @@ function GuestsPage() {
           <div>
             <h1 className="font-display text-4xl">Guests</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              {guests.length} total · {guests.filter((g) => g.tableId).length} seated · {guests.filter((g) => !g.tableId).length} unassigned
+              {guests.length} total · {guests.filter((g) => g.tableId).length} seated · {guests.filter((g) => !g.tableId && g.rsvpStatus !== "Withdrawn").length} unassigned
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
@@ -248,6 +267,7 @@ function GuestsPage() {
           {([
             { id: "edit", label: "Edit" },
             { id: "seating", label: "Seating View" },
+            { id: "companies", label: "Companies" },
           ] as const).map((t) => (
             <button
               key={t.id}
@@ -261,7 +281,57 @@ function GuestsPage() {
           ))}
         </div>
 
-        {tab === "seating" ? <SeatingView /> : (<>
+        {tab === "seating" ? <SeatingView initialQuery={query} /> : tab === "companies" ? (
+          <div className="border border-border rounded-xl bg-card overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50 text-xs uppercase tracking-wider text-muted-foreground">
+                <tr>
+                  <th className="text-left p-3">Company</th>
+                  <th className="text-right p-3">Total</th>
+                  <th className="text-right p-3">Seated</th>
+                  <th className="text-right p-3">Unassigned</th>
+                  <th className="text-left p-3">Meals</th>
+                </tr>
+              </thead>
+              <tbody>
+                {companyStats.map(({ company, total, seated, unassigned, meals }) => (
+                  <tr
+                    key={company}
+                    onClick={() => { setQuery(company === "(No company)" ? "" : company); setTab("seating"); }}
+                    className="border-t border-border/60 hover:bg-muted/30 cursor-pointer"
+                    title="Click to view this company's guests"
+                  >
+                    <td className="p-3 font-medium">{company}</td>
+                    <td className="p-3 text-right font-mono">{total}</td>
+                    <td className="p-3 text-right font-mono">{seated}</td>
+                    <td className={`p-3 text-right font-mono ${unassigned > 0 ? "text-amber-600 font-semibold" : "text-muted-foreground"}`}>
+                      {unassigned || "—"}
+                    </td>
+                    <td className="p-3 text-xs text-muted-foreground">
+                      {Object.entries(meals).map(([m, n]) => `${MEAL_ICON[m] ?? m} ×${n}`).join("  ") || "—"}
+                    </td>
+                  </tr>
+                ))}
+                {companyStats.length === 0 && (
+                  <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">No guests yet.</td></tr>
+                )}
+              </tbody>
+              {companyStats.length > 0 && (
+                <tfoot className="bg-muted/30 text-xs font-mono">
+                  <tr className="border-t border-border">
+                    <td className="p-3">{companyStats.length} companies</td>
+                    <td className="p-3 text-right">{guests.length}</td>
+                    <td className="p-3 text-right">{guests.filter((g) => g.tableId).length}</td>
+                    <td className={`p-3 text-right ${guests.filter((g) => !g.tableId && g.rsvpStatus !== "Withdrawn" && g.rsvpStatus !== "Declined").length > 0 ? "text-amber-600" : ""}`}>
+                      {guests.filter((g) => !g.tableId && g.rsvpStatus !== "Withdrawn" && g.rsvpStatus !== "Declined").length || "—"}
+                    </td>
+                    <td className="p-3"></td>
+                  </tr>
+                </tfoot>
+              )}
+            </table>
+          </div>
+        ) : (<>
 
 
         <div className="flex items-center gap-2 mb-4 flex-wrap">

@@ -4,7 +4,7 @@ import { useStore } from "zustand";
 
 export type Tag = "VIP" | "Wheelchair" | "Child" | "Speaker" | "Sponsor";
 export type Meal = "Chicken" | "Fish" | "Vegetarian" | "Vegan" | "Kids" | "None";
-export type RsvpStatus = "Confirmed" | "Pending" | "Declined" | "Waitlist" | "No-show";
+export type RsvpStatus = "Confirmed" | "Pending" | "Declined" | "Waitlist" | "No-show" | "Withdrawn";
 
 export type SeatStrategy =
   | "smart"
@@ -148,6 +148,11 @@ interface PlanState {
   autoSeat: (strategy?: SeatStrategy, commit?: boolean) => {
     assigned: number;
     unassigned: number;
+    violations: number;
+    violatingGuestIds: string[];
+  };
+  fillGaps: (strategy?: SeatStrategy) => {
+    assigned: number;
     violations: number;
     violatingGuestIds: string[];
   };
@@ -336,6 +341,10 @@ export const usePlanStore = create<PlanState>()(
               const derived = deriveName(merged);
               if (derived) merged.name = derived;
             }
+            if (patch.rsvpStatus === "Withdrawn" && g.tableId) {
+              merged.tableId = undefined;
+              merged.seatIndex = undefined;
+            }
             return merged;
           }),
         })),
@@ -412,7 +421,7 @@ export const usePlanStore = create<PlanState>()(
         const state = get();
         const tables = state.tables.map((t) => ({ ...t }));
         const eligible = state.guests.filter(
-          (g) => g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show" && !g.locked,
+          (g) => g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show" && g.rsvpStatus !== "Withdrawn" && !g.locked,
         );
         let guests = eligible.map((g) => ({ ...g, tableId: undefined, seatIndex: undefined as number | undefined }));
         const rules = state.rules.filter((r) => r.enabled);
@@ -746,6 +755,37 @@ export const usePlanStore = create<PlanState>()(
           violations: violatingGuestIds.length,
           violatingGuestIds,
         };
+      },
+
+      fillGaps: () => {
+        const { guests, tables } = get();
+        const toAssign = guests.filter(
+          (g) => !g.tableId && g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show" && g.rsvpStatus !== "Withdrawn",
+        );
+        if (toAssign.length === 0) return { assigned: 0, violations: 0, violatingGuestIds: [] };
+        const occupied = new Set<string>();
+        guests.forEach((g) => {
+          if (g.tableId && g.seatIndex != null) occupied.add(`${g.tableId}:${g.seatIndex}`);
+        });
+        const emptySeats: { tableId: string; seatIndex: number }[] = [];
+        tables.forEach((t) => {
+          for (let s = 1; s <= t.seats; s++) {
+            if (!occupied.has(`${t.id}:${s}`)) emptySeats.push({ tableId: t.id, seatIndex: s });
+          }
+        });
+        const updates = [...guests];
+        let assigned = 0;
+        toAssign.forEach((g, i) => {
+          if (i >= emptySeats.length) return;
+          const seat = emptySeats[i];
+          const idx = updates.findIndex((u) => u.id === g.id);
+          if (idx >= 0) {
+            updates[idx] = { ...updates[idx], tableId: seat.tableId, seatIndex: seat.seatIndex };
+            assigned++;
+          }
+        });
+        set({ guests: updates });
+        return { assigned, violations: 0, violatingGuestIds: [] };
       },
 
       importPlan: (data) => {

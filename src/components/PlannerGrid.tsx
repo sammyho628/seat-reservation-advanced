@@ -21,6 +21,7 @@ interface Props {
   seatLabelMode?: "none" | "name" | "name+firm";
   selectedSeat: { tableId: string; seatIndex: number } | null;
   onSelectSeat: (sel: { tableId: string; seatIndex: number } | null) => void;
+  onEditGuest?: (id: string) => void;
 }
 
 function SortableTable({ id, children }: { id: string; children: React.ReactNode }) {
@@ -46,6 +47,7 @@ export function PlannerGrid({
   seatLabelMode,
   selectedSeat,
   onSelectSeat,
+  onEditGuest,
 }: Props) {
   const tables = usePlanStore((s) => s.tables);
   const guests = usePlanStore((s) => s.guests);
@@ -112,6 +114,7 @@ export function PlannerGrid({
                     cohortColorMap={cohortColorMap}
                     seatLabelMode={seatLabelMode}
                     showFirmInList={settings.showFirmInList}
+                    onEditGuest={onEditGuest}
                   />
                 </SortableTable>
               ))}

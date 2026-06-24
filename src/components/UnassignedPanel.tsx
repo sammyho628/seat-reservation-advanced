@@ -6,6 +6,7 @@ import { toast } from "sonner";
 interface Props {
   selectedGuestId: string | null;
   onSelect: (id: string | null) => void;
+  onEditGuest?: (id: string) => void;
 }
 
 const RSVP_FILTERS: { label: string; value: "All" | RsvpStatus }[] = [
@@ -15,7 +16,7 @@ const RSVP_FILTERS: { label: string; value: "All" | RsvpStatus }[] = [
   { label: "Waitlist", value: "Waitlist" },
 ];
 
-export function UnassignedPanel({ selectedGuestId, onSelect }: Props) {
+export function UnassignedPanel({ selectedGuestId, onSelect, onEditGuest }: Props) {
   const allGuests = usePlanStore((s) => s.guests);
   const tables = usePlanStore((s) => s.tables);
   const assignGuest = usePlanStore((s) => s.assignGuest);
@@ -69,7 +70,7 @@ export function UnassignedPanel({ selectedGuestId, onSelect }: Props) {
     <aside className="w-72 shrink-0 border-l border-border bg-sidebar text-sidebar-foreground flex flex-col h-[calc(100vh-4rem)] sticky top-16">
       <div className="p-4 border-b border-sidebar-border">
         <div className="text-xs uppercase tracking-wider text-muted-foreground">Unassigned</div>
-        <div className="font-display text-2xl">{visible.filter((g) => g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show").length}</div>
+        <div className="font-display text-2xl">{visible.filter((g) => g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show" && g.rsvpStatus !== "Withdrawn").length}</div>
         <div className="flex flex-wrap gap-1 mt-2">
           {RSVP_FILTERS.map((f) => (
             <button
@@ -133,7 +134,13 @@ export function UnassignedPanel({ selectedGuestId, onSelect }: Props) {
                         }`}
                       >
                         <div className="flex-1 min-w-0">
-                          <div className="truncate font-medium">{g.name}</div>
+                          <div
+                            className="truncate font-medium cursor-pointer hover:underline"
+                            onClick={(e) => { e.stopPropagation(); onEditGuest?.(g.id); }}
+                            title="Click to edit guest details"
+                          >
+                            {g.name}
+                          </div>
                           {g.company && (
                             <div className={`truncate text-[11px] ${active ? "opacity-80" : "text-muted-foreground"}`}>
                               {g.company}

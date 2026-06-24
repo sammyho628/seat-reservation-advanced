@@ -74,12 +74,14 @@ export function AutoAssignDrawer({
   strategy,
   setStrategy,
   onRun,
+  onFillGaps,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   strategy: SeatStrategy;
   setStrategy: (s: SeatStrategy) => void;
   onRun: () => void;
+  onFillGaps: () => void;
 }) {
   const rules = usePlanStore((s) => s.rules);
   const guests = usePlanStore((s) => s.guests);
@@ -88,7 +90,7 @@ export function AutoAssignDrawer({
   const removeRule = usePlanStore((s) => s.removeRule);
   const [showAddRule, setShowAddRule] = useState(false);
 
-  const unassigned = guests.filter((g) => !g.tableId && g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show").length;
+  const unassigned = guests.filter((g) => !g.tableId && g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show" && g.rsvpStatus !== "Withdrawn").length;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -196,6 +198,13 @@ export function AutoAssignDrawer({
             <div className="text-xs text-muted-foreground mb-2 text-center">
               {unassigned > 0 ? <><span className="font-mono font-medium text-foreground">{unassigned}</span> guest{unassigned === 1 ? "" : "s"} unassigned</> : "All guests are seated"}
             </div>
+            <button
+              onClick={onFillGaps}
+              className="w-full h-10 rounded-md border border-input text-sm font-medium inline-flex items-center justify-center gap-2 hover:bg-accent mb-2"
+            >
+              ✦ Fill empty seats only
+            </button>
+            <p className="text-[10px] text-muted-foreground text-center mb-3">Assigns unassigned guests to empty seats without moving anyone already seated.</p>
             <button
               onClick={onRun}
               className="w-full h-11 rounded-md bg-primary text-primary-foreground text-sm font-medium inline-flex items-center justify-center gap-2 hover:opacity-90"

@@ -49,6 +49,7 @@ interface Props {
   seatLabelMode?: "none" | "name" | "name+firm";
   showFirmInList?: boolean;
   zoomed?: boolean;
+  onEditGuest?: (id: string) => void;
 }
 
 export function TableCircle(props: Props) {
@@ -86,6 +87,7 @@ function TableCircleInner({
   seatLabelMode = "none",
   showFirmInList = false,
   zoomed = false,
+  onEditGuest,
   onRequestZoom,
 }: Props & { onRequestZoom?: () => void }) {
   const updateTable = usePlanStore((s) => s.updateTable);
@@ -415,22 +417,21 @@ function TableCircleInner({
           const guest = seatMap.get(s);
           if (!guest) return null;
           const angle = ((s - 1 + seatOffset) / table.seats) * Math.PI * 2 + Math.PI / 2;
-          const labelR = radius + 24;
+          const labelR = seatLabelMode === "name+firm" ? radius + 30 : radius + 24;
           const lx = cx + Math.cos(angle) * labelR;
           const ly = cy + Math.sin(angle) * labelR;
-          const deg = (angle * 180) / Math.PI;
-          const flip = deg > 90 && deg < 270;
-          const rotateDeg = flip ? deg + 180 : deg;
-          const displayName = (guest.lastName || guest.name.split(" ").slice(-1)[0] || "").slice(0, 10);
-          const displayFirm = seatLabelMode === "name+firm" && guest.company
-            ? guest.company.slice(0, 9) : "";
+          const displayName = (guest.lastName || guest.name.split(" ").slice(-1)[0] || "").slice(0, 12);
+          const showFirm = seatLabelMode === "name+firm" && guest.company;
+          const displayFirm = showFirm
+            ? (guest.company!.length > 14 ? guest.company!.slice(0, 13) + "…" : guest.company!)
+            : "";
           return (
-            <g key={`lbl-${s}`} transform={`translate(${lx}, ${ly}) rotate(${rotateDeg})`} className="pointer-events-none">
-              <text textAnchor="middle" dy="3" fontSize="7.5" fontWeight="500" className="fill-foreground">
+            <g key={`lbl-${s}`} transform={`translate(${lx}, ${ly})`} className="pointer-events-none">
+              <text textAnchor="middle" dy="3" fontSize="8" fontWeight="500" className="fill-foreground">
                 {displayName}
               </text>
               {displayFirm && (
-                <text textAnchor="middle" dy="13" fontSize="6" className="fill-muted-foreground">
+                <text textAnchor="middle" dy="14" fontSize="6.5" className="fill-muted-foreground">
                   {displayFirm}
                 </text>
               )}
@@ -458,7 +459,13 @@ function TableCircleInner({
                         <span className="text-[8px] uppercase tracking-wider font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 px-1 py-0.5 rounded mr-0.5 inline-block leading-none align-middle">HOST</span>
                       </>
                     )}
-                    {guest.name}
+                    <span
+                      onClick={() => onEditGuest?.(guest.id)}
+                      className="cursor-pointer hover:text-primary hover:underline"
+                      title="Click to edit guest details"
+                    >
+                      {guest.name}
+                    </span>
                     {showFirmInList && guest.company && (
                       <span className="text-muted-foreground"> · {guest.company}</span>
                     )}
