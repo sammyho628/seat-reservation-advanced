@@ -651,22 +651,73 @@ export const usePlanStore = create<PlanState>()(
           }
         }
 
-        const updated = state.guests.map((g) => ({
-          ...g,
-          tableId: g.rsvpStatus === "Declined" || g.rsvpStatus === "No-show" ? undefined : (undefined as string | undefined),
-          seatIndex: undefined as number | undefined,
-        }));
+        const updated = state.guests.map((g) => {
+          if (g.locked && g.tableId) return g; // preserve locked
+          return {
+            ...g,
+            tableId: g.rsvpStatus === "Declined" || g.rsvpStatus === "No-show" ? undefined : (undefined as string | undefined),
+            seatIndex: undefined as number | undefined,
+          };
+        });
         let assigned = 0;
         for (const t of tables) {
-          occupants[t.id].forEach((id, idx) => {
+          // Seats already taken by locked guests at this table
+          const lockedSeats = new Set(
+            state.guests
+              .filter((g) => g.locked && g.tableId === t.id && g.seatIndex)
+              .map((g) => g.seatIndex as number),
+          );
+          let cursor = 1;
+          occupants[t.id].forEach((id) => {
             const u = updated.find((x) => x.id === id);
-            if (u) {
-              u.tableId = t.id;
-              u.seatIndex = idx + 1;
+            if (!u) return;
+            if (u.locked && u.tableId === t.id && u.seatIndex) {
               assigned += 1;
+              return;
             }
+            while (lockedSeats.has(cursor)) cursor++;
+            u.tableId = t.id;
+            u.seatIndex = cursor;
+            cursor++;
+            assigned += 1;
           });
         }
+
+        // Seat-adjacent rule post-processing
+        const adjRules = rules.filter(
+          (r) => r.type === "seat_adjacent" && r.guestIds?.length === 2,
+        );
+        adjRules.forEach((rule) => {
+          const [idA, idB] = rule.guestIds!;
+          const gA = updated.find((g) => g.id === idA);
+          const gB = updated.find((g) => g.id === idB);
+          if (!gA?.tableId || !gB?.tableId || gA.tableId !== gB.tableId) return;
+          if (!gA.seatIndex || !gB.seatIndex) return;
+          const tbl = tables.find((t) => t.id === gA.tableId);
+          if (!tbl) return;
+          const n = tbl.seats;
+          const isAdj = (a: number, b: number) =>
+            Math.abs(a - b) === 1 || (Math.min(a, b) === 1 && Math.max(a, b) === n);
+          if (isAdj(gA.seatIndex, gB.seatIndex)) return;
+          const candidates = [(gA.seatIndex % n) + 1, ((gA.seatIndex - 2 + n) % n) + 1];
+          for (const seat of candidates) {
+            const occupier = updated.find(
+              (g) => g.tableId === gA.tableId && g.seatIndex === seat && g.id !== idB,
+            );
+            if (!occupier) {
+              gB.seatIndex = seat;
+              return;
+            }
+            // Try swap with occupier if they aren't locked
+            if (!occupier.locked && !gB.locked) {
+              const oldB = gB.seatIndex;
+              occupier.seatIndex = oldB;
+              gB.seatIndex = seat;
+              return;
+            }
+          }
+        });
+
         if (commit) set({ guests: updated });
         return {
           assigned,
