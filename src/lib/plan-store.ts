@@ -153,6 +153,8 @@ interface PlanState {
   };
   resetAssignments: () => void;
   importPlan: (data: Partial<PlanState>) => boolean;
+  exportPlan: () => void;
+  resetPlan: () => void;
 }
 
 function uid() {
