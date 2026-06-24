@@ -377,6 +377,14 @@ function GuestsPage() {
                       />
                     </td>
                     <td className="p-2">
+                      <input
+                        value={g.notes ?? ""}
+                        onChange={(e) => updateGuest(g.id, { notes: e.target.value || undefined })}
+                        placeholder="—"
+                        className="w-full bg-transparent px-1 py-1 rounded focus:bg-background focus:ring-1 focus:ring-ring focus:outline-none"
+                      />
+                    </td>
+                    <td className="p-2">
                       <select
                         value={g.rsvpStatus}
                         onChange={(e) => updateGuest(g.id, { rsvpStatus: e.target.value as RsvpStatus })}
