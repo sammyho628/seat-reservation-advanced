@@ -404,6 +404,23 @@ function PlannerPage() {
                   <Redo2 className="h-4 w-4" />
                 </button>
                 <button
+                  onClick={addTable}
+                  className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent"
+                  title="Add a table"
+                >
+                  <Plus className="h-4 w-4" /> Table
+                </button>
+                <button
+                  onClick={() => {
+                    addGuests([{ name: "New guest", meal: "None", tags: [], rsvpStatus: "Confirmed" }]);
+                    toast.success("Added blank guest");
+                  }}
+                  className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent"
+                  title="Add a blank guest"
+                >
+                  <UserPlus className="h-4 w-4" /> Guest
+                </button>
+                <button
                   onClick={resetAssignments}
                   className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent"
                 >
