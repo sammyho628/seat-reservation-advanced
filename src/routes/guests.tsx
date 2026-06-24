@@ -34,6 +34,9 @@ export const Route = createFileRoute("/guests")({
 });
 
 const MEALS: Meal[] = ["None", "Chicken", "Fish", "Vegetarian", "Vegan", "Kids"];
+const MEAL_ICON: Record<string, string> = {
+  Chicken: "🍗", Fish: "🐟", Vegetarian: "🥦", Vegan: "🌱", Kids: "👶",
+};
 const TAGS: Tag[] = ["VIP", "Wheelchair", "Child", "Speaker", "Sponsor"];
 const RSVPS: RsvpStatus[] = ["Confirmed", "Pending", "Declined", "Waitlist", "No-show", "Withdrawn"];
 
