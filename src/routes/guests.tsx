@@ -467,6 +467,7 @@ function GuestsPage() {
             </table>
           </div>
         )}
+        </>)}
       </div>
 
       {/* Bulk action bar */}
