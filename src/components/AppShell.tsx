@@ -22,7 +22,6 @@ import { toast } from "sonner";
 const nav = [
   { to: "/", label: "Planner", icon: LayoutGrid },
   { to: "/guests", label: "Guests", icon: Users },
-  { to: "/list", label: "Lists", icon: ListFilter },
   { to: "/rules", label: "Rules", icon: Sliders },
   { to: "/checkin", label: "Check-in", icon: UserCheck },
   { to: "/print", label: "Print", icon: Printer },
