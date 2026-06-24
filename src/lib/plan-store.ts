@@ -4,7 +4,7 @@ import { useStore } from "zustand";
 
 export type Tag = "VIP" | "Wheelchair" | "Child" | "Speaker" | "Sponsor";
 export type Meal = "Chicken" | "Fish" | "Vegetarian" | "Vegan" | "Kids" | "None";
-export type RsvpStatus = "Confirmed" | "Pending" | "Declined" | "Waitlist" | "No-show";
+export type RsvpStatus = "Confirmed" | "Pending" | "Declined" | "Waitlist" | "No-show" | "Withdrawn";
 
 export type SeatStrategy =
   | "smart"
