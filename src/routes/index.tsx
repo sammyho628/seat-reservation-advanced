@@ -16,7 +16,7 @@ import { AutoAssignDrawer } from "@/components/AutoAssignDrawer";
 import {
   Wand2, RotateCcw, Settings as SettingsIcon, Undo2, Redo2, Camera,
   Search, BarChart2, ChevronUp, ChevronDown, Building2, Tag as TagIcon, X,
-  Plus, UserPlus,
+  Plus, UserPlus, Save, FolderOpen, FilePlus, Upload,
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
@@ -95,6 +95,30 @@ function PlannerPage() {
   const rules = usePlanStore((s) => s.rules);
   const addTable = usePlanStore((s) => s.addTable);
   const addGuests = usePlanStore((s) => s.addGuests);
+  const exportPlan = usePlanStore((s) => s.exportPlan);
+  const importPlan = usePlanStore((s) => s.importPlan);
+  const resetPlan = usePlanStore((s) => s.resetPlan);
+
+  const [newPlanOpen, setNewPlanOpen] = useState(false);
+
+  async function handleOpenFile() {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json,application/json";
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      try {
+        const data = JSON.parse(await file.text());
+        const ok = importPlan(data);
+        if (ok) toast.success(`Loaded "${file.name}"`);
+        else toast.error("Could not load file — invalid Seatcraft plan");
+      } catch {
+        toast.error("Could not load file — is it a valid Seatcraft plan?");
+      }
+    };
+    input.click();
+  }
 
   const pastStates = useTemporalStore((s) => s.pastStates) as any[];
   const futureStates = useTemporalStore((s) => s.futureStates) as any[];
@@ -433,6 +457,33 @@ function PlannerPage() {
                 >
                   <Camera className="h-4 w-4" /> PNG
                 </button>
+
+                <div className="h-8 w-px bg-border mx-1" />
+
+                <button
+                  onClick={exportPlan}
+                  title="Save plan to file"
+                  className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent"
+                >
+                  <Save className="h-4 w-4" /> Save
+                </button>
+                <button
+                  onClick={handleOpenFile}
+                  title="Open a .seatcraft.json file"
+                  className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent"
+                >
+                  <FolderOpen className="h-4 w-4" /> Open
+                </button>
+                <button
+                  onClick={() => setNewPlanOpen(true)}
+                  title="Start a new blank plan"
+                  className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent"
+                >
+                  <FilePlus className="h-4 w-4" /> New
+                </button>
+
+                <div className="h-8 w-px bg-border mx-1" />
+
                 <button
                   onClick={openAutoSeat}
                   className="h-10 px-4 rounded-md bg-primary text-primary-foreground text-sm inline-flex items-center gap-1.5 hover:opacity-90"
@@ -441,6 +492,27 @@ function PlannerPage() {
                 </button>
               </div>
             </div>
+
+            <AlertDialog open={newPlanOpen} onOpenChange={setNewPlanOpen}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Start a new plan?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will clear all tables, guests and rules. Save your current plan first if you want to keep it.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => { resetPlan(); setNewPlanOpen(false); toast.success("New plan created"); }}
+                    className="bg-destructive hover:bg-destructive/90"
+                  >
+                    Clear and start new
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
 
             {/* Row 2 — search + view controls */}
             <div className="flex items-center gap-3 mb-4 flex-wrap">
@@ -554,16 +626,50 @@ function PlannerPage() {
               Click a seat to select · click another seat to swap · select a guest then click an empty seat · click a table label to edit details · drag tables to reorder.
             </p>
 
-            <PlannerGrid
-              selectedGuestId={selectedGuestId}
-              onAfterAssign={() => setSelectedGuestId(null)}
-              highlightedTableId={highlightedTableId}
-              violatingGuestIds={violatingGuestIds}
-              cohortColorMap={cohortColorMap}
-              seatLabelMode={seatLabelMode}
-              selectedSeat={selectedSeat}
-              onSelectSeat={handleSelectSeat}
-            />
+            {tables.length === 0 && guests.length === 0 ? (
+              <div className="flex items-center justify-center py-20">
+                <div className="w-full max-w-2xl rounded-2xl border border-border bg-card shadow-sm p-10">
+                  <div className="text-center mb-8">
+                    <h2 className="font-display text-4xl mb-2">Seatcraft</h2>
+                    <p className="text-muted-foreground text-sm">Professional event seating planner</p>
+                  </div>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <button
+                      onClick={addTable}
+                      className="flex flex-col items-center gap-2 p-6 border-2 border-dashed border-border rounded-xl hover:border-primary hover:bg-accent/30 transition group"
+                    >
+                      <FilePlus className="h-8 w-8 text-muted-foreground group-hover:text-primary transition" />
+                      <span className="font-medium">New plan</span>
+                      <span className="text-xs text-muted-foreground text-center">Add your first table to get started</span>
+                    </button>
+                    <button
+                      onClick={handleOpenFile}
+                      className="flex flex-col items-center gap-2 p-6 border-2 border-dashed border-border rounded-xl hover:border-primary hover:bg-accent/30 transition group"
+                    >
+                      <FolderOpen className="h-8 w-8 text-muted-foreground group-hover:text-primary transition" />
+                      <span className="font-medium">Open plan</span>
+                      <span className="text-xs text-muted-foreground text-center">Load a .seatcraft.json file</span>
+                    </button>
+                  </div>
+                  <p className="text-xs text-muted-foreground text-center mt-6">
+                    Or head to{" "}
+                    <a href="/guests" className="text-primary hover:underline">Guests</a>
+                    {" "}to import a CSV or Excel list.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <PlannerGrid
+                selectedGuestId={selectedGuestId}
+                onAfterAssign={() => setSelectedGuestId(null)}
+                highlightedTableId={highlightedTableId}
+                violatingGuestIds={violatingGuestIds}
+                cohortColorMap={cohortColorMap}
+                seatLabelMode={seatLabelMode}
+                selectedSeat={selectedSeat}
+                onSelectSeat={handleSelectSeat}
+              />
+            )}
           </div>
         </div>
         <UnassignedPanel selectedGuestId={selectedGuestId} onSelect={setSelectedGuestId} />
