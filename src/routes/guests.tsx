@@ -392,6 +392,16 @@ function GuestsPage() {
                         <span className="text-muted-foreground">—</span>
                       )}
                     </td>
+                    <td className="p-2 text-center">
+                      <button
+                        onClick={() => updateGuest(g.id, { locked: !g.locked })}
+                        disabled={!g.tableId}
+                        title={g.locked ? "Unlock seat" : g.tableId ? "Lock to current seat" : "Assign to a seat first"}
+                        className={`text-sm ${g.locked ? "text-amber-500" : "text-muted-foreground/40 hover:text-muted-foreground"} disabled:opacity-30`}
+                      >
+                        {g.locked ? "🔒" : "○"}
+                      </button>
+                    </td>
                     <td className="p-2 text-right">
                       <button onClick={() => removeGuest(g.id)} className="text-muted-foreground hover:text-destructive p-1">
                         <Trash2 className="h-4 w-4" />
