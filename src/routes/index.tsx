@@ -293,11 +293,21 @@ function PlannerPage() {
               <div className="flex items-end gap-3">
                 <div>
                   <Label className="text-xs">Tables per row</Label>
-                  <Input
-                    className="w-32 font-mono mt-1"
-                    defaultValue={settings.rowPattern}
-                    onBlur={(e) => setSettings({ rowPattern: e.target.value })}
-                  />
+                  <div className="flex gap-1 mt-1">
+                    <Input
+                      className="w-28 font-mono"
+                      value={rowPatternDraft}
+                      onChange={(e) => setRowPatternDraft(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && setSettings({ rowPattern: rowPatternDraft })}
+                    />
+                    <button
+                      onClick={() => setSettings({ rowPattern: rowPatternDraft })}
+                      className="h-10 px-2.5 rounded-md border border-input hover:bg-accent text-sm font-medium"
+                    >
+                      Apply
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">e.g. 4:4:4 = 3 rows of 4</p>
                 </div>
                 <div>
                   <Label className="text-xs">Default seats</Label>
