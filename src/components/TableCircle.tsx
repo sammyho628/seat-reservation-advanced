@@ -459,7 +459,13 @@ function TableCircleInner({
                         <span className="text-[8px] uppercase tracking-wider font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 px-1 py-0.5 rounded mr-0.5 inline-block leading-none align-middle">HOST</span>
                       </>
                     )}
-                    {guest.name}
+                    <span
+                      onClick={() => onEditGuest?.(guest.id)}
+                      className="cursor-pointer hover:text-primary hover:underline"
+                      title="Click to edit guest details"
+                    >
+                      {guest.name}
+                    </span>
                     {showFirmInList && guest.company && (
                       <span className="text-muted-foreground"> · {guest.company}</span>
                     )}
