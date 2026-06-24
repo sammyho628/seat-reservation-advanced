@@ -12,9 +12,10 @@ export const Route = createFileRoute("/rules")({
   component: RulesPage,
 });
 
-const RULE_OPTIONS: { type: RuleType; label: string; description: string; needsGuests: boolean; needsCohort?: boolean }[] = [
+const RULE_OPTIONS: { type: RuleType; label: string; description: string; needsGuests: boolean; needsCohort?: boolean; maxGuests?: number }[] = [
   { type: "keep_together", label: "Keep together", description: "These guests must share a table.", needsGuests: true },
   { type: "keep_apart", label: "Keep apart", description: "These guests cannot share a table.", needsGuests: true },
+  { type: "seat_adjacent", label: "Seat adjacent", description: "Two specific guests will be placed in adjacent seats (next to each other) at the same table.", needsGuests: true, maxGuests: 2 },
   { type: "keep_cohort_together", label: "Keep cohort together", description: "All guests sharing a cohort name sit at the same table.", needsGuests: false, needsCohort: true },
   { type: "vip_near_stage", label: "VIPs near the stage", description: "Guests tagged VIP get front-row tables first.", needsGuests: false },
   { type: "accessibility_edge", label: "Accessibility on edges", description: "Guests tagged Wheelchair get edge tables.", needsGuests: false },
