@@ -457,6 +457,33 @@ function PlannerPage() {
                 >
                   <Camera className="h-4 w-4" /> PNG
                 </button>
+
+                <div className="h-8 w-px bg-border mx-1" />
+
+                <button
+                  onClick={exportPlan}
+                  title="Save plan to file"
+                  className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent"
+                >
+                  <Save className="h-4 w-4" /> Save
+                </button>
+                <button
+                  onClick={handleOpenFile}
+                  title="Open a .seatcraft.json file"
+                  className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent"
+                >
+                  <FolderOpen className="h-4 w-4" /> Open
+                </button>
+                <button
+                  onClick={() => setNewPlanOpen(true)}
+                  title="Start a new blank plan"
+                  className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent"
+                >
+                  <FilePlus className="h-4 w-4" /> New
+                </button>
+
+                <div className="h-8 w-px bg-border mx-1" />
+
                 <button
                   onClick={openAutoSeat}
                   className="h-10 px-4 rounded-md bg-primary text-primary-foreground text-sm inline-flex items-center gap-1.5 hover:opacity-90"
@@ -465,6 +492,27 @@ function PlannerPage() {
                 </button>
               </div>
             </div>
+
+            <AlertDialog open={newPlanOpen} onOpenChange={setNewPlanOpen}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Start a new plan?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will clear all tables, guests and rules. Save your current plan first if you want to keep it.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => { resetPlan(); setNewPlanOpen(false); toast.success("New plan created"); }}
+                    className="bg-destructive hover:bg-destructive/90"
+                  >
+                    Clear and start new
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
 
             {/* Row 2 — search + view controls */}
             <div className="flex items-center gap-3 mb-4 flex-wrap">
