@@ -284,6 +284,7 @@ function GuestsPage() {
                   <th className="text-left p-3">Cohort</th>
                   <th className="text-left p-3">Meal</th>
                   <th className="text-left p-3">Dietary</th>
+                  <th className="text-left p-3">Notes</th>
                   <th className="text-left p-3">RSVP</th>
                   <th className="text-left p-3">Tags</th>
                   <th className="text-left p-3">Table</th>
