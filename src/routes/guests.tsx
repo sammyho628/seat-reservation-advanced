@@ -326,7 +326,6 @@ function GuestsPage() {
                     </td>
                     <td className="p-2">
 
-                    <td className="p-2">
                       <input
                         value={g.company ?? ""}
                         onChange={(e) => updateGuest(g.id, { company: e.target.value })}
