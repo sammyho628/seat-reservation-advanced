@@ -1,10 +1,30 @@
+import { useState } from "react";
 import { usePlanStore, type Table, type Guest } from "@/lib/plan-store";
-import { Star, Accessibility, TriangleAlert, RotateCw, RotateCcw } from "lucide-react";
+import {
+  Star, Accessibility, TriangleAlert, RotateCw, RotateCcw,
+  Pencil, Maximize2, X,
+} from "lucide-react";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -28,9 +48,32 @@ interface Props {
   cohortColorMap?: Map<string, string>;
   seatLabelMode?: "none" | "name" | "name+firm";
   showFirmInList?: boolean;
+  zoomed?: boolean;
 }
 
-export function TableCircle({
+export function TableCircle(props: Props) {
+  const [zoomOpen, setZoomOpen] = useState(false);
+  if (props.zoomed) {
+    return <TableCircleInner {...props} />;
+  }
+  return (
+    <>
+      <TableCircleInner {...props} onRequestZoom={() => setZoomOpen(true)} />
+      <Dialog open={zoomOpen} onOpenChange={setZoomOpen}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Table {props.table.label}</DialogTitle>
+          </DialogHeader>
+          <div className="mt-2">
+            <TableCircleInner {...props} zoomed seatLabelMode="name" />
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+function TableCircleInner({
   table,
   guests,
   selectedSeat,
@@ -42,13 +85,20 @@ export function TableCircle({
   cohortColorMap,
   seatLabelMode = "none",
   showFirmInList = false,
-}: Props) {
-  const allGuests = usePlanStore((s) => s.guests);
+  zoomed = false,
+  onRequestZoom,
+}: Props & { onRequestZoom?: () => void }) {
   const updateTable = usePlanStore((s) => s.updateTable);
-  const swapSeats = usePlanStore((s) => s.swapSeats);
   const unassignGuest = usePlanStore((s) => s.unassignGuest);
+  const updateGuest = usePlanStore((s) => s.updateGuest);
   const setTableHost = usePlanStore((s) => s.setTableHost);
   const rotateTable = usePlanStore((s) => s.rotateTable);
+  const removeTable = usePlanStore((s) => s.removeTable);
+
+  const [popoverOpen, setPopoverOpen] = useState(false);
+  const [editingSeats, setEditingSeats] = useState(false);
+  const [rotateOpen, setRotateOpen] = useState(false);
+  const [rotateDir, setRotateDir] = useState<"cw" | "ccw">("cw");
 
   const seatMap = new Map<number, Guest>();
   guests.forEach((g) => {
@@ -62,15 +112,11 @@ export function TableCircle({
   const hasAcc = guests.some((g) => g.tags.includes("Wheelchair"));
   const hasViolation = !!violatingGuestIds && guests.some((g) => violatingGuestIds.has(g.id));
   const dietList = guests.filter((g) => g.dietary && g.dietary.trim());
+  const isEmpty = occupied === 0;
 
   function handleSeatClick(seatIndex: number) {
     if (selectedGuestId && !seatMap.get(seatIndex)) {
       onAssignGuest?.(table.id, seatIndex);
-      return;
-    }
-    if (selectedSeat && (selectedSeat.tableId !== table.id || selectedSeat.seatIndex !== seatIndex)) {
-      swapSeats(selectedSeat, { tableId: table.id, seatIndex });
-      onSelectSeat(null);
       return;
     }
     if (selectedSeat?.tableId === table.id && selectedSeat.seatIndex === seatIndex) {
@@ -80,103 +126,137 @@ export function TableCircle({
     onSelectSeat({ tableId: table.id, seatIndex });
   }
 
+  function requestRotate(dir: "cw" | "ccw") {
+    setRotateDir(dir);
+    setRotateOpen(true);
+  }
+
+  const isLabelMode = seatLabelMode !== "none";
+  const viewSize = isLabelMode ? 320 : 240;
+  const cx = viewSize / 2;
+  const cy = viewSize / 2;
+  const radius = Math.min(isLabelMode ? 130 : 105, (isLabelMode ? 75 : 60) + table.seats * 4);
+  const seatOffset = table.seatOffset ?? 0;
+
   const seats = Array.from({ length: table.seats }, (_, i) => i + 1);
-  const radius = Math.min(105, 60 + table.seats * 4);
-  const cx = 120;
-  const cy = 120;
 
   return (
     <div
       className={`relative rounded-xl border bg-card p-3 group transition-shadow ${
         highlighted ? "ring-2 ring-primary animate-pulse border-primary" : "border-table-ring"
-      }`}
+      } ${zoomed ? "scale-100" : ""}`}
     >
       <div className="flex items-center justify-between mb-1 px-1">
-        <Popover>
-          <PopoverTrigger asChild>
-            <button className="font-display text-sm tracking-wider hover:underline text-left">
-              TABLE {table.label}
-              {table.hostName && (
-                <span className="block text-[10px] text-muted-foreground italic font-sans tracking-normal">
-                  {table.hostName}
-                </span>
-              )}
-            </button>
-          </PopoverTrigger>
-          <PopoverContent className="w-72 space-y-3" align="start">
-            <div>
-              <Label className="text-xs">Label</Label>
-              <Input
-                defaultValue={table.label}
-                onBlur={(e) => updateTable(table.id, { label: e.target.value.slice(0, 12) || table.label })}
-              />
-            </div>
-            <div>
-              <Label className="text-xs">Seats</Label>
-              <Input
-                type="number"
-                min={2}
-                max={24}
-                defaultValue={table.seats}
-                onBlur={(e) => updateTable(table.id, { seats: Math.max(2, parseInt(e.target.value) || table.seats) })}
-              />
-            </div>
-            <div>
-              <Label className="text-xs">Host guest</Label>
-              <select
-                className="w-full h-9 rounded-md border border-input bg-background px-2 text-sm"
-                value={table.hostGuestId ?? ""}
-                onChange={(e) => setTableHost(table.id, e.target.value || undefined)}
-              >
-                <option value="">— none —</option>
-                {guests.map((g) => (
-                  <option key={g.id} value={g.id}>{g.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <Label className="text-xs">Host / sponsor label</Label>
-              <Input
-                defaultValue={table.hostName ?? ""}
-                onBlur={(e) => updateTable(table.id, { hostName: e.target.value || undefined })}
-              />
-            </div>
-            <div>
-              <Label className="text-xs">Sponsor tag</Label>
-              <Input
-                defaultValue={table.hostTag ?? ""}
-                onBlur={(e) => updateTable(table.id, { hostTag: e.target.value || undefined })}
-              />
-            </div>
-            <div>
-              <Label className="text-xs">Notes</Label>
-              <Input
-                defaultValue={table.notes ?? ""}
-                placeholder="e.g. Near bar"
-                onBlur={(e) => updateTable(table.id, { notes: e.target.value || undefined })}
-              />
-            </div>
-            <div className="flex items-center justify-between pt-2 border-t border-border">
-              <span className="text-xs text-muted-foreground">Rotate seats</span>
-              <div className="flex gap-1">
-                <button
-                  onClick={() => rotateTable(table.id, "ccw")}
-                  className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-input hover:bg-accent"
-                  title="Rotate counter-clockwise"
-                >
-                  <RotateCcw className="h-3.5 w-3.5" />
-                </button>
-                <button
-                  onClick={() => rotateTable(table.id, "cw")}
-                  className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-input hover:bg-accent"
-                  title="Rotate clockwise"
-                >
-                  <RotateCw className="h-3.5 w-3.5" />
-                </button>
+        <div className="flex items-center gap-1 group/label flex-1 min-w-0">
+          <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+            <PopoverTrigger asChild>
+              <button className="font-display text-sm tracking-wider hover:underline text-left truncate">
+                TABLE {table.label}
+                {table.hostName && (
+                  <span className="block text-[10px] text-muted-foreground italic font-sans tracking-normal truncate">
+                    {table.hostName}
+                  </span>
+                )}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-72 space-y-3" align="start">
+              <div>
+                <Label className="text-xs">Label</Label>
+                <Input
+                  defaultValue={table.label}
+                  onBlur={(e) => updateTable(table.id, { label: e.target.value.slice(0, 12) || table.label })}
+                />
               </div>
-            </div>
-          </PopoverContent>
-        </Popover>
+              <div>
+                <Label className="text-xs">Seats</Label>
+                <Input
+                  type="number"
+                  min={2}
+                  max={24}
+                  defaultValue={table.seats}
+                  onBlur={(e) => updateTable(table.id, { seats: Math.max(2, parseInt(e.target.value) || table.seats) })}
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Start seat (visual position of seat 1)</Label>
+                <div className="flex items-center gap-2 mt-1">
+                  <input
+                    type="range"
+                    min={0}
+                    max={table.seats - 1}
+                    value={table.seatOffset ?? 0}
+                    onChange={(e) => updateTable(table.id, { seatOffset: parseInt(e.target.value) })}
+                    className="flex-1"
+                  />
+                  <span className="text-xs font-mono w-5 text-right">{table.seatOffset ?? 0}</span>
+                </div>
+              </div>
+              <div>
+                <Label className="text-xs">Host guest</Label>
+                <select
+                  className="w-full h-9 rounded-md border border-input bg-background px-2 text-sm"
+                  value={table.hostGuestId ?? ""}
+                  onChange={(e) => setTableHost(table.id, e.target.value || undefined)}
+                >
+                  <option value="">— none —</option>
+                  {guests.map((g) => (
+                    <option key={g.id} value={g.id}>{g.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <Label className="text-xs">Host / sponsor label</Label>
+                <Input
+                  defaultValue={table.hostName ?? ""}
+                  onBlur={(e) => updateTable(table.id, { hostName: e.target.value || undefined })}
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Sponsor tag</Label>
+                <Input
+                  defaultValue={table.hostTag ?? ""}
+                  onBlur={(e) => updateTable(table.id, { hostTag: e.target.value || undefined })}
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Notes</Label>
+                <Input
+                  defaultValue={table.notes ?? ""}
+                  placeholder="e.g. Near bar"
+                  onBlur={(e) => updateTable(table.id, { notes: e.target.value || undefined })}
+                />
+              </div>
+              <div className="flex items-center justify-between pt-2 border-t border-border">
+                <span className="text-xs text-muted-foreground">Rotate seats</span>
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => { setPopoverOpen(false); requestRotate("ccw"); }}
+                    className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-input hover:bg-accent"
+                    title="Rotate counter-clockwise"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    onClick={() => { setPopoverOpen(false); requestRotate("cw"); }}
+                    className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-input hover:bg-accent"
+                    title="Rotate clockwise"
+                  >
+                    <RotateCw className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+          {!zoomed && (
+            <button
+              onClick={() => setPopoverOpen(true)}
+              className="opacity-0 group-hover/label:opacity-100 transition-opacity p-0.5 rounded hover:bg-accent shrink-0"
+              title="Edit table"
+            >
+              <Pencil className="h-3 w-3 text-muted-foreground" />
+            </button>
+          )}
+        </div>
         <div className="flex items-center gap-1 text-[10px] font-mono text-muted-foreground">
           {hasViolation && (
             <span title="Rule violation">
@@ -191,12 +271,50 @@ export function TableCircle({
               title={dietList.map((g) => `${g.name}: ${g.dietary}`).join("\n")}
             />
           )}
-          <span>{occupied}/{table.seats}</span>
+          {editingSeats ? (
+            <input
+              type="number" min={2} max={24}
+              defaultValue={table.seats}
+              className="w-12 font-mono text-xs border border-input rounded px-1 h-5"
+              autoFocus
+              onBlur={(e) => {
+                updateTable(table.id, { seats: Math.max(2, parseInt(e.target.value) || table.seats) });
+                setEditingSeats(false);
+              }}
+              onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+            />
+          ) : (
+            <button
+              onClick={() => setEditingSeats(true)}
+              className="font-mono text-muted-foreground text-[10px] hover:underline hover:text-foreground"
+              title="Click to edit seat count"
+            >
+              {occupied}/{table.seats}
+            </button>
+          )}
+          {!zoomed && onRequestZoom && (
+            <button
+              onClick={onRequestZoom}
+              className="opacity-0 group-hover:opacity-100 transition-opacity h-5 w-5 inline-flex items-center justify-center rounded hover:bg-accent ml-1"
+              title="Enlarge table"
+            >
+              <Maximize2 className="h-3 w-3" />
+            </button>
+          )}
+          {!zoomed && isEmpty && (
+            <button
+              onClick={() => removeTable(table.id)}
+              className="opacity-0 group-hover:opacity-100 transition-opacity h-5 w-5 inline-flex items-center justify-center rounded hover:bg-destructive/10 hover:text-destructive ml-0.5"
+              title="Remove empty table"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          )}
         </div>
       </div>
 
-      <svg viewBox="0 0 240 240" className="w-full h-auto">
-        <circle cx={cx} cy={cy} r={70} fill="var(--color-table-surface)" stroke="var(--color-table-ring)" strokeWidth="1" />
+      <svg viewBox={`0 0 ${viewSize} ${viewSize}`} className="w-full h-auto">
+        <circle cx={cx} cy={cy} r={isLabelMode ? 80 : 70} fill="var(--color-table-surface)" stroke="var(--color-table-ring)" strokeWidth="1" />
         <text x={cx} y={cy - 4} textAnchor="middle" className="font-display fill-foreground" fontSize="18">
           {table.label}
         </text>
@@ -204,7 +322,7 @@ export function TableCircle({
           {table.seats} PAX
         </text>
         {seats.map((s) => {
-          const angle = (s / table.seats) * Math.PI * 2 - Math.PI / 2;
+          const angle = ((s - 1 + seatOffset) / table.seats) * Math.PI * 2 - Math.PI / 2;
           const x = cx + Math.cos(angle) * radius;
           const y = cy + Math.sin(angle) * radius;
           const guest = seatMap.get(s);
@@ -231,12 +349,6 @@ export function TableCircle({
             ? "var(--color-violation)"
             : "var(--color-table-ring)";
           const cohortColor = guest?.cohort ? cohortColorMap?.get(guest.cohort) : undefined;
-          const labelText =
-            seatLabelMode === "none" || !guest
-              ? ""
-              : seatLabelMode === "name"
-              ? (guest.lastName || guest.name.split(" ")[0] || "").slice(0, 8)
-              : `${(guest.lastName || guest.name.split(" ")[0] || "").slice(0, 6)}${guest.company ? "·" + guest.company.slice(0, 4) : ""}`;
           return (
             <g key={s} transform={`translate(${x}, ${y})`} className="cursor-pointer" onClick={() => handleSeatClick(s)}>
               {cohortColor && (
@@ -260,10 +372,14 @@ export function TableCircle({
                   {guest.cohort ? ` · ${guest.cohort}` : ""}
                   {guest.rsvpStatus !== "Confirmed" ? ` · ${guest.rsvpStatus}` : ""}
                   {guest.dietary ? `\n⚠️ ${guest.dietary}` : ""}
+                  {guest.locked ? `\n🔒 Locked` : ""}
                 </title>
               )}
               {isHost && (
                 <text textAnchor="middle" dy="-16" fontSize="10" fill="oklch(0.55 0.2 80)" className="pointer-events-none">♛</text>
+              )}
+              {guest?.locked && (
+                <text textAnchor="middle" dy="-15" x={-10} fontSize="8" className="pointer-events-none select-none">🔒</text>
               )}
               {guest?.tags.includes("Wheelchair") && (
                 <circle r={3} cx={11} cy={-10} fill="var(--color-primary)" />
@@ -274,9 +390,30 @@ export function TableCircle({
               {guest?.dietary && (
                 <circle r={3} cx={11} cy={10} fill="var(--color-dietary-alert)" />
               )}
-              {labelText && (
-                <text textAnchor="middle" dy="24" fontSize="7" className="fill-muted-foreground pointer-events-none font-mono">
-                  {labelText}
+            </g>
+          );
+        })}
+        {isLabelMode && seats.map((s) => {
+          const guest = seatMap.get(s);
+          if (!guest) return null;
+          const angle = ((s - 1 + seatOffset) / table.seats) * Math.PI * 2 - Math.PI / 2;
+          const labelR = radius + 24;
+          const lx = cx + Math.cos(angle) * labelR;
+          const ly = cy + Math.sin(angle) * labelR;
+          const deg = (angle * 180) / Math.PI;
+          const flip = deg > 90 && deg < 270;
+          const rotateDeg = flip ? deg + 180 : deg;
+          const displayName = (guest.lastName || guest.name.split(" ").slice(-1)[0] || "").slice(0, 10);
+          const displayFirm = seatLabelMode === "name+firm" && guest.company
+            ? guest.company.slice(0, 9) : "";
+          return (
+            <g key={`lbl-${s}`} transform={`translate(${lx}, ${ly}) rotate(${rotateDeg})`} className="pointer-events-none">
+              <text textAnchor="middle" dy="3" fontSize="7.5" fontWeight="500" className="fill-foreground">
+                {displayName}
+              </text>
+              {displayFirm && (
+                <text textAnchor="middle" dy="13" fontSize="6" className="fill-muted-foreground">
+                  {displayFirm}
                 </text>
               )}
             </g>
@@ -284,7 +421,9 @@ export function TableCircle({
         })}
       </svg>
 
-      <div className={`mt-2 text-[11px] space-y-0.5 max-h-40 overflow-y-auto ${table.seats > 12 ? "columns-2 gap-x-3" : ""}`}>
+      <div className={`mt-2 text-[11px] max-h-60 overflow-y-auto ${
+        table.seats >= 7 ? "grid grid-cols-2 gap-x-3 gap-y-0.5" : "space-y-0.5"
+      }`}>
         {seats.map((s) => {
           const guest = seatMap.get(s);
           const ghost = guests.find((g) => g.seatIndex === s && (g.rsvpStatus === "Declined" || g.rsvpStatus === "No-show"));
@@ -302,8 +441,15 @@ export function TableCircle({
                     )}
                   </span>
                   <button
+                    onClick={() => updateGuest(guest.id, { locked: !guest.locked })}
+                    className={`text-[10px] shrink-0 ${guest.locked ? "text-amber-500" : "text-muted-foreground/30 hover:text-muted-foreground"}`}
+                    title={guest.locked ? "Locked to this seat (click to unlock)" : "Click to lock to this seat"}
+                  >
+                    {guest.locked ? "🔒" : "○"}
+                  </button>
+                  <button
                     onClick={() => unassignGuest(guest.id)}
-                    className="opacity-0 group-hover/row:opacity-100 text-destructive text-[10px]"
+                    className="opacity-0 group-hover/row:opacity-100 text-destructive text-[10px] shrink-0"
                     title="Unassign"
                   >
                     ×
@@ -318,6 +464,43 @@ export function TableCircle({
           );
         })}
       </div>
+
+      {!zoomed && (
+        <div className="absolute bottom-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+          <button
+            onClick={(e) => { e.stopPropagation(); requestRotate("ccw"); }}
+            className="h-7 w-7 rounded-md border border-input bg-card/90 hover:bg-accent inline-flex items-center justify-center shadow-sm"
+            title="Rotate seats counter-clockwise"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); requestRotate("cw"); }}
+            className="h-7 w-7 rounded-md border border-input bg-card/90 hover:bg-accent inline-flex items-center justify-center shadow-sm"
+            title="Rotate seats clockwise"
+          >
+            <RotateCw className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
+
+      <AlertDialog open={rotateOpen} onOpenChange={setRotateOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Rotate Table {table.label} {rotateDir === "cw" ? "clockwise" : "counter-clockwise"}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              All guests at this table will shift one seat {rotateDir === "cw" ? "clockwise" : "counter-clockwise"}.
+              Seat numbers stay the same — only the visual positions rotate.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { rotateTable(table.id, rotateDir); setRotateOpen(false); }}>
+              Rotate
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
