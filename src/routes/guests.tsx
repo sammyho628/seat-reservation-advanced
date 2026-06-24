@@ -285,6 +285,7 @@ function GuestsPage() {
                   <th className="text-left p-3">RSVP</th>
                   <th className="text-left p-3">Tags</th>
                   <th className="text-left p-3">Table</th>
+                  <th className="text-center p-3">Lock</th>
                   <th></th>
                 </tr>
               </thead>
