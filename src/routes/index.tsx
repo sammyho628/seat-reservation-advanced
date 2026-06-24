@@ -16,7 +16,7 @@ import { AutoAssignDrawer } from "@/components/AutoAssignDrawer";
 import {
   Wand2, RotateCcw, Settings as SettingsIcon, Undo2, Redo2, Camera,
   Search, BarChart2, ChevronUp, ChevronDown, Building2, Tag as TagIcon, X,
-  Plus, UserPlus,
+  Plus, UserPlus, Save, FolderOpen, FilePlus, Upload,
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
