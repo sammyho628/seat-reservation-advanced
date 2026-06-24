@@ -224,21 +224,45 @@ function GuestsPage() {
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            <label className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 cursor-pointer hover:bg-accent">
-              <Upload className="h-4 w-4" /> Import CSV/Excel
-              <input type="file" accept=".csv,.xlsx,.xls" onChange={handleFile} className="hidden" />
-            </label>
-            <button onClick={() => exportGuestsCSV(guests, tableLabel)} className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent">
-              <Download className="h-4 w-4" /> CSV
-            </button>
-            <button onClick={() => exportGuestsXLSX(guests, tableLabel)} className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent">
-              <Download className="h-4 w-4" /> Excel
-            </button>
-            <button onClick={addBlank} className="h-10 px-3 rounded-md bg-primary text-primary-foreground text-sm inline-flex items-center gap-1.5">
-              <Plus className="h-4 w-4" /> Add guest
-            </button>
+            {tab === "edit" && (
+              <>
+                <label className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 cursor-pointer hover:bg-accent">
+                  <Upload className="h-4 w-4" /> Import CSV/Excel
+                  <input type="file" accept=".csv,.xlsx,.xls" onChange={handleFile} className="hidden" />
+                </label>
+                <button onClick={() => exportGuestsCSV(guests, tableLabel)} className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent">
+                  <Download className="h-4 w-4" /> CSV
+                </button>
+                <button onClick={() => exportGuestsXLSX(guests, tableLabel)} className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent">
+                  <Download className="h-4 w-4" /> Excel
+                </button>
+                <button onClick={addBlank} className="h-10 px-3 rounded-md bg-primary text-primary-foreground text-sm inline-flex items-center gap-1.5">
+                  <Plus className="h-4 w-4" /> Add guest
+                </button>
+              </>
+            )}
           </div>
         </div>
+
+        <div className="flex items-center gap-1 mb-6 p-1 bg-muted/40 rounded-lg w-fit">
+          {([
+            { id: "edit", label: "Edit" },
+            { id: "seating", label: "Seating View" },
+          ] as const).map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={`px-4 py-1.5 text-sm rounded-md transition ${
+                tab === t.id ? "bg-background shadow-sm font-medium" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {tab === "seating" ? <SeatingView /> : (<>
+
 
         <div className="flex items-center gap-2 mb-4 flex-wrap">
           <div className="relative flex-1 max-w-md">
