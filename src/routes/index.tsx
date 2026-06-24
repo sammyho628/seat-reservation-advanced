@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { PlannerGrid } from "@/components/PlannerGrid";
 import { UnassignedPanel } from "@/components/UnassignedPanel";
-import { WelcomeGate } from "@/components/WelcomeGate";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import {
   usePlanStore,
   useTemporalStore,
