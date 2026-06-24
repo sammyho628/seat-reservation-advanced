@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import {
   Wand2, RotateCcw, Settings as SettingsIcon, Undo2, Redo2, Camera,
   Search, BarChart2, ChevronUp, ChevronDown, Building2, Tag as TagIcon, X,
+  Plus, UserPlus,
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
@@ -91,6 +92,8 @@ function PlannerPage() {
   const guests = usePlanStore((s) => s.guests);
   const tables = usePlanStore((s) => s.tables);
   const rules = usePlanStore((s) => s.rules);
+  const addTable = usePlanStore((s) => s.addTable);
+  const addGuests = usePlanStore((s) => s.addGuests);
 
   const pastStates = useTemporalStore((s) => s.pastStates) as any[];
   const futureStates = useTemporalStore((s) => s.futureStates) as any[];
@@ -103,13 +106,19 @@ function PlannerPage() {
   const [autoSeatOpen, setAutoSeatOpen] = useState(false);
   const [strategy, setStrategy] = useState<SeatStrategy>("smart");
   const [overwriteOpen, setOverwriteOpen] = useState(false);
+  const [rowPatternDraft, setRowPatternDraft] = useState(settings.rowPattern);
   const searchRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => setRowPatternDraft(settings.rowPattern), [settings.rowPattern]);
 
   // intercept seat clicks for swap confirmation
   function handleSelectSeat(sel: typeof selectedSeat) {
-    if (sel && selectedSeat && (selectedSeat.tableId !== sel.tableId || selectedSeat.seatIndex !== sel.seatIndex)) {
-      // a swap was just triggered inside TableCircle; we override by NOT auto-swapping.
-      // TableCircle has already done the swap, so we just clear selection.
+    if (
+      sel &&
+      selectedSeat &&
+      (selectedSeat.tableId !== sel.tableId || selectedSeat.seatIndex !== sel.seatIndex)
+    ) {
+      setPendingSwap({ a: selectedSeat, b: sel });
       setSelectedSeat(null);
       return;
     }
@@ -284,11 +293,21 @@ function PlannerPage() {
               <div className="flex items-end gap-3">
                 <div>
                   <Label className="text-xs">Tables per row</Label>
-                  <Input
-                    className="w-32 font-mono mt-1"
-                    defaultValue={settings.rowPattern}
-                    onBlur={(e) => setSettings({ rowPattern: e.target.value })}
-                  />
+                  <div className="flex gap-1 mt-1">
+                    <Input
+                      className="w-28 font-mono"
+                      value={rowPatternDraft}
+                      onChange={(e) => setRowPatternDraft(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && setSettings({ rowPattern: rowPatternDraft })}
+                    />
+                    <button
+                      onClick={() => setSettings({ rowPattern: rowPatternDraft })}
+                      className="h-10 px-2.5 rounded-md border border-input hover:bg-accent text-sm font-medium"
+                    >
+                      Apply
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">e.g. 4:4:4 = 3 rows of 4</p>
                 </div>
                 <div>
                   <Label className="text-xs">Default seats</Label>
@@ -383,6 +402,23 @@ function PlannerPage() {
                   className="h-10 w-10 rounded-md border border-input hover:bg-accent inline-flex items-center justify-center disabled:opacity-30"
                 >
                   <Redo2 className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={addTable}
+                  className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent"
+                  title="Add a table"
+                >
+                  <Plus className="h-4 w-4" /> Table
+                </button>
+                <button
+                  onClick={() => {
+                    addGuests([{ name: "New guest", meal: "None", tags: [], rsvpStatus: "Confirmed" }]);
+                    toast.success("Added blank guest");
+                  }}
+                  className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent"
+                  title="Add a blank guest"
+                >
+                  <UserPlus className="h-4 w-4" /> Guest
                 </button>
                 <button
                   onClick={resetAssignments}
@@ -532,43 +568,52 @@ function PlannerPage() {
         <UnassignedPanel selectedGuestId={selectedGuestId} onSelect={setSelectedGuestId} />
       </div>
 
-      {/* Selection banner */}
-      {selectedSeat && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 max-w-[90vw] bg-[color:var(--color-rsvp-pending)]/95 text-foreground border border-[color:var(--color-rsvp-pending)] rounded-xl shadow-lg px-4 py-2 flex items-center gap-3 text-sm">
-          <span className="font-medium">
-            {selectedSeatGuest ? selectedSeatGuest.name : "Empty seat"} · Table {selectedSeatTableLabel} · Seat {selectedSeat.seatIndex}
-          </span>
-          <span className="text-xs">— click destination seat to swap</span>
-          <button onClick={() => setSelectedSeat(null)} className="ml-2 inline-flex items-center gap-1 text-xs hover:underline">
-            <X className="h-3 w-3" /> Cancel
-          </button>
+      {/* Persistent swap status bar */}
+      {(selectedSeat || pendingSwap) && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 border-t-2 border-amber-400 bg-amber-50 dark:bg-amber-950/90 shadow-xl px-6 py-3 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="h-2.5 w-2.5 rounded-full bg-amber-500 animate-pulse shrink-0" />
+            {selectedSeat ? (
+              <span className="font-medium text-amber-900 dark:text-amber-100 text-sm">
+                <span className="font-bold">{selectedSeatGuest?.name ?? "Empty seat"}</span>
+                {" "}(Table {selectedSeatTableLabel} · Seat {selectedSeat.seatIndex})
+                <span className="font-normal text-amber-700 dark:text-amber-300 ml-2">→ click any other seat to swap</span>
+              </span>
+            ) : pendingSwap ? (
+              <span className="font-medium text-amber-900 dark:text-amber-100 text-sm">
+                Swap{" "}
+                <span className="font-bold">
+                  {guests.find((g) => g.tableId === pendingSwap.a?.tableId && g.seatIndex === pendingSwap.a?.seatIndex)?.name ?? "empty seat"}
+                </span>
+                {" ↔ "}
+                <span className="font-bold">
+                  {guests.find((g) => g.tableId === pendingSwap.b?.tableId && g.seatIndex === pendingSwap.b?.seatIndex)?.name ?? "empty seat"}
+                </span>
+              </span>
+            ) : null}
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            {pendingSwap && (
+              <button
+                onClick={() => {
+                  if (pendingSwap.a && pendingSwap.b) swapSeats(pendingSwap.a, pendingSwap.b);
+                  setPendingSwap(null);
+                }}
+                className="h-8 px-4 rounded-md bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold"
+              >
+                ✓ Confirm swap
+              </button>
+            )}
+            <button
+              onClick={() => { setSelectedSeat(null); setPendingSwap(null); }}
+              className="h-8 px-3 rounded-md bg-amber-200 hover:bg-amber-300 text-amber-900 text-sm inline-flex items-center gap-1"
+            >
+              <X className="h-3 w-3" /> Cancel
+            </button>
+          </div>
         </div>
       )}
 
-      {/* Pending swap confirmation */}
-      <AlertDialog open={!!pendingSwap} onOpenChange={(v) => !v && setPendingSwap(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm seat swap</AlertDialogTitle>
-            <AlertDialogDescription>
-              {pendingSwap && (() => {
-                const ga = guests.find((g) => g.tableId === pendingSwap.a?.tableId && g.seatIndex === pendingSwap.a?.seatIndex);
-                const gb = guests.find((g) => g.tableId === pendingSwap.b?.tableId && g.seatIndex === pendingSwap.b?.seatIndex);
-                const tla = tables.find((t) => t.id === pendingSwap.a?.tableId)?.label;
-                const tlb = tables.find((t) => t.id === pendingSwap.b?.tableId)?.label;
-                return `${ga?.name ?? "empty seat"} (Table ${tla} · Seat ${pendingSwap.a?.seatIndex}) ↔ ${gb?.name ?? "empty seat"} (Table ${tlb} · Seat ${pendingSwap.b?.seatIndex})`;
-              })()}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => {
-              if (pendingSwap?.a && pendingSwap.b) swapSeats(pendingSwap.a, pendingSwap.b);
-              setPendingSwap(null);
-            }}>Swap</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {/* Auto-seat strategy dialog */}
       <Dialog open={autoSeatOpen} onOpenChange={setAutoSeatOpen}>

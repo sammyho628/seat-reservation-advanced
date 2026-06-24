@@ -12,9 +12,10 @@ export const Route = createFileRoute("/rules")({
   component: RulesPage,
 });
 
-const RULE_OPTIONS: { type: RuleType; label: string; description: string; needsGuests: boolean; needsCohort?: boolean }[] = [
+const RULE_OPTIONS: { type: RuleType; label: string; description: string; needsGuests: boolean; needsCohort?: boolean; maxGuests?: number }[] = [
   { type: "keep_together", label: "Keep together", description: "These guests must share a table.", needsGuests: true },
   { type: "keep_apart", label: "Keep apart", description: "These guests cannot share a table.", needsGuests: true },
+  { type: "seat_adjacent", label: "Seat adjacent", description: "Two specific guests will be placed in adjacent seats (next to each other) at the same table.", needsGuests: true, maxGuests: 2 },
   { type: "keep_cohort_together", label: "Keep cohort together", description: "All guests sharing a cohort name sit at the same table.", needsGuests: false, needsCohort: true },
   { type: "vip_near_stage", label: "VIPs near the stage", description: "Guests tagged VIP get front-row tables first.", needsGuests: false },
   { type: "accessibility_edge", label: "Accessibility on edges", description: "Guests tagged Wheelchair get edge tables.", needsGuests: false },
@@ -24,14 +25,17 @@ const RULE_OPTIONS: { type: RuleType; label: string; description: string; needsG
 function GuestPicker({
   selectedIds,
   onChange,
+  max,
 }: {
   selectedIds: string[];
   onChange: (ids: string[]) => void;
+  max?: number;
 }) {
   const guests = usePlanStore((s) => s.guests);
   const [q, setQ] = useState("");
+  const atMax = max !== undefined && selectedIds.length >= max;
   const matches = useMemo(() => {
-    if (!q.trim()) return [];
+    if (!q.trim() || atMax) return [];
     const lower = q.toLowerCase();
     return guests
       .filter(
@@ -60,7 +64,12 @@ function GuestPicker({
         ))}
       </div>
       <div className="relative">
-        <Input placeholder="Search guests…" value={q} onChange={(e) => setQ(e.target.value)} />
+        <Input
+          placeholder={atMax ? `Max ${max} guests selected` : "Search guests…"}
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          disabled={atMax}
+        />
         {matches.length > 0 && (
           <div className="absolute top-full mt-1 left-0 right-0 z-10 bg-popover border border-border rounded-md shadow-lg max-h-48 overflow-y-auto">
             {matches.map((g) => (
@@ -171,20 +180,24 @@ function RulesPage() {
             <p className="text-sm text-muted-foreground italic">No rules yet. Auto-seat will spread guests across tables.</p>
           ) : (
             <div className="space-y-2">
-              {rules.map((r) => {
+              {rules.map((r, idx) => {
                 const opt = RULE_OPTIONS.find((o) => o.type === r.type)!;
+                const sameTypeBefore = rules.slice(0, idx).filter((x) => x.type === r.type).length;
+                const sameTypeTotal = rules.filter((x) => x.type === r.type).length;
+                const groupLabel = opt.type === "keep_together" && sameTypeTotal > 1 ? ` · Group ${sameTypeBefore + 1}` : "";
                 return (
                   <div key={r.id} className="border border-border rounded-lg p-3 bg-card">
                     <div className="flex items-start gap-3">
                       <Switch checked={r.enabled} onCheckedChange={(v) => updateRule(r.id, { enabled: v })} />
                       <div className="flex-1">
-                        <div className="font-medium text-sm">{opt.label}</div>
+                        <div className="font-medium text-sm">{opt.label}{groupLabel}</div>
                         <p className="text-xs text-muted-foreground">{opt.description}</p>
                         {opt.needsGuests && (
                           <div className="mt-2">
                             <GuestPicker
                               selectedIds={r.guestIds ?? []}
                               onChange={(ids) => updateRule(r.id, { guestIds: ids })}
+                              max={opt.maxGuests}
                             />
                           </div>
                         )}
