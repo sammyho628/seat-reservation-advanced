@@ -576,21 +576,39 @@ function PlannerPage() {
             {selectedSeat ? (
               <span className="font-medium text-amber-900 dark:text-amber-100 text-sm">
                 <span className="font-bold">{selectedSeatGuest?.name ?? "Empty seat"}</span>
-                {" "}(Table {selectedSeatTableLabel} · Seat {selectedSeat.seatIndex})
-                <span className="font-normal text-amber-700 dark:text-amber-300 ml-2">→ click any other seat to swap</span>
-              </span>
-            ) : pendingSwap ? (
-              <span className="font-medium text-amber-900 dark:text-amber-100 text-sm">
-                Swap{" "}
-                <span className="font-bold">
-                  {guests.find((g) => g.tableId === pendingSwap.a?.tableId && g.seatIndex === pendingSwap.a?.seatIndex)?.name ?? "empty seat"}
+                {selectedSeatGuest?.company && (
+                  <span className="font-normal text-amber-700 dark:text-amber-300"> · {selectedSeatGuest.company}</span>
+                )}
+                <span className="font-mono text-xs text-amber-700 dark:text-amber-400 ml-1">
+                  (Table {selectedSeatTableLabel} · Seat {selectedSeat.seatIndex})
                 </span>
-                {" ↔ "}
-                <span className="font-bold">
-                  {guests.find((g) => g.tableId === pendingSwap.b?.tableId && g.seatIndex === pendingSwap.b?.seatIndex)?.name ?? "empty seat"}
-                </span>
+                <span className="font-normal text-amber-700 dark:text-amber-300 ml-2">→ click another seat to swap</span>
               </span>
-            ) : null}
+            ) : pendingSwap ? (() => {
+              const gA = guests.find((g) => g.tableId === pendingSwap.a?.tableId && g.seatIndex === pendingSwap.a?.seatIndex);
+              const gB = guests.find((g) => g.tableId === pendingSwap.b?.tableId && g.seatIndex === pendingSwap.b?.seatIndex);
+              const tA = tables.find((t) => t.id === pendingSwap.a?.tableId);
+              const tB = tables.find((t) => t.id === pendingSwap.b?.tableId);
+              return (
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs text-amber-700 dark:text-amber-300 font-medium uppercase tracking-wider">Confirm swap</span>
+                  <span className="font-medium text-amber-900 dark:text-amber-100 text-sm flex flex-wrap items-center gap-2">
+                    <span>
+                      <span className="font-bold">{gA?.name ?? "Empty seat"}</span>
+                      {gA?.company && <span className="font-normal text-amber-700"> · {gA.company}</span>}
+                      <span className="font-mono text-xs text-amber-700 ml-1">(Table {tA?.label ?? "?"} · Seat {pendingSwap.a?.seatIndex})</span>
+                    </span>
+                    <span className="text-amber-500 font-bold">⇄</span>
+                    <span>
+                      <span className="font-bold">{gB?.name ?? "Empty seat"}</span>
+                      {gB?.company && <span className="font-normal text-amber-700"> · {gB.company}</span>}
+                      <span className="font-mono text-xs text-amber-700 ml-1">(Table {tB?.label ?? "?"} · Seat {pendingSwap.b?.seatIndex})</span>
+                    </span>
+                  </span>
+                </div>
+              );
+            })() : null}
+
           </div>
           <div className="flex items-center gap-2 shrink-0">
             {pendingSwap && (
