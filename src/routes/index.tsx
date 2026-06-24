@@ -207,20 +207,15 @@ function PlannerPage() {
     const node = document.getElementById("planner-grid-capture");
     if (!node) return;
     try {
-      const mod = await import("html2canvas");
-      const canvas = await mod.default(node, {
-        backgroundColor: getComputedStyle(document.body).backgroundColor,
-        scale: 2,
-      });
-      canvas.toBlob((blob) => {
-        if (!blob) return;
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `${settings.eventTitle.replace(/\s+/g, "-").toLowerCase()}-seating-map.png`;
-        a.click();
-        URL.revokeObjectURL(url);
-      });
+      const domtoimage = (await import("dom-to-image-more")).default;
+      const blob = await domtoimage.toBlob(node, { scale: 2 });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${settings.eventTitle.replace(/\s+/g, "-").toLowerCase()}-seating-map.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("PNG downloaded");
     } catch (e) {
       console.error(e);
       toast.error("PNG export failed");
