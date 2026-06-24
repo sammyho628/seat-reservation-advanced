@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { PlannerGrid } from "@/components/PlannerGrid";
 import { UnassignedPanel } from "@/components/UnassignedPanel";
-import { WelcomeGate } from "@/components/WelcomeGate";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import {
   usePlanStore,
   useTemporalStore,
@@ -302,7 +302,6 @@ function PlannerPage() {
 
   return (
     <AppShell>
-      <WelcomeGate />
       <div className="flex">
         <div className="flex-1 min-w-0">
           <div className="max-w-[1300px] mx-auto px-6 py-8">
@@ -428,61 +427,32 @@ function PlannerPage() {
                 >
                   <Redo2 className="h-4 w-4" />
                 </button>
-                <button
-                  onClick={addTable}
-                  className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent"
-                  title="Add a table"
-                >
-                  <Plus className="h-4 w-4" /> Table
-                </button>
-                <button
-                  onClick={() => {
-                    addGuests([{ name: "New guest", meal: "None", tags: [], rsvpStatus: "Confirmed" }]);
-                    toast.success("Added blank guest");
-                  }}
-                  className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent"
-                  title="Add a blank guest"
-                >
-                  <UserPlus className="h-4 w-4" /> Guest
-                </button>
-                <button
-                  onClick={resetAssignments}
-                  className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent"
-                >
-                  <RotateCcw className="h-4 w-4" /> Clear seats
-                </button>
-                <button
-                  onClick={exportPNG}
-                  className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent"
-                >
-                  <Camera className="h-4 w-4" /> PNG
-                </button>
-
-                <div className="h-8 w-px bg-border mx-1" />
-
-                <button
-                  onClick={exportPlan}
-                  title="Save plan to file"
-                  className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent"
-                >
-                  <Save className="h-4 w-4" /> Save
-                </button>
-                <button
-                  onClick={handleOpenFile}
-                  title="Open a .seatcraft.json file"
-                  className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent"
-                >
-                  <FolderOpen className="h-4 w-4" /> Open
-                </button>
-                <button
-                  onClick={() => setNewPlanOpen(true)}
-                  title="Start a new blank plan"
-                  className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent"
-                >
-                  <FilePlus className="h-4 w-4" /> New
-                </button>
-
-                <div className="h-8 w-px bg-border mx-1" />
+                <Popover>
+                  <PopoverTrigger className="h-10 px-3 rounded-md border border-input hover:bg-accent inline-flex items-center gap-1.5 text-sm">
+                    <Save className="h-4 w-4" /> File <ChevronDown className="h-3 w-3" />
+                  </PopoverTrigger>
+                  <PopoverContent className="w-48 p-1" align="end">
+                    <button
+                      onClick={exportPlan}
+                      className="w-full text-left px-3 py-2 text-sm rounded hover:bg-accent inline-flex items-center gap-2"
+                    >
+                      <Save className="h-4 w-4" /> Save plan…
+                    </button>
+                    <button
+                      onClick={handleOpenFile}
+                      className="w-full text-left px-3 py-2 text-sm rounded hover:bg-accent inline-flex items-center gap-2"
+                    >
+                      <FolderOpen className="h-4 w-4" /> Open plan…
+                    </button>
+                    <div className="h-px bg-border my-1" />
+                    <button
+                      onClick={() => setNewPlanOpen(true)}
+                      className="w-full text-left px-3 py-2 text-sm rounded hover:bg-accent text-destructive inline-flex items-center gap-2"
+                    >
+                      <FilePlus className="h-4 w-4" /> New plan…
+                    </button>
+                  </PopoverContent>
+                </Popover>
 
                 <button
                   onClick={openAutoSeat}
@@ -514,8 +484,41 @@ function PlannerPage() {
             </AlertDialog>
 
 
-            {/* Row 2 — search + view controls */}
+            {/* Row 2 — secondary actions + search + view controls */}
             <div className="flex items-center gap-3 mb-4 flex-wrap">
+              <button
+                onClick={addTable}
+                className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent"
+                title="Add a table"
+              >
+                <Plus className="h-4 w-4" /> Table
+              </button>
+              <button
+                onClick={() => {
+                  addGuests([{ name: "New guest", meal: "None", tags: [], rsvpStatus: "Confirmed" }]);
+                  toast.success("Added blank guest");
+                }}
+                className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent"
+                title="Add a blank guest"
+              >
+                <UserPlus className="h-4 w-4" /> Guest
+              </button>
+              <button
+                onClick={resetAssignments}
+                className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent"
+              >
+                <RotateCcw className="h-4 w-4" /> Clear seats
+              </button>
+              <button
+                onClick={exportPNG}
+                className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent"
+              >
+                <Camera className="h-4 w-4" /> PNG
+              </button>
+
+              <div className="h-8 w-px bg-border mx-1" />
+
+
               <div className="relative flex-1 max-w-md min-w-[240px]">
                 <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <Input

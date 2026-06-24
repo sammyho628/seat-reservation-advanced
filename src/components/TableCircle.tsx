@@ -340,7 +340,7 @@ function TableCircleInner({
           {table.seats} PAX
         </text>
         {seats.map((s) => {
-          const angle = ((s - 1 + seatOffset) / table.seats) * Math.PI * 2 - Math.PI / 2;
+          const angle = ((s - 1 + seatOffset) / table.seats) * Math.PI * 2 + Math.PI / 2;
           const x = cx + Math.cos(angle) * radius;
           const y = cy + Math.sin(angle) * radius;
           const guest = seatMap.get(s);
@@ -414,7 +414,7 @@ function TableCircleInner({
         {isLabelMode && seats.map((s) => {
           const guest = seatMap.get(s);
           if (!guest) return null;
-          const angle = ((s - 1 + seatOffset) / table.seats) * Math.PI * 2 - Math.PI / 2;
+          const angle = ((s - 1 + seatOffset) / table.seats) * Math.PI * 2 + Math.PI / 2;
           const labelR = radius + 24;
           const lx = cx + Math.cos(angle) * labelR;
           const ly = cy + Math.sin(angle) * labelR;
@@ -493,14 +493,14 @@ function TableCircleInner({
           <button
             onClick={(e) => { e.stopPropagation(); requestRotate("ccw"); }}
             className="h-7 w-7 rounded-md border border-input bg-card/90 hover:bg-accent inline-flex items-center justify-center shadow-sm"
-            title="Rotate seats counter-clockwise"
+            title="Rotate CCW — moves which seat faces stage"
           >
             <RotateCcw className="h-3.5 w-3.5" />
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); requestRotate("cw"); }}
             className="h-7 w-7 rounded-md border border-input bg-card/90 hover:bg-accent inline-flex items-center justify-center shadow-sm"
-            title="Rotate seats clockwise"
+            title="Rotate CW — moves which seat faces stage"
           >
             <RotateCw className="h-3.5 w-3.5" />
           </button>
