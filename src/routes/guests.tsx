@@ -44,7 +44,7 @@ const RSVP_COLOR: Record<RsvpStatus, string> = {
   "No-show": "bg-muted text-muted-foreground line-through",
 };
 
-const FIELDS = ["name", "company", "title", "cohort", "meal", "tags", "dietary", "notes", "rsvpStatus"];
+const FIELDS = ["name", "firstName", "lastName", "company", "title", "cohort", "meal", "tags", "dietary", "notes", "rsvpStatus"];
 
 function GuestsPage() {
   const guests = usePlanStore((s) => s.guests);
