@@ -13,6 +13,7 @@ import {
 } from "@/lib/plan-store";
 import { toast } from "sonner";
 import { AutoAssignDrawer } from "@/components/AutoAssignDrawer";
+import { GuestEditSheet } from "@/components/GuestEditSheet";
 import {
   Wand2, RotateCcw, Settings as SettingsIcon, Undo2, Redo2, Camera,
   Search, BarChart2, ChevronUp, ChevronDown, Building2, Tag as TagIcon, X,
