@@ -568,43 +568,52 @@ function PlannerPage() {
         <UnassignedPanel selectedGuestId={selectedGuestId} onSelect={setSelectedGuestId} />
       </div>
 
-      {/* Selection banner */}
-      {selectedSeat && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 max-w-[90vw] bg-[color:var(--color-rsvp-pending)]/95 text-foreground border border-[color:var(--color-rsvp-pending)] rounded-xl shadow-lg px-4 py-2 flex items-center gap-3 text-sm">
-          <span className="font-medium">
-            {selectedSeatGuest ? selectedSeatGuest.name : "Empty seat"} · Table {selectedSeatTableLabel} · Seat {selectedSeat.seatIndex}
-          </span>
-          <span className="text-xs">— click destination seat to swap</span>
-          <button onClick={() => setSelectedSeat(null)} className="ml-2 inline-flex items-center gap-1 text-xs hover:underline">
-            <X className="h-3 w-3" /> Cancel
-          </button>
+      {/* Persistent swap status bar */}
+      {(selectedSeat || pendingSwap) && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 border-t-2 border-amber-400 bg-amber-50 dark:bg-amber-950/90 shadow-xl px-6 py-3 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="h-2.5 w-2.5 rounded-full bg-amber-500 animate-pulse shrink-0" />
+            {selectedSeat ? (
+              <span className="font-medium text-amber-900 dark:text-amber-100 text-sm">
+                <span className="font-bold">{selectedSeatGuest?.name ?? "Empty seat"}</span>
+                {" "}(Table {selectedSeatTableLabel} · Seat {selectedSeat.seatIndex})
+                <span className="font-normal text-amber-700 dark:text-amber-300 ml-2">→ click any other seat to swap</span>
+              </span>
+            ) : pendingSwap ? (
+              <span className="font-medium text-amber-900 dark:text-amber-100 text-sm">
+                Swap{" "}
+                <span className="font-bold">
+                  {guests.find((g) => g.tableId === pendingSwap.a?.tableId && g.seatIndex === pendingSwap.a?.seatIndex)?.name ?? "empty seat"}
+                </span>
+                {" ↔ "}
+                <span className="font-bold">
+                  {guests.find((g) => g.tableId === pendingSwap.b?.tableId && g.seatIndex === pendingSwap.b?.seatIndex)?.name ?? "empty seat"}
+                </span>
+              </span>
+            ) : null}
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            {pendingSwap && (
+              <button
+                onClick={() => {
+                  if (pendingSwap.a && pendingSwap.b) swapSeats(pendingSwap.a, pendingSwap.b);
+                  setPendingSwap(null);
+                }}
+                className="h-8 px-4 rounded-md bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold"
+              >
+                ✓ Confirm swap
+              </button>
+            )}
+            <button
+              onClick={() => { setSelectedSeat(null); setPendingSwap(null); }}
+              className="h-8 px-3 rounded-md bg-amber-200 hover:bg-amber-300 text-amber-900 text-sm inline-flex items-center gap-1"
+            >
+              <X className="h-3 w-3" /> Cancel
+            </button>
+          </div>
         </div>
       )}
 
-      {/* Pending swap confirmation */}
-      <AlertDialog open={!!pendingSwap} onOpenChange={(v) => !v && setPendingSwap(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm seat swap</AlertDialogTitle>
-            <AlertDialogDescription>
-              {pendingSwap && (() => {
-                const ga = guests.find((g) => g.tableId === pendingSwap.a?.tableId && g.seatIndex === pendingSwap.a?.seatIndex);
-                const gb = guests.find((g) => g.tableId === pendingSwap.b?.tableId && g.seatIndex === pendingSwap.b?.seatIndex);
-                const tla = tables.find((t) => t.id === pendingSwap.a?.tableId)?.label;
-                const tlb = tables.find((t) => t.id === pendingSwap.b?.tableId)?.label;
-                return `${ga?.name ?? "empty seat"} (Table ${tla} · Seat ${pendingSwap.a?.seatIndex}) ↔ ${gb?.name ?? "empty seat"} (Table ${tlb} · Seat ${pendingSwap.b?.seatIndex})`;
-              })()}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => {
-              if (pendingSwap?.a && pendingSwap.b) swapSeats(pendingSwap.a, pendingSwap.b);
-              setPendingSwap(null);
-            }}>Swap</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {/* Auto-seat strategy dialog */}
       <Dialog open={autoSeatOpen} onOpenChange={setAutoSeatOpen}>
