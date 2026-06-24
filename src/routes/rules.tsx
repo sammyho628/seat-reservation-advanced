@@ -180,20 +180,24 @@ function RulesPage() {
             <p className="text-sm text-muted-foreground italic">No rules yet. Auto-seat will spread guests across tables.</p>
           ) : (
             <div className="space-y-2">
-              {rules.map((r) => {
+              {rules.map((r, idx) => {
                 const opt = RULE_OPTIONS.find((o) => o.type === r.type)!;
+                const sameTypeBefore = rules.slice(0, idx).filter((x) => x.type === r.type).length;
+                const sameTypeTotal = rules.filter((x) => x.type === r.type).length;
+                const groupLabel = opt.type === "keep_together" && sameTypeTotal > 1 ? ` · Group ${sameTypeBefore + 1}` : "";
                 return (
                   <div key={r.id} className="border border-border rounded-lg p-3 bg-card">
                     <div className="flex items-start gap-3">
                       <Switch checked={r.enabled} onCheckedChange={(v) => updateRule(r.id, { enabled: v })} />
                       <div className="flex-1">
-                        <div className="font-medium text-sm">{opt.label}</div>
+                        <div className="font-medium text-sm">{opt.label}{groupLabel}</div>
                         <p className="text-xs text-muted-foreground">{opt.description}</p>
                         {opt.needsGuests && (
                           <div className="mt-2">
                             <GuestPicker
                               selectedIds={r.guestIds ?? []}
                               onChange={(ids) => updateRule(r.id, { guestIds: ids })}
+                              max={opt.maxGuests}
                             />
                           </div>
                         )}
