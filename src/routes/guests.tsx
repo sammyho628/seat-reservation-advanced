@@ -14,6 +14,7 @@ import {
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Upload, Download, Plus, Trash2, Search } from "lucide-react";
+import { SeatingView } from "@/components/SeatingView";
 import { Input } from "@/components/ui/input";
 import {
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
