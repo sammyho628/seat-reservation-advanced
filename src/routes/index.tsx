@@ -302,7 +302,6 @@ function PlannerPage() {
 
   return (
     <AppShell>
-      <WelcomeGate />
       <div className="flex">
         <div className="flex-1 min-w-0">
           <div className="max-w-[1300px] mx-auto px-6 py-8">
