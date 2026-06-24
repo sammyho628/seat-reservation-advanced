@@ -98,8 +98,10 @@ function PlannerPage() {
   const exportPlan = usePlanStore((s) => s.exportPlan);
   const importPlan = usePlanStore((s) => s.importPlan);
   const resetPlan = usePlanStore((s) => s.resetPlan);
+  const fillGaps = usePlanStore((s) => s.fillGaps);
 
   const [newPlanOpen, setNewPlanOpen] = useState(false);
+  const [editingGuestId, setEditingGuestId] = useState<string | null>(null);
 
   async function handleOpenFile() {
     const input = document.createElement("input");
