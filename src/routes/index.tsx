@@ -669,11 +669,12 @@ function PlannerPage() {
                 seatLabelMode={seatLabelMode}
                 selectedSeat={selectedSeat}
                 onSelectSeat={handleSelectSeat}
+                onEditGuest={setEditingGuestId}
               />
             )}
           </div>
         </div>
-        <UnassignedPanel selectedGuestId={selectedGuestId} onSelect={setSelectedGuestId} />
+        <UnassignedPanel selectedGuestId={selectedGuestId} onSelect={setSelectedGuestId} onEditGuest={setEditingGuestId} />
       </div>
 
       {/* Persistent swap status bar */}
