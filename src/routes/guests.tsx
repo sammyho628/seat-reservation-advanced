@@ -35,7 +35,7 @@ export const Route = createFileRoute("/guests")({
 
 const MEALS: Meal[] = ["None", "Chicken", "Fish", "Vegetarian", "Vegan", "Kids"];
 const TAGS: Tag[] = ["VIP", "Wheelchair", "Child", "Speaker", "Sponsor"];
-const RSVPS: RsvpStatus[] = ["Confirmed", "Pending", "Declined", "Waitlist", "No-show"];
+const RSVPS: RsvpStatus[] = ["Confirmed", "Pending", "Declined", "Waitlist", "No-show", "Withdrawn"];
 
 const RSVP_COLOR: Record<RsvpStatus, string> = {
   Confirmed: "bg-[color:var(--color-rsvp-confirmed)]/15 text-[color:var(--color-rsvp-confirmed)]",
@@ -43,6 +43,7 @@ const RSVP_COLOR: Record<RsvpStatus, string> = {
   Declined: "bg-[color:var(--color-rsvp-declined)]/15 text-[color:var(--color-rsvp-declined)]",
   Waitlist: "bg-muted text-muted-foreground",
   "No-show": "bg-muted text-muted-foreground line-through",
+  Withdrawn: "bg-muted text-muted-foreground line-through opacity-60",
 };
 
 const FIELDS = ["name", "firstName", "lastName", "company", "title", "cohort", "meal", "tags", "dietary", "notes", "rsvpStatus"];
