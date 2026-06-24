@@ -21,6 +21,7 @@ interface Props {
   seatLabelMode?: "none" | "name" | "name+firm";
   selectedSeat: { tableId: string; seatIndex: number } | null;
   onSelectSeat: (sel: { tableId: string; seatIndex: number } | null) => void;
+  onEditGuest?: (id: string) => void;
 }
 
 function SortableTable({ id, children }: { id: string; children: React.ReactNode }) {
