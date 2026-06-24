@@ -766,6 +766,35 @@ export const usePlanStore = create<PlanState>()(
         }));
         return true;
       },
+
+      exportPlan: () => {
+        const s = get();
+        const payload = {
+          version: 2,
+          exportedAt: new Date().toISOString(),
+          settings: s.settings,
+          tables: s.tables,
+          guests: s.guests,
+          rules: s.rules,
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        const safeName = (s.settings.eventTitle || "seatcraft-plan").replace(/\s+/g, "-").toLowerCase();
+        a.href = url;
+        a.download = `${safeName}.seatcraft.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+      },
+
+      resetPlan: () => {
+        set({
+          settings: initialSettings,
+          tables: buildTables(initialSettings.rowPattern, initialSettings.defaultSeats, [], initialSettings.namingScheme),
+          guests: [],
+          rules: [],
+        });
+      },
     }),
     { limit: 50, partialize: (s) => ({ settings: s.settings, tables: s.tables, guests: s.guests, rules: s.rules }) as any },
   ),
