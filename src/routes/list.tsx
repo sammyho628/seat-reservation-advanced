@@ -185,8 +185,9 @@ function ListPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((g) => (
+              {filtered.map((g, idx) => (
                 <tr key={g.id} className="border-t border-border/60 hover:bg-muted/30">
+                  <td className="p-3 font-mono text-xs text-muted-foreground">{idx + 1}</td>
                   <td className="p-3 font-medium">{g.lastName ?? g.name.split(" ").slice(-1)[0]}</td>
                   <td className="p-3">{g.firstName ?? (g.name.split(" ").slice(0, -1).join(" ") || g.name)}</td>
                   <td className="p-3 text-muted-foreground">{g.company ?? "—"}</td>
