@@ -757,6 +757,37 @@ export const usePlanStore = create<PlanState>()(
         };
       },
 
+      fillGaps: () => {
+        const { guests, tables } = get();
+        const toAssign = guests.filter(
+          (g) => !g.tableId && g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show" && g.rsvpStatus !== "Withdrawn",
+        );
+        if (toAssign.length === 0) return { assigned: 0, violations: 0, violatingGuestIds: [] };
+        const occupied = new Set<string>();
+        guests.forEach((g) => {
+          if (g.tableId && g.seatIndex != null) occupied.add(`${g.tableId}:${g.seatIndex}`);
+        });
+        const emptySeats: { tableId: string; seatIndex: number }[] = [];
+        tables.forEach((t) => {
+          for (let s = 1; s <= t.seats; s++) {
+            if (!occupied.has(`${t.id}:${s}`)) emptySeats.push({ tableId: t.id, seatIndex: s });
+          }
+        });
+        const updates = [...guests];
+        let assigned = 0;
+        toAssign.forEach((g, i) => {
+          if (i >= emptySeats.length) return;
+          const seat = emptySeats[i];
+          const idx = updates.findIndex((u) => u.id === g.id);
+          if (idx >= 0) {
+            updates[idx] = { ...updates[idx], tableId: seat.tableId, seatIndex: seat.seatIndex };
+            assigned++;
+          }
+        });
+        set({ guests: updates });
+        return { assigned, violations: 0, violatingGuestIds: [] };
+      },
+
       importPlan: (data) => {
         if (!data || typeof data !== "object") return false;
         if (data.tables && !Array.isArray(data.tables)) return false;
