@@ -432,6 +432,18 @@ export const usePlanStore = create<PlanState>()(
           occupants[t.id] = [];
         });
 
+        // Pre-occupy seats held by locked guests
+        const lockedGuests = state.guests.filter(
+          (g) => g.locked && g.tableId && g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show",
+        );
+        lockedGuests.forEach((g) => {
+          if (occupants[g.tableId!]) {
+            occupants[g.tableId!].push(g.id);
+            cap[g.tableId!] = Math.max(0, cap[g.tableId!] - 1);
+          }
+        });
+
+
         const groupMap = new Map<string, Set<string>>();
         const groupOf = new Map<string, string>();
         const getGroup = (id: string) => groupOf.get(id);
