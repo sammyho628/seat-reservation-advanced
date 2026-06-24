@@ -243,7 +243,7 @@ function PrintPage() {
                         className="flex items-center justify-center border-b border-dashed border-gray-400"
                         style={{ height: "35mm", transform: "rotate(180deg)" }}
                       >
-                        <span className="font-display text-base font-bold text-center px-3">{g.name}</span>
+                        <span className="font-display text-3xl font-bold text-center px-3">{g.name}</span>
                       </div>
                       <div className="flex flex-col items-center justify-center flex-1 gap-0.5 px-3 py-2">
                         <span className="font-display text-xl font-bold text-center leading-tight">{g.name}</span>

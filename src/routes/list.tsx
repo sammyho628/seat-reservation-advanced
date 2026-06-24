@@ -153,10 +153,27 @@ function ListPage() {
           </div>
         </div>
 
+        <div className="flex items-center gap-2 mb-4 flex-wrap">
+          {(["VIP", "Wheelchair", "Speaker", "Sponsor", "Child"] as Tag[]).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTag(tag === t ? "All" : t)}
+              className={`text-xs px-2.5 py-1 rounded-full border transition ${
+                tag === t
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "border-border text-muted-foreground hover:border-foreground/40"
+              }`}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+
         <div className="border border-border rounded-xl bg-card overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-xs uppercase tracking-wider text-muted-foreground">
               <tr>
+                <th className="text-left p-3 w-10">#</th>
                 <th className="text-left p-3">Last</th>
                 <th className="text-left p-3">First</th>
                 <th className="text-left p-3">Company</th>
@@ -168,8 +185,9 @@ function ListPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((g) => (
+              {filtered.map((g, idx) => (
                 <tr key={g.id} className="border-t border-border/60 hover:bg-muted/30">
+                  <td className="p-3 font-mono text-xs text-muted-foreground">{idx + 1}</td>
                   <td className="p-3 font-medium">{g.lastName ?? g.name.split(" ").slice(-1)[0]}</td>
                   <td className="p-3">{g.firstName ?? (g.name.split(" ").slice(0, -1).join(" ") || g.name)}</td>
                   <td className="p-3 text-muted-foreground">{g.company ?? "—"}</td>
@@ -183,7 +201,7 @@ function ListPage() {
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">No guests match these filters.</td></tr>
+                <tr><td colSpan={9} className="p-8 text-center text-muted-foreground">No guests match these filters.</td></tr>
               )}
             </tbody>
           </table>

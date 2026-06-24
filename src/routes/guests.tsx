@@ -44,7 +44,7 @@ const RSVP_COLOR: Record<RsvpStatus, string> = {
   "No-show": "bg-muted text-muted-foreground line-through",
 };
 
-const FIELDS = ["name", "company", "title", "cohort", "meal", "tags", "dietary", "notes", "rsvpStatus"];
+const FIELDS = ["name", "firstName", "lastName", "company", "title", "cohort", "meal", "tags", "dietary", "notes", "rsvpStatus"];
 
 function GuestsPage() {
   const guests = usePlanStore((s) => s.guests);
@@ -284,6 +284,7 @@ function GuestsPage() {
                   <th className="text-left p-3">Cohort</th>
                   <th className="text-left p-3">Meal</th>
                   <th className="text-left p-3">Dietary</th>
+                  <th className="text-left p-3">Notes</th>
                   <th className="text-left p-3">RSVP</th>
                   <th className="text-left p-3">Tags</th>
                   <th className="text-left p-3">Table</th>
@@ -376,6 +377,14 @@ function GuestsPage() {
                       />
                     </td>
                     <td className="p-2">
+                      <input
+                        value={g.notes ?? ""}
+                        onChange={(e) => updateGuest(g.id, { notes: e.target.value || undefined })}
+                        placeholder="—"
+                        className="w-full bg-transparent px-1 py-1 rounded focus:bg-background focus:ring-1 focus:ring-ring focus:outline-none"
+                      />
+                    </td>
+                    <td className="p-2">
                       <select
                         value={g.rsvpStatus}
                         onChange={(e) => updateGuest(g.id, { rsvpStatus: e.target.value as RsvpStatus })}
@@ -444,6 +453,15 @@ function GuestsPage() {
               {tables.map((t) => <SelectItem key={t.id} value={t.id}>Table {t.label}</SelectItem>)}
             </SelectContent>
           </Select>
+          <button
+            onClick={() => {
+              selected.forEach((id) => unassignGuest(id));
+              setSelected(new Set());
+            }}
+            className="h-8 px-3 rounded-md border border-input text-xs hover:bg-accent"
+          >
+            Unassign seats
+          </button>
           <Select onValueChange={(v) => bulkRsvp(v as RsvpStatus)}>
             <SelectTrigger className="h-8 w-32"><SelectValue placeholder="RSVP" /></SelectTrigger>
             <SelectContent>{RSVPS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>

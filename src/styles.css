@@ -143,7 +143,8 @@
 @media print {
   .no-print { display: none !important; }
   body { background: white; }
-  .print-page { page-break-after: always; }
+  .print-page { page-break-before: always; page-break-after: always; }
+  .print-page:first-of-type { page-break-before: avoid; }
   .place-cards-grid {
     columns: 2;
     column-gap: 4mm;
