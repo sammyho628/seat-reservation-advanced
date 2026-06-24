@@ -89,6 +89,21 @@ function GuestsPage() {
     return m;
   }, [guests]);
 
+  const companyStats = useMemo(() => {
+    const m = new Map<string, { total: number; seated: number; meals: Record<string, number> }>();
+    guests.forEach((g) => {
+      const key = g.company?.trim() || "(No company)";
+      if (!m.has(key)) m.set(key, { total: 0, seated: 0, meals: {} });
+      const e = m.get(key)!;
+      e.total++;
+      if (g.tableId) e.seated++;
+      if (g.meal !== "None") e.meals[g.meal] = (e.meals[g.meal] || 0) + 1;
+    });
+    return [...m.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([company, stats]) => ({ company, ...stats, unassigned: stats.total - stats.seated }));
+  }, [guests]);
+
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     if (!f) return;
