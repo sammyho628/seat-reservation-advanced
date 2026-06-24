@@ -74,12 +74,14 @@ export function AutoAssignDrawer({
   strategy,
   setStrategy,
   onRun,
+  onFillGaps,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   strategy: SeatStrategy;
   setStrategy: (s: SeatStrategy) => void;
   onRun: () => void;
+  onFillGaps: () => void;
 }) {
   const rules = usePlanStore((s) => s.rules);
   const guests = usePlanStore((s) => s.guests);
@@ -88,7 +90,7 @@ export function AutoAssignDrawer({
   const removeRule = usePlanStore((s) => s.removeRule);
   const [showAddRule, setShowAddRule] = useState(false);
 
-  const unassigned = guests.filter((g) => !g.tableId && g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show").length;
+  const unassigned = guests.filter((g) => !g.tableId && g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show" && g.rsvpStatus !== "Withdrawn").length;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
