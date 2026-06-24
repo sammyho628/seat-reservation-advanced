@@ -626,16 +626,50 @@ function PlannerPage() {
               Click a seat to select · click another seat to swap · select a guest then click an empty seat · click a table label to edit details · drag tables to reorder.
             </p>
 
-            <PlannerGrid
-              selectedGuestId={selectedGuestId}
-              onAfterAssign={() => setSelectedGuestId(null)}
-              highlightedTableId={highlightedTableId}
-              violatingGuestIds={violatingGuestIds}
-              cohortColorMap={cohortColorMap}
-              seatLabelMode={seatLabelMode}
-              selectedSeat={selectedSeat}
-              onSelectSeat={handleSelectSeat}
-            />
+            {tables.length === 0 && guests.length === 0 ? (
+              <div className="flex items-center justify-center py-20">
+                <div className="w-full max-w-2xl rounded-2xl border border-border bg-card shadow-sm p-10">
+                  <div className="text-center mb-8">
+                    <h2 className="font-display text-4xl mb-2">Seatcraft</h2>
+                    <p className="text-muted-foreground text-sm">Professional event seating planner</p>
+                  </div>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <button
+                      onClick={addTable}
+                      className="flex flex-col items-center gap-2 p-6 border-2 border-dashed border-border rounded-xl hover:border-primary hover:bg-accent/30 transition group"
+                    >
+                      <FilePlus className="h-8 w-8 text-muted-foreground group-hover:text-primary transition" />
+                      <span className="font-medium">New plan</span>
+                      <span className="text-xs text-muted-foreground text-center">Add your first table to get started</span>
+                    </button>
+                    <button
+                      onClick={handleOpenFile}
+                      className="flex flex-col items-center gap-2 p-6 border-2 border-dashed border-border rounded-xl hover:border-primary hover:bg-accent/30 transition group"
+                    >
+                      <FolderOpen className="h-8 w-8 text-muted-foreground group-hover:text-primary transition" />
+                      <span className="font-medium">Open plan</span>
+                      <span className="text-xs text-muted-foreground text-center">Load a .seatcraft.json file</span>
+                    </button>
+                  </div>
+                  <p className="text-xs text-muted-foreground text-center mt-6">
+                    Or head to{" "}
+                    <a href="/guests" className="text-primary hover:underline">Guests</a>
+                    {" "}to import a CSV or Excel list.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <PlannerGrid
+                selectedGuestId={selectedGuestId}
+                onAfterAssign={() => setSelectedGuestId(null)}
+                highlightedTableId={highlightedTableId}
+                violatingGuestIds={violatingGuestIds}
+                cohortColorMap={cohortColorMap}
+                seatLabelMode={seatLabelMode}
+                selectedSeat={selectedSeat}
+                onSelectSeat={handleSelectSeat}
+              />
+            )}
           </div>
         </div>
         <UnassignedPanel selectedGuestId={selectedGuestId} onSelect={setSelectedGuestId} />
