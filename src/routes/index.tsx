@@ -437,7 +437,7 @@ function PlannerPage() {
                   onClick={openAutoSeat}
                   className="h-10 px-4 rounded-md bg-primary text-primary-foreground text-sm inline-flex items-center gap-1.5 hover:opacity-90"
                 >
-                  <Wand2 className="h-4 w-4" /> Auto-seat
+                  <Wand2 className="h-4 w-4" /> Auto-Assign
                 </button>
               </div>
             </div>
