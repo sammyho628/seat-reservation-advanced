@@ -199,6 +199,13 @@ export function AutoAssignDrawer({
               {unassigned > 0 ? <><span className="font-mono font-medium text-foreground">{unassigned}</span> guest{unassigned === 1 ? "" : "s"} unassigned</> : "All guests are seated"}
             </div>
             <button
+              onClick={onFillGaps}
+              className="w-full h-10 rounded-md border border-input text-sm font-medium inline-flex items-center justify-center gap-2 hover:bg-accent mb-2"
+            >
+              ✦ Fill empty seats only
+            </button>
+            <p className="text-[10px] text-muted-foreground text-center mb-3">Assigns unassigned guests to empty seats without moving anyone already seated.</p>
+            <button
               onClick={onRun}
               className="w-full h-11 rounded-md bg-primary text-primary-foreground text-sm font-medium inline-flex items-center justify-center gap-2 hover:opacity-90"
             >
