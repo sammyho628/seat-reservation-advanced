@@ -114,6 +114,7 @@ export function PlannerGrid({
                     cohortColorMap={cohortColorMap}
                     seatLabelMode={seatLabelMode}
                     showFirmInList={settings.showFirmInList}
+                    onEditGuest={onEditGuest}
                   />
                 </SortableTable>
               ))}
