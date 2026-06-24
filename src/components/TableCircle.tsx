@@ -49,6 +49,7 @@ interface Props {
   seatLabelMode?: "none" | "name" | "name+firm";
   showFirmInList?: boolean;
   zoomed?: boolean;
+  onEditGuest?: (id: string) => void;
 }
 
 export function TableCircle(props: Props) {
