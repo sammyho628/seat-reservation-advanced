@@ -16,7 +16,7 @@ const RSVP_FILTERS: { label: string; value: "All" | RsvpStatus }[] = [
   { label: "Waitlist", value: "Waitlist" },
 ];
 
-export function UnassignedPanel({ selectedGuestId, onSelect }: Props) {
+export function UnassignedPanel({ selectedGuestId, onSelect, onEditGuest }: Props) {
   const allGuests = usePlanStore((s) => s.guests);
   const tables = usePlanStore((s) => s.tables);
   const assignGuest = usePlanStore((s) => s.assignGuest);
