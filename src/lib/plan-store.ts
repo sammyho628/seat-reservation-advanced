@@ -32,6 +32,7 @@ export interface Guest {
   arrived?: boolean;
   tableId?: string;
   seatIndex?: number;
+  locked?: boolean;
 }
 
 export interface Table {
@@ -42,6 +43,7 @@ export interface Table {
   hostGuestId?: string;
   notes?: string;
   hostTag?: string;
+  seatOffset?: number;
 }
 
 export type RuleType =
@@ -50,7 +52,8 @@ export type RuleType =
   | "keep_cohort_together"
   | "vip_near_stage"
   | "accessibility_edge"
-  | "balance_company";
+  | "balance_company"
+  | "seat_adjacent";
 
 export interface Rule {
   id: string;
