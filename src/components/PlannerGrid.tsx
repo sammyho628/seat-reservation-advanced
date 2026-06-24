@@ -47,6 +47,7 @@ export function PlannerGrid({
   seatLabelMode,
   selectedSeat,
   onSelectSeat,
+  onEditGuest,
 }: Props) {
   const tables = usePlanStore((s) => s.tables);
   const guests = usePlanStore((s) => s.guests);
