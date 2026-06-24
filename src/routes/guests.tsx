@@ -310,6 +310,24 @@ function GuestsPage() {
                     </td>
                     <td className="p-2">
                       <input
+                        value={g.firstName ?? ""}
+                        onChange={(e) => updateGuest(g.id, { firstName: e.target.value || undefined })}
+                        placeholder="—"
+                        className="w-full bg-transparent px-1 py-1 rounded focus:bg-background focus:ring-1 focus:ring-ring focus:outline-none"
+                      />
+                    </td>
+                    <td className="p-2">
+                      <input
+                        value={g.lastName ?? ""}
+                        onChange={(e) => updateGuest(g.id, { lastName: e.target.value || undefined })}
+                        placeholder="—"
+                        className="w-full bg-transparent px-1 py-1 rounded focus:bg-background focus:ring-1 focus:ring-ring focus:outline-none"
+                      />
+                    </td>
+                    <td className="p-2">
+
+                    <td className="p-2">
+                      <input
                         value={g.company ?? ""}
                         onChange={(e) => updateGuest(g.id, { company: e.target.value })}
                         className="w-full bg-transparent px-1 py-1 rounded focus:bg-background focus:ring-1 focus:ring-ring focus:outline-none"
