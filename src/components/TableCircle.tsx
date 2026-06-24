@@ -87,6 +87,7 @@ function TableCircleInner({
   seatLabelMode = "none",
   showFirmInList = false,
   zoomed = false,
+  onEditGuest,
   onRequestZoom,
 }: Props & { onRequestZoom?: () => void }) {
   const updateTable = usePlanStore((s) => s.updateTable);
