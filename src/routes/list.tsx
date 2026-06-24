@@ -153,10 +153,27 @@ function ListPage() {
           </div>
         </div>
 
+        <div className="flex items-center gap-2 mb-4 flex-wrap">
+          {(["VIP", "Wheelchair", "Speaker", "Sponsor", "Child"] as Tag[]).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTag(tag === t ? "All" : t)}
+              className={`text-xs px-2.5 py-1 rounded-full border transition ${
+                tag === t
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "border-border text-muted-foreground hover:border-foreground/40"
+              }`}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+
         <div className="border border-border rounded-xl bg-card overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-xs uppercase tracking-wider text-muted-foreground">
               <tr>
+                <th className="text-left p-3 w-10">#</th>
                 <th className="text-left p-3">Last</th>
                 <th className="text-left p-3">First</th>
                 <th className="text-left p-3">Company</th>
