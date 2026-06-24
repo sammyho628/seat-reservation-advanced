@@ -64,7 +64,12 @@ function GuestPicker({
         ))}
       </div>
       <div className="relative">
-        <Input placeholder="Search guests…" value={q} onChange={(e) => setQ(e.target.value)} />
+        <Input
+          placeholder={atMax ? `Max ${max} guests selected` : "Search guests…"}
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          disabled={atMax}
+        />
         {matches.length > 0 && (
           <div className="absolute top-full mt-1 left-0 right-0 z-10 bg-popover border border-border rounded-md shadow-lg max-h-48 overflow-y-auto">
             {matches.map((g) => (
