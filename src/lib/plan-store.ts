@@ -510,6 +510,25 @@ export const usePlanStore = create<PlanState>()(
             }
           });
 
+        // seat_adjacent implies same table — group them just like keep_together
+        rules
+          .filter((r) => r.type === "seat_adjacent" && r.guestIds && r.guestIds.length === 2)
+          .forEach((r) => {
+            const ids = r.guestIds!.filter((id) => guests.some((g) => g.id === id));
+            if (ids.length < 2) return;
+            const existing = ids.map(getGroup).filter(Boolean) as string[];
+            if (existing.length === 0) makeGroup(ids);
+            else {
+              const target = existing[0];
+              ids.forEach((id) => {
+                const cur = getGroup(id);
+                if (!cur) addToGroup(target, id);
+                else if (cur !== target) mergeInto(target, cur);
+              });
+            }
+          });
+
+
         // group strategy: bind same-company guests
         if (strategy === "group") {
           const byCompany = new Map<string, string[]>();
