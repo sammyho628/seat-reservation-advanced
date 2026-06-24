@@ -25,14 +25,17 @@ const RULE_OPTIONS: { type: RuleType; label: string; description: string; needsG
 function GuestPicker({
   selectedIds,
   onChange,
+  max,
 }: {
   selectedIds: string[];
   onChange: (ids: string[]) => void;
+  max?: number;
 }) {
   const guests = usePlanStore((s) => s.guests);
   const [q, setQ] = useState("");
+  const atMax = max !== undefined && selectedIds.length >= max;
   const matches = useMemo(() => {
-    if (!q.trim()) return [];
+    if (!q.trim() || atMax) return [];
     const lower = q.toLowerCase();
     return guests
       .filter(
