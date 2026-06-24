@@ -70,7 +70,7 @@ export function UnassignedPanel({ selectedGuestId, onSelect, onEditGuest }: Prop
     <aside className="w-72 shrink-0 border-l border-border bg-sidebar text-sidebar-foreground flex flex-col h-[calc(100vh-4rem)] sticky top-16">
       <div className="p-4 border-b border-sidebar-border">
         <div className="text-xs uppercase tracking-wider text-muted-foreground">Unassigned</div>
-        <div className="font-display text-2xl">{visible.filter((g) => g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show").length}</div>
+        <div className="font-display text-2xl">{visible.filter((g) => g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show" && g.rsvpStatus !== "Withdrawn").length}</div>
         <div className="flex flex-wrap gap-1 mt-2">
           {RSVP_FILTERS.map((f) => (
             <button
