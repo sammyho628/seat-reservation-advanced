@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { usePlanStore, type Meal, type RsvpStatus, type Tag } from "@/lib/plan-store";
+import { toast } from "sonner";
 
 const MEALS: Meal[] = ["None", "Chicken", "Fish", "Vegetarian", "Vegan", "Kids"];
 const RSVPS: RsvpStatus[] = ["Confirmed", "Pending", "Declined", "Waitlist", "No-show", "Withdrawn"];
