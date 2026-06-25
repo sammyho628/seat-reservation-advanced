@@ -90,7 +90,7 @@ export function AutoAssignDrawer({
   const removeRule = usePlanStore((s) => s.removeRule);
   const [showAddRule, setShowAddRule] = useState(false);
 
-  const unassigned = guests.filter((g) => !g.tableId && g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show" && g.rsvpStatus !== "Withdrawn").length;
+  const unassigned = guests.filter((g) => !g.tableId && !g.isPlaceholder && g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show" && g.rsvpStatus !== "Withdrawn").length;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
