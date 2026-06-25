@@ -481,6 +481,17 @@ export const usePlanStore = create<PlanState>()(
           }
         });
 
+        // Pre-occupy seats held by TBC placeholders so autoSeat doesn't overwrite them
+        const placeholderSeated = state.guests.filter((g) => g.isPlaceholder && g.tableId);
+        placeholderSeated.forEach((g) => {
+          if (occupants[g.tableId!]) {
+            occupants[g.tableId!].push(g.id);
+            cap[g.tableId!] = Math.max(0, cap[g.tableId!] - 1);
+          }
+        });
+
+
+
 
         const groupMap = new Map<string, Set<string>>();
         const groupOf = new Map<string, string>();
