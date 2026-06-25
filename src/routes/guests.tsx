@@ -794,6 +794,146 @@ function GuestsPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Batch import — column mapping */}
+      <Dialog open={batchMappingOpen} onOpenChange={setBatchMappingOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Map columns — new batch import</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            These guests will be <strong>added</strong> to the plan. No existing guests will be changed or removed.
+          </p>
+          <div className="space-y-2 max-h-80 overflow-y-auto">
+            {FIELDS.map((field) => (
+              <div key={field} className="flex items-center gap-3">
+                <span className="text-sm font-mono w-28 text-muted-foreground">{field}</span>
+                <Select
+                  value={batchColumnMap[field] ?? "__none__"}
+                  onValueChange={(v) =>
+                    setBatchColumnMap((m) => ({ ...m, [field]: v === "__none__" ? undefined : v }))
+                  }
+                >
+                  <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">— unmapped —</SelectItem>
+                    {batchHeaders.map((h) => <SelectItem key={h} value={h}>{h}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            ))}
+          </div>
+          <div className="text-xs text-muted-foreground border-t border-border pt-2">
+            <div className="font-semibold mb-1">Preview (first 3 rows):</div>
+            {batchRows.slice(0, 3).map((r, i) => (
+              <div key={i} className="font-mono truncate">
+                {(batchColumnMap.name && String(r[batchColumnMap.name])) || "—"}
+                {batchColumnMap.company ? ` · ${r[batchColumnMap.company]}` : ""}
+                {batchColumnMap.meal ? ` · ${r[batchColumnMap.meal]}` : ""}
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <button onClick={() => setBatchMappingOpen(false)} className="h-9 px-3 rounded-md border border-input text-sm">Cancel</button>
+            <button onClick={confirmBatchMapping} className="h-9 px-4 rounded-md bg-primary text-primary-foreground text-sm">
+              Import {batchRows.length} guests →
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Batch import — smart assignment */}
+      <Dialog open={batchAssignOpen} onOpenChange={setBatchAssignOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {batchImportedGuests.length} guests imported — what next?
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <button
+              onClick={handleBatchAddTable}
+              className="w-full text-left px-4 py-3 rounded-xl border-2 border-primary/30 hover:border-primary hover:bg-primary/5 transition group"
+            >
+              <div className="font-semibold text-sm flex items-center gap-2">
+                <span className="text-lg">➕</span> Add a new table and assign all {batchImportedGuests.length}
+              </div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                Creates one table with {batchImportedGuests.length} seats and assigns everyone sequentially.
+              </div>
+            </button>
+
+            <div className="px-4 py-3 rounded-xl border border-border">
+              <div className="font-semibold text-sm mb-2 flex items-center gap-2">
+                <span className="text-lg">📋</span> Assign to an existing table
+              </div>
+              <div className="flex gap-2">
+                <Select value={batchTargetTable} onValueChange={setBatchTargetTable}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Choose table…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {tables.map((t) => {
+                      const occupied = guests.filter((g) => g.tableId === t.id && !g.isPlaceholder).length;
+                      const empty = t.seats - occupied;
+                      return (
+                        <SelectItem key={t.id} value={t.id} disabled={empty === 0}>
+                          Table {t.label} · {empty} empty seat{empty !== 1 ? "s" : ""}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+                <button
+                  onClick={() => handleBatchAssignToTable(batchTargetTable)}
+                  disabled={!batchTargetTable}
+                  className="h-10 px-3 rounded-md bg-primary text-primary-foreground text-sm disabled:opacity-40"
+                >
+                  Assign
+                </button>
+              </div>
+              {batchTargetTable && (() => {
+                const t = tables.find((x) => x.id === batchTargetTable);
+                const occupied = guests.filter((g) => g.tableId === batchTargetTable && !g.isPlaceholder).length;
+                const empty = t ? t.seats - occupied : 0;
+                if (empty < batchImportedGuests.length) {
+                  return (
+                    <p className="text-xs text-amber-600 mt-1.5">
+                      ⚠ Only {empty} empty seat{empty !== 1 ? "s" : ""} — {batchImportedGuests.length - empty} guest{batchImportedGuests.length - empty !== 1 ? "s" : ""} will stay unassigned.
+                    </p>
+                  );
+                }
+                return null;
+              })()}
+            </div>
+
+            <button
+              onClick={handleBatchAutoAssign}
+              className="w-full text-left px-4 py-3 rounded-xl border border-border hover:bg-accent transition"
+            >
+              <div className="font-semibold text-sm flex items-center gap-2">
+                <span className="text-lg">🎲</span> Auto-assign among empty seats
+              </div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                Spreads them across any available seats using the current strategy.
+              </div>
+            </button>
+
+            <button
+              onClick={() => setBatchAssignOpen(false)}
+              className="w-full text-left px-4 py-3 rounded-xl border border-border hover:bg-accent transition"
+            >
+              <div className="font-semibold text-sm flex items-center gap-2">
+                <span className="text-lg">📥</span> Leave unassigned for now
+              </div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                They'll appear in the Unassigned panel on the Planner.
+              </div>
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+
       <AlertDialog open={clearOpen} onOpenChange={setClearOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
