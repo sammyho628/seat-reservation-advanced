@@ -74,13 +74,19 @@ export function rowsToGuestsWithMap(
       const lastName = fieldMap.lastName ? String(row[fieldMap.lastName] ?? "").trim() : "";
       const explicitName = fieldMap.name ? String(row[fieldMap.name] ?? "").trim() : "";
       const combined = [firstName, lastName].filter(Boolean).join(" ");
-      const name = combined || explicitName;
-      if (!name) return null;
+      const rawName = combined || explicitName;
+      const company = fieldMap.company ? String(row[fieldMap.company] ?? "").trim() || undefined : undefined;
+      const isPlaceholder = rawName === "" || rawName.toUpperCase().startsWith("TBC");
+      // Only allow a fully blank row if some other field is set (company etc.)
+      if (!rawName && !company && !fieldMap.title && !fieldMap.cohort) return null;
+      const name = isPlaceholder
+        ? rawName || `TBC · ${company || "Unknown"}`
+        : rawName;
       return {
-        firstName: firstName || undefined,
-        lastName: lastName || undefined,
+        firstName: !isPlaceholder ? (firstName || undefined) : undefined,
+        lastName: !isPlaceholder ? (lastName || undefined) : undefined,
         name,
-        company: fieldMap.company ? String(row[fieldMap.company] ?? "").trim() || undefined : undefined,
+        company,
         title: fieldMap.title ? String(row[fieldMap.title] ?? "").trim() || undefined : undefined,
         cohort: fieldMap.cohort ? String(row[fieldMap.cohort] ?? "").trim() || undefined : undefined,
         meal: normalizeMeal(fieldMap.meal ? String(row[fieldMap.meal] ?? "") : undefined),
@@ -88,6 +94,7 @@ export function rowsToGuestsWithMap(
         dietary: fieldMap.dietary ? String(row[fieldMap.dietary] ?? "").trim() || undefined : undefined,
         notes: fieldMap.notes ? String(row[fieldMap.notes] ?? "").trim() || undefined : undefined,
         rsvpStatus: normalizeRsvp(fieldMap.rsvpStatus ? String(row[fieldMap.rsvpStatus] ?? "") : undefined),
+        isPlaceholder: isPlaceholder || undefined,
       } as GuestDraft;
     })
     .filter((g): g is GuestDraft => g !== null);
