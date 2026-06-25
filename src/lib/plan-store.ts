@@ -721,6 +721,7 @@ export const usePlanStore = create<PlanState>()(
 
         const updated = state.guests.map((g) => {
           if (g.locked && g.tableId) return g; // preserve locked
+          if (g.isPlaceholder) return g; // preserve TBC placeholders
           return {
             ...g,
             tableId: g.rsvpStatus === "Declined" || g.rsvpStatus === "No-show" ? undefined : (undefined as string | undefined),
@@ -729,10 +730,10 @@ export const usePlanStore = create<PlanState>()(
         });
         let assigned = 0;
         for (const t of tables) {
-          // Seats already taken by locked guests at this table
+          // Seats already taken by locked guests or TBC placeholders at this table
           const lockedSeats = new Set(
             state.guests
-              .filter((g) => g.locked && g.tableId === t.id && g.seatIndex)
+              .filter((g) => ((g.locked || g.isPlaceholder) && g.tableId === t.id && g.seatIndex))
               .map((g) => g.seatIndex as number),
           );
           let cursor = 1;
