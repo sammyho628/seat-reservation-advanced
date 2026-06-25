@@ -14,6 +14,8 @@ import {
 import { toast } from "sonner";
 import { AutoAssignDrawer } from "@/components/AutoAssignDrawer";
 import { GuestEditSheet } from "@/components/GuestEditSheet";
+import { SmartChecksSheet } from "@/components/SmartChecksSheet";
+import { runSmartChecks } from "@/lib/smart-checks";
 import {
   Wand2, RotateCcw, Settings as SettingsIcon, Undo2, Redo2, Camera,
   Search, BarChart2, ChevronUp, ChevronDown, Building2, Tag as TagIcon, X,
@@ -95,6 +97,10 @@ function PlannerPage() {
   const guests = usePlanStore((s) => s.guests);
   const tables = usePlanStore((s) => s.tables);
   const rules = usePlanStore((s) => s.rules);
+  const checkWarningCount = useMemo(
+    () => runSmartChecks(guests, tables, rules).length,
+    [guests, tables, rules]
+  );
   const addTable = usePlanStore((s) => s.addTable);
   const addGuests = usePlanStore((s) => s.addGuests);
   const exportPlan = usePlanStore((s) => s.exportPlan);
@@ -108,6 +114,7 @@ function PlannerPage() {
   const [pendingImportData, setPendingImportData] = useState<any>(null);
   const [importConfirmOpen, setImportConfirmOpen] = useState(false);
   const [editingGuestId, setEditingGuestId] = useState<string | null>(null);
+  const [checksOpen, setChecksOpen] = useState(false);
 
   async function handleOpenFile() {
     const input = document.createElement("input");
@@ -664,6 +671,22 @@ function PlannerPage() {
                 </PopoverContent>
               </Popover>
 
+              <button
+                onClick={() => setChecksOpen(true)}
+                className={`h-10 px-3 rounded-md border text-sm inline-flex items-center gap-1.5 relative ${
+                  checkWarningCount > 0
+                    ? "border-amber-400 text-amber-700 bg-amber-50 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-300 dark:bg-amber-950/30"
+                    : "border-input hover:bg-accent"
+                }`}
+              >
+                🔍 Checks
+                {checkWarningCount > 0 && (
+                  <span className="inline-flex items-center justify-center h-4 min-w-[1rem] px-1 rounded-full bg-destructive text-white text-[10px] font-bold leading-none">
+                    {checkWarningCount}
+                  </span>
+                )}
+              </button>
+
               <div className="h-8 w-px bg-border mx-1" />
 
 
@@ -1117,6 +1140,11 @@ function PlannerPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <SmartChecksSheet
+        open={checksOpen}
+        onOpenChange={setChecksOpen}
+        onEditGuest={(id) => { setEditingGuestId(id); setChecksOpen(false); }}
+      />
     </AppShell>
   );
 }
