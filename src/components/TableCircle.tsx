@@ -349,6 +349,7 @@ function TableCircleInner({
           const isHost = guest && table.hostGuestId === guest.id;
           const isSelected = selectedSeat?.tableId === table.id && selectedSeat.seatIndex === s;
           const isViolating = guest && violatingGuestIds?.has(guest.id);
+          const isPlaceholderSeat = guest?.isPlaceholder === true;
           let fill = "var(--color-seat)";
           let dash: string | undefined;
           if (guest) {
@@ -362,6 +363,10 @@ function TableCircleInner({
               fill = "var(--color-rsvp-waitlist)";
               dash = "1 2";
             }
+          }
+          if (isPlaceholderSeat) {
+            fill = "var(--color-muted, #e5e7eb)";
+            dash = "4 2";
           }
           const strokeColor = isSelected
             ? "var(--color-primary)"
@@ -381,10 +386,23 @@ function TableCircleInner({
                 strokeWidth={isSelected || isViolating ? 2.5 : 1}
                 strokeDasharray={dash}
               />
-              <text textAnchor="middle" dy="3" className="fill-foreground font-mono pointer-events-none" fontSize="9">
-                {s}
-              </text>
-              {guest && (
+              {isPlaceholderSeat ? (
+                <>
+                  <text textAnchor="middle" dy="1" className="fill-muted-foreground font-mono pointer-events-none" fontSize="11" fontWeight="600">?</text>
+                  {guest?.company && (
+                    <text textAnchor="middle" dy="10" className="fill-muted-foreground pointer-events-none" fontSize="6">
+                      {guest.company.slice(0, 4).toUpperCase()}
+                    </text>
+                  )}
+                </>
+              ) : (
+                <text textAnchor="middle" dy="3" className="fill-foreground font-mono pointer-events-none" fontSize="9">
+                  {s}
+                </text>
+              )}
+              {isPlaceholderSeat ? (
+                <title>TBC · {guest?.company ?? "Unknown"} — awaiting name{guest?.meal && guest.meal !== "None" ? ` · ${guest.meal}` : ""}</title>
+              ) : guest && (
                 <title>
                   {guest.name}
                   {guest.company ? ` · ${guest.company}` : ""}
