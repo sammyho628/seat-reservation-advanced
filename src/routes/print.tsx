@@ -165,9 +165,15 @@ function PrintPage() {
             </button>
             <button
               onClick={() => setView(view === "companies" ? "full" : "companies")}
-              className="h-9 px-3 rounded-md border border-input text-sm"
+              className={`h-9 px-3 rounded-md border text-sm ${view === "companies" ? "bg-primary text-primary-foreground border-primary" : "border-input"}`}
             >
               🏢 {view === "companies" ? "Full view" : "By company"}
+            </button>
+            <button
+              onClick={() => setView(view === "dietary" ? "full" : "dietary")}
+              className={`h-9 px-3 rounded-md border text-sm ${view === "dietary" ? "bg-primary text-primary-foreground border-primary" : "border-input"}`}
+            >
+              🥗 {view === "dietary" ? "Full view" : "Dietary"}
             </button>
             <button
               onClick={exportMailMerge}
