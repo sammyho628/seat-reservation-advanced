@@ -1007,6 +1007,39 @@ function PlannerPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <AlertDialog open={!!pendingScheme} onOpenChange={(v) => { if (!v) setPendingScheme(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Apply "{SCHEME_LABELS.find((s) => s.value === pendingScheme)?.label}" naming?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This will rename all {tables.length} tables.
+              {(() => {
+                const customCount = tables.filter((t) => t.customLabel).length;
+                return customCount > 0
+                  ? ` ${customCount} table(s) have custom names — they will also be overwritten.`
+                  : "";
+              })()}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingScheme(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (pendingScheme) {
+                  applyNamingScheme(pendingScheme);
+                  tables.forEach((t) => { if (t.customLabel) updateTable(t.id, { customLabel: undefined }); });
+                  toast.success("Table naming updated");
+                }
+                setPendingScheme(null);
+              }}
+            >
+              Apply naming
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppShell>
   );
 }
