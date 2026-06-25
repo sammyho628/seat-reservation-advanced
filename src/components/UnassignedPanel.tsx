@@ -23,8 +23,9 @@ export function UnassignedPanel({ selectedGuestId, onSelect, onEditGuest }: Prop
   const [filter, setFilter] = useState<"All" | RsvpStatus>("All");
   const [showDeclined, setShowDeclined] = useState(false);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const [panelSearch, setPanelSearch] = useState("");
 
-  const visible = useMemo(() => {
+  const unfiltered = useMemo(() => {
     return allGuests.filter((g) => {
       if (g.tableId) return false;
       if (g.rsvpStatus === "Declined" || g.rsvpStatus === "No-show") return showDeclined;
@@ -32,6 +33,14 @@ export function UnassignedPanel({ selectedGuestId, onSelect, onEditGuest }: Prop
       return g.rsvpStatus === filter;
     });
   }, [allGuests, filter, showDeclined]);
+
+  const visible = useMemo(() => {
+    const q = panelSearch.trim().toLowerCase();
+    if (!q) return unfiltered;
+    return unfiltered.filter(
+      (g) => g.name.toLowerCase().includes(q) || (g.company ?? "").toLowerCase().includes(q),
+    );
+  }, [unfiltered, panelSearch]);
 
   const grouped = useMemo(() => {
     const map = new Map<string, typeof visible>();
