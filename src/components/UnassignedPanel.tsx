@@ -1,5 +1,5 @@
 import { usePlanStore, type RsvpStatus } from "@/lib/plan-store";
-import { Star, Accessibility, X, ChevronDown, ChevronRight } from "lucide-react";
+import { Star, Accessibility, X, ChevronDown, ChevronRight, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -23,8 +23,9 @@ export function UnassignedPanel({ selectedGuestId, onSelect, onEditGuest }: Prop
   const [filter, setFilter] = useState<"All" | RsvpStatus>("All");
   const [showDeclined, setShowDeclined] = useState(false);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const [panelSearch, setPanelSearch] = useState("");
 
-  const visible = useMemo(() => {
+  const unfiltered = useMemo(() => {
     return allGuests.filter((g) => {
       if (g.tableId) return false;
       if (g.rsvpStatus === "Declined" || g.rsvpStatus === "No-show") return showDeclined;
@@ -32,6 +33,14 @@ export function UnassignedPanel({ selectedGuestId, onSelect, onEditGuest }: Prop
       return g.rsvpStatus === filter;
     });
   }, [allGuests, filter, showDeclined]);
+
+  const visible = useMemo(() => {
+    const q = panelSearch.trim().toLowerCase();
+    if (!q) return unfiltered;
+    return unfiltered.filter(
+      (g) => g.name.toLowerCase().includes(q) || (g.company ?? "").toLowerCase().includes(q),
+    );
+  }, [unfiltered, panelSearch]);
 
   const grouped = useMemo(() => {
     const map = new Map<string, typeof visible>();
@@ -88,6 +97,23 @@ export function UnassignedPanel({ selectedGuestId, onSelect, onEditGuest }: Prop
           <input type="checkbox" checked={showDeclined} onChange={(e) => setShowDeclined(e.target.checked)} />
           Show declined / no-show
         </label>
+      </div>
+
+      <div className="px-3 pt-2 pb-1">
+        <div className="relative">
+          <Search className="h-3.5 w-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <input
+            value={panelSearch}
+            onChange={(e) => setPanelSearch(e.target.value)}
+            placeholder="Search unassigned…"
+            className="w-full h-8 pl-8 pr-3 rounded-md border border-input bg-background text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+          />
+        </div>
+        {panelSearch && (
+          <p className="text-[10px] text-muted-foreground pt-1">
+            {visible.length} of {unfiltered.length} shown
+          </p>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto p-2 space-y-3">
