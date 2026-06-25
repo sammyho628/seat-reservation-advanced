@@ -61,6 +61,8 @@ function GuestsPage() {
   const assignGuest = usePlanStore((s) => s.assignGuest);
   const unassignGuest = usePlanStore((s) => s.unassignGuest);
   const addPlaceholder = usePlanStore((s) => s.addPlaceholder);
+  const addTable = usePlanStore((s) => s.addTable);
+  const fillGaps = usePlanStore((s) => s.fillGaps);
 
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "assigned" | "unassigned">("all");
@@ -78,6 +80,15 @@ function GuestsPage() {
   const [reconcileOpen, setReconcileOpen] = useState(false);
   const [diff, setDiff] = useState<ReconciliationDiff | null>(null);
   const [pendingDrafts, setPendingDrafts] = useState<GuestDraft[]>([]);
+
+  // batch import state
+  const [batchRows, setBatchRows] = useState<Record<string, unknown>[]>([]);
+  const [batchHeaders, setBatchHeaders] = useState<string[]>([]);
+  const [batchColumnMap, setBatchColumnMap] = useState<Record<string, string | undefined>>({});
+  const [batchMappingOpen, setBatchMappingOpen] = useState(false);
+  const [batchAssignOpen, setBatchAssignOpen] = useState(false);
+  const [batchImportedGuests, setBatchImportedGuests] = useState<string[]>([]);
+  const [batchTargetTable, setBatchTargetTable] = useState<string>("");
 
   const tableLabel = useMemo(
     () => Object.fromEntries(tables.map((t) => [t.id, t.label])),
@@ -174,6 +185,93 @@ function GuestsPage() {
     toast.success("Reconciled imported list");
   }
 
+  async function handleBatchFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    try {
+      const { rows, headers } = await parseFileRows(f);
+      if (rows.length === 0) { toast.error("File is empty"); return; }
+      setBatchRows(rows);
+      setBatchHeaders(headers);
+      setBatchColumnMap(detectColumnMap(headers));
+      setBatchMappingOpen(true);
+    } catch (err) {
+      toast.error("Could not parse file");
+      console.error(err);
+    } finally {
+      e.target.value = "";
+    }
+  }
+
+  function confirmBatchMapping() {
+    const drafts = rowsToGuestsWithMap(batchRows, batchColumnMap);
+    if (drafts.length === 0) {
+      toast.error("No rows with a 'Name' column.");
+      return;
+    }
+    addGuests(drafts);
+    setTimeout(() => {
+      const allGuests = usePlanStore.getState().guests;
+      const draftNames = new Set(drafts.map((d) => d.name?.toLowerCase().trim()));
+      const newIds = allGuests
+        .filter((g) => !g.tableId && draftNames.has(g.name.toLowerCase().trim()))
+        .slice(-drafts.length)
+        .map((g) => g.id);
+      setBatchImportedGuests(newIds);
+    }, 50);
+    setBatchMappingOpen(false);
+    setBatchAssignOpen(true);
+    toast.success(`${drafts.length} guests added`);
+  }
+
+  function handleBatchAddTable() {
+    const count = batchImportedGuests.length;
+    const seatCount = Math.max(count, usePlanStore.getState().settings.defaultSeats ?? 10);
+    addTable(seatCount);
+    setTimeout(() => {
+      const state = usePlanStore.getState();
+      const newTable = state.tables[state.tables.length - 1];
+      if (!newTable) return;
+      batchImportedGuests.forEach((guestId, i) => {
+        const seatIndex = i + 1;
+        if (seatIndex <= newTable.seats) assignGuest(guestId, newTable.id, seatIndex);
+      });
+      toast.success(`Added Table ${newTable.label} and assigned ${count} guests`);
+      setBatchAssignOpen(false);
+      setBatchImportedGuests([]);
+    }, 50);
+  }
+
+  function handleBatchAssignToTable(tableId: string) {
+    if (!tableId) return;
+    const state = usePlanStore.getState();
+    const table = state.tables.find((t) => t.id === tableId);
+    if (!table) return;
+    const occupied = new Set(
+      state.guests.filter((g) => g.tableId === tableId).map((g) => g.seatIndex),
+    );
+    const emptySeats: number[] = [];
+    for (let s = 1; s <= table.seats; s++) if (!occupied.has(s)) emptySeats.push(s);
+    let assigned = 0;
+    batchImportedGuests.forEach((guestId, i) => {
+      if (i < emptySeats.length) { assignGuest(guestId, tableId, emptySeats[i]); assigned++; }
+    });
+    const skipped = batchImportedGuests.length - assigned;
+    toast.success(
+      `Assigned ${assigned} to Table ${table.label}${skipped > 0 ? ` · ${skipped} remain unassigned (table full)` : ""}`,
+    );
+    setBatchAssignOpen(false);
+    setBatchImportedGuests([]);
+    setBatchTargetTable("");
+  }
+
+  function handleBatchAutoAssign() {
+    const r = fillGaps("smart");
+    toast.success(`Auto-assigned ${r.assigned} guests to empty seats`);
+    setBatchAssignOpen(false);
+    setBatchImportedGuests([]);
+  }
+
   const filtered = guests.filter((g) => {
     if (filter === "assigned" && !g.tableId) return false;
     if (filter === "unassigned" && g.tableId) return false;
@@ -251,8 +349,12 @@ function GuestsPage() {
             {tab === "edit" && (
               <>
                 <label className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 cursor-pointer hover:bg-accent">
-                  <Upload className="h-4 w-4" /> Import CSV/Excel
+                  <Upload className="h-4 w-4" /> Import / Reconcile
                   <input type="file" accept=".csv,.xlsx,.xls" onChange={handleFile} className="hidden" />
+                </label>
+                <label className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 cursor-pointer hover:bg-accent">
+                  <Upload className="h-4 w-4" /> Import new batch
+                  <input type="file" accept=".csv,.xlsx,.xls" onChange={handleBatchFile} className="hidden" />
                 </label>
                 <button onClick={() => exportGuestsCSV(guests, tableLabel)} className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent">
                   <Download className="h-4 w-4" /> CSV
@@ -691,6 +793,146 @@ function GuestsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Batch import — column mapping */}
+      <Dialog open={batchMappingOpen} onOpenChange={setBatchMappingOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Map columns — new batch import</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            These guests will be <strong>added</strong> to the plan. No existing guests will be changed or removed.
+          </p>
+          <div className="space-y-2 max-h-80 overflow-y-auto">
+            {FIELDS.map((field) => (
+              <div key={field} className="flex items-center gap-3">
+                <span className="text-sm font-mono w-28 text-muted-foreground">{field}</span>
+                <Select
+                  value={batchColumnMap[field] ?? "__none__"}
+                  onValueChange={(v) =>
+                    setBatchColumnMap((m) => ({ ...m, [field]: v === "__none__" ? undefined : v }))
+                  }
+                >
+                  <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">— unmapped —</SelectItem>
+                    {batchHeaders.map((h) => <SelectItem key={h} value={h}>{h}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            ))}
+          </div>
+          <div className="text-xs text-muted-foreground border-t border-border pt-2">
+            <div className="font-semibold mb-1">Preview (first 3 rows):</div>
+            {batchRows.slice(0, 3).map((r, i) => (
+              <div key={i} className="font-mono truncate">
+                {(batchColumnMap.name && String(r[batchColumnMap.name])) || "—"}
+                {batchColumnMap.company ? ` · ${r[batchColumnMap.company]}` : ""}
+                {batchColumnMap.meal ? ` · ${r[batchColumnMap.meal]}` : ""}
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <button onClick={() => setBatchMappingOpen(false)} className="h-9 px-3 rounded-md border border-input text-sm">Cancel</button>
+            <button onClick={confirmBatchMapping} className="h-9 px-4 rounded-md bg-primary text-primary-foreground text-sm">
+              Import {batchRows.length} guests →
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Batch import — smart assignment */}
+      <Dialog open={batchAssignOpen} onOpenChange={setBatchAssignOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {batchImportedGuests.length} guests imported — what next?
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <button
+              onClick={handleBatchAddTable}
+              className="w-full text-left px-4 py-3 rounded-xl border-2 border-primary/30 hover:border-primary hover:bg-primary/5 transition group"
+            >
+              <div className="font-semibold text-sm flex items-center gap-2">
+                <span className="text-lg">➕</span> Add a new table and assign all {batchImportedGuests.length}
+              </div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                Creates one table with {batchImportedGuests.length} seats and assigns everyone sequentially.
+              </div>
+            </button>
+
+            <div className="px-4 py-3 rounded-xl border border-border">
+              <div className="font-semibold text-sm mb-2 flex items-center gap-2">
+                <span className="text-lg">📋</span> Assign to an existing table
+              </div>
+              <div className="flex gap-2">
+                <Select value={batchTargetTable} onValueChange={setBatchTargetTable}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Choose table…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {tables.map((t) => {
+                      const occupied = guests.filter((g) => g.tableId === t.id && !g.isPlaceholder).length;
+                      const empty = t.seats - occupied;
+                      return (
+                        <SelectItem key={t.id} value={t.id} disabled={empty === 0}>
+                          Table {t.label} · {empty} empty seat{empty !== 1 ? "s" : ""}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+                <button
+                  onClick={() => handleBatchAssignToTable(batchTargetTable)}
+                  disabled={!batchTargetTable}
+                  className="h-10 px-3 rounded-md bg-primary text-primary-foreground text-sm disabled:opacity-40"
+                >
+                  Assign
+                </button>
+              </div>
+              {batchTargetTable && (() => {
+                const t = tables.find((x) => x.id === batchTargetTable);
+                const occupied = guests.filter((g) => g.tableId === batchTargetTable && !g.isPlaceholder).length;
+                const empty = t ? t.seats - occupied : 0;
+                if (empty < batchImportedGuests.length) {
+                  return (
+                    <p className="text-xs text-amber-600 mt-1.5">
+                      ⚠ Only {empty} empty seat{empty !== 1 ? "s" : ""} — {batchImportedGuests.length - empty} guest{batchImportedGuests.length - empty !== 1 ? "s" : ""} will stay unassigned.
+                    </p>
+                  );
+                }
+                return null;
+              })()}
+            </div>
+
+            <button
+              onClick={handleBatchAutoAssign}
+              className="w-full text-left px-4 py-3 rounded-xl border border-border hover:bg-accent transition"
+            >
+              <div className="font-semibold text-sm flex items-center gap-2">
+                <span className="text-lg">🎲</span> Auto-assign among empty seats
+              </div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                Spreads them across any available seats using the current strategy.
+              </div>
+            </button>
+
+            <button
+              onClick={() => setBatchAssignOpen(false)}
+              className="w-full text-left px-4 py-3 rounded-xl border border-border hover:bg-accent transition"
+            >
+              <div className="font-semibold text-sm flex items-center gap-2">
+                <span className="text-lg">📥</span> Leave unassigned for now
+              </div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                They'll appear in the Unassigned panel on the Planner.
+              </div>
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
 
       <AlertDialog open={clearOpen} onOpenChange={setClearOpen}>
         <AlertDialogContent>
