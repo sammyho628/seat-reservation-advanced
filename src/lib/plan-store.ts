@@ -448,7 +448,7 @@ export const usePlanStore = create<PlanState>()(
         const state = get();
         const tables = state.tables.map((t) => ({ ...t }));
         const eligible = state.guests.filter(
-          (g) => g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show" && g.rsvpStatus !== "Withdrawn" && !g.locked,
+          (g) => !g.isPlaceholder && g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show" && g.rsvpStatus !== "Withdrawn" && !g.locked,
         );
         let guests = eligible.map((g) => ({ ...g, tableId: undefined, seatIndex: undefined as number | undefined }));
         const rules = state.rules.filter((r) => r.enabled);
