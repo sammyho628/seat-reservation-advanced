@@ -248,7 +248,8 @@ function PrintPage() {
                 </tbody>
               </table>
             </div>
-          ) : (
+          )}
+          {view === "full" && (
             <>
               <h2 className="font-display text-2xl mt-10 mb-3">Meal totals</h2>
               <table className="w-full max-w-md border border-border">
