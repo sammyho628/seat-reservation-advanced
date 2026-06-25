@@ -124,6 +124,8 @@ interface PlanState {
   setSettings: (patch: Partial<Settings>) => void;
   regenerateTables: () => void;
   updateTable: (id: string, patch: Partial<Table>) => void;
+  checkSeatReduction: (tableId: string, newSeats: number) => { overflowGuests: Guest[] };
+  reduceTableSeats: (tableId: string, newSeats: number, action: "unassign" | "cancel") => void;
   reorderTables: (orderedIds: string[]) => void;
   applyNamingScheme: (scheme: NamingScheme) => void;
   setTableHost: (tableId: string, guestId: string | undefined) => void;
