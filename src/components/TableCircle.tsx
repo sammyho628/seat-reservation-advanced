@@ -516,7 +516,7 @@ function TableCircleInner({
         })}
       </svg>
 
-      <div className={`mt-2 text-[11px] max-h-60 overflow-y-auto ${
+      <div className={`table-guest-list mt-2 text-[11px] max-h-60 overflow-y-auto ${
         table.seats >= 7 ? "grid grid-cols-2 gap-x-3 gap-y-0.5" : "space-y-0.5"
       }`}>
         {seats.map((s) => {
