@@ -81,6 +81,15 @@ function GuestsPage() {
   const [diff, setDiff] = useState<ReconciliationDiff | null>(null);
   const [pendingDrafts, setPendingDrafts] = useState<GuestDraft[]>([]);
 
+  // batch import state
+  const [batchRows, setBatchRows] = useState<Record<string, unknown>[]>([]);
+  const [batchHeaders, setBatchHeaders] = useState<string[]>([]);
+  const [batchColumnMap, setBatchColumnMap] = useState<Record<string, string | undefined>>({});
+  const [batchMappingOpen, setBatchMappingOpen] = useState(false);
+  const [batchAssignOpen, setBatchAssignOpen] = useState(false);
+  const [batchImportedGuests, setBatchImportedGuests] = useState<string[]>([]);
+  const [batchTargetTable, setBatchTargetTable] = useState<string>("");
+
   const tableLabel = useMemo(
     () => Object.fromEntries(tables.map((t) => [t.id, t.label])),
     [tables],
