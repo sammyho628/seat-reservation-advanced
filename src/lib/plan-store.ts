@@ -264,6 +264,27 @@ export const usePlanStore = create<PlanState>()(
       updateTable: (id, patch) =>
         set((s) => ({ tables: s.tables.map((t) => (t.id === id ? { ...t, ...patch } : t)) })),
 
+      checkSeatReduction: (tableId, newSeats) => {
+        const { guests } = get();
+        const overflowGuests = guests.filter(
+          (g) => g.tableId === tableId && !g.isPlaceholder && (g.seatIndex ?? 0) > newSeats,
+        );
+        return { overflowGuests };
+      },
+
+      reduceTableSeats: (tableId, newSeats, action) => {
+        if (action === "cancel") return;
+        set((s) => ({
+          tables: s.tables.map((t) => (t.id === tableId ? { ...t, seats: newSeats } : t)),
+          guests: s.guests.map((g) => {
+            if (g.tableId === tableId && !g.isPlaceholder && (g.seatIndex ?? 0) > newSeats) {
+              return { ...g, tableId: undefined, seatIndex: undefined };
+            }
+            return g;
+          }),
+        }));
+      },
+
       reorderTables: (orderedIds) =>
         set((s) => {
           const byId = new Map(s.tables.map((t) => [t.id, t]));
