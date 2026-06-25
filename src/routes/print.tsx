@@ -266,6 +266,54 @@ function PrintPage() {
           )}
         </section>
 
+        {view === "companies" && (
+          <section>
+            <h2 className="font-display text-3xl mb-6">Guest list by company</h2>
+            {byCompany.map(([company, list]) => (
+              <div key={company} className="mb-8 print-page">
+                <h3 className="font-display text-xl mb-2 pb-1" style={{ borderBottom: `2px solid ${settings.primaryColor}` }}>
+                  {company}
+                  <span className="text-sm font-sans font-normal text-muted-foreground ml-2">
+                    {list.length} guest{list.length !== 1 ? "s" : ""}
+                    {" · "}
+                    {list.filter((g) => g.tableId).length} seated
+                    {list.some((g) => !g.tableId) ? ` · ${list.filter((g) => !g.tableId).length} unassigned` : ""}
+                  </span>
+                </h3>
+                <table className="w-full text-sm border border-border">
+                  <thead className="bg-muted text-xs uppercase tracking-wider text-muted-foreground">
+                    <tr>
+                      <th className="text-left p-2">Name</th>
+                      <th className="text-left p-2">Title</th>
+                      <th className="text-left p-2">Table</th>
+                      <th className="text-left p-2">Seat</th>
+                      <th className="text-left p-2">Meal</th>
+                      <th className="text-left p-2">Dietary</th>
+                      <th className="text-left p-2">RSVP</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {list.map((g) => (
+                      <tr key={g.id} className="border-t border-border/60">
+                        <td className="p-2 font-medium">{g.name}</td>
+                        <td className="p-2 text-muted-foreground text-xs">{g.title ?? "—"}</td>
+                        <td className="p-2 font-mono">{g.tableId ? tableLabel[g.tableId] : <span className="text-amber-600">Unassigned</span>}</td>
+                        <td className="p-2 font-mono">{g.seatIndex ?? "—"}</td>
+                        <td className="p-2 text-xs">{g.meal !== "None" ? g.meal : "—"}</td>
+                        <td className={`p-2 text-xs ${g.dietary ? "text-[color:var(--color-violation)] font-medium" : "text-muted-foreground"}`}>
+                          {g.dietary || "—"}
+                        </td>
+                        <td className="p-2 text-xs">{g.rsvpStatus}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ))}
+          </section>
+        )}
+
+
         {view === "full" && (
           <>
             <section className="print-page">
