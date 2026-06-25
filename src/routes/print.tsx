@@ -24,7 +24,7 @@ function PrintPage() {
     [allGuests],
   );
 
-  const eligibleGuests = useMemo(() => guests.filter((g) => g.tableId), [guests]);
+  const eligibleGuests = useMemo(() => guests.filter((g) => g.tableId && !g.isPlaceholder), [guests]);
 
   function exportMailMerge() {
     const rows = [
@@ -67,7 +67,7 @@ function PrintPage() {
   }, [tables, guests]);
 
   const alpha = useMemo(
-    () => [...guests].filter((g) => g.tableId).sort((a, b) => a.name.localeCompare(b.name)),
+    () => [...guests].filter((g) => g.tableId && !g.isPlaceholder).sort((a, b) => a.name.localeCompare(b.name)),
     [guests],
   );
 
@@ -212,10 +212,11 @@ function PrintPage() {
                       <tbody>
                         {Array.from({ length: t.seats }, (_, i) => i + 1).map((seat) => {
                           const g = list.find((x) => x.seatIndex === seat);
+                          const isTbc = g?.isPlaceholder === true;
                           return (
-                            <tr key={seat} className="border-t border-border/60">
+                            <tr key={seat} className={`border-t border-border/60 ${isTbc ? "opacity-50 italic" : ""}`}>
                               <td className="w-12 p-2 font-mono text-muted-foreground">{seat}</td>
-                              <td className="p-2 font-medium">{g?.name ?? <span className="text-muted-foreground italic">—</span>}</td>
+                              <td className="p-2 font-medium">{g ? (isTbc ? "TBC" : g.name) : <span className="text-muted-foreground italic">—</span>}</td>
                               <td className="p-2 text-muted-foreground text-sm">{g?.company ?? ""}</td>
                               <td className="p-2 text-right text-xs font-mono">{g && g.meal !== "None" ? g.meal : ""}</td>
                             </tr>

@@ -32,8 +32,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   const eventVenue = usePlanStore((s) => s.settings.eventVenue);
   const logoDataUrl = usePlanStore((s) => s.settings.logoDataUrl);
   const allGuests = usePlanStore((s) => s.guests);
-  const guestCount = allGuests.length;
-  const unassigned = allGuests.filter((g) => !g.tableId && g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show").length;
+  const guestCount = allGuests.filter((g) => !g.isPlaceholder).length;
+  const unassigned = allGuests.filter((g) => !g.tableId && !g.isPlaceholder && g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show" && g.rsvpStatus !== "Withdrawn").length;
+  const tbcCount = allGuests.filter((g) => g.isPlaceholder).length;
   const importPlan = usePlanStore((s) => s.importPlan);
 
   const [savedFlash, setSavedFlash] = useState(false);
@@ -109,6 +110,12 @@ export function AppShell({ children }: { children: ReactNode }) {
                 "all seated"
               )}
             </span>
+            {tbcCount > 0 && (
+              <>
+                <span className="opacity-50">·</span>
+                <span className="font-mono text-indigo-600 font-semibold">{tbcCount} TBC</span>
+              </>
+            )}
             <DropdownMenu>
               <DropdownMenuTrigger className="ml-2 h-8 w-8 inline-flex items-center justify-center rounded-md hover:bg-accent">
                 <MoreVertical className="h-4 w-4" />

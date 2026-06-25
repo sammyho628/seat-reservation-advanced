@@ -60,6 +60,7 @@ function GuestsPage() {
   const clearGuests = usePlanStore((s) => s.clearGuests);
   const assignGuest = usePlanStore((s) => s.assignGuest);
   const unassignGuest = usePlanStore((s) => s.unassignGuest);
+  const addPlaceholder = usePlanStore((s) => s.addPlaceholder);
 
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "assigned" | "unassigned">("all");
@@ -90,14 +91,18 @@ function GuestsPage() {
   }, [guests]);
 
   const companyStats = useMemo(() => {
-    const m = new Map<string, { total: number; seated: number; meals: Record<string, number> }>();
+    const m = new Map<string, { total: number; seated: number; tbc: number; meals: Record<string, number> }>();
     guests.forEach((g) => {
       const key = g.company?.trim() || "(No company)";
-      if (!m.has(key)) m.set(key, { total: 0, seated: 0, meals: {} });
+      if (!m.has(key)) m.set(key, { total: 0, seated: 0, tbc: 0, meals: {} });
       const e = m.get(key)!;
-      e.total++;
-      if (g.tableId) e.seated++;
-      if (g.meal !== "None") e.meals[g.meal] = (e.meals[g.meal] || 0) + 1;
+      if (g.isPlaceholder) {
+        e.tbc++;
+      } else {
+        e.total++;
+        if (g.tableId) e.seated++;
+        if (g.meal !== "None") e.meals[g.meal] = (e.meals[g.meal] || 0) + 1;
+      }
     });
     return [...m.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
@@ -290,11 +295,13 @@ function GuestsPage() {
                   <th className="text-right p-3">Total</th>
                   <th className="text-right p-3">Seated</th>
                   <th className="text-right p-3">Unassigned</th>
+                  <th className="text-right p-3">TBC</th>
                   <th className="text-left p-3">Meals</th>
+                  <th className="p-3"></th>
                 </tr>
               </thead>
               <tbody>
-                {companyStats.map(({ company, total, seated, unassigned, meals }) => (
+                {companyStats.map(({ company, total, seated, unassigned, tbc, meals }) => (
                   <tr
                     key={company}
                     onClick={() => { setQuery(company === "(No company)" ? "" : company); setTab("seating"); }}
@@ -307,24 +314,48 @@ function GuestsPage() {
                     <td className={`p-3 text-right font-mono ${unassigned > 0 ? "text-amber-600 font-semibold" : "text-muted-foreground"}`}>
                       {unassigned || "—"}
                     </td>
+                    <td className="p-3 text-right font-mono">
+                      {tbc > 0 ? (
+                        <span className="text-indigo-600 font-semibold">{tbc}</span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </td>
                     <td className="p-3 text-xs text-muted-foreground">
                       {Object.entries(meals).map(([m, n]) => `${MEAL_ICON[m] ?? m} ×${n}`).join("  ") || "—"}
+                    </td>
+                    <td className="p-3 text-right">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          addPlaceholder(company === "(No company)" ? "" : company);
+                          toast.success(`Added TBC placeholder for ${company}`);
+                        }}
+                        className="text-[11px] px-2 py-1 rounded border border-indigo-200 text-indigo-600 hover:bg-indigo-50 font-medium"
+                        title={`Add a TBC placeholder for ${company}`}
+                      >
+                        + TBC
+                      </button>
                     </td>
                   </tr>
                 ))}
                 {companyStats.length === 0 && (
-                  <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">No guests yet.</td></tr>
+                  <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">No guests yet.</td></tr>
                 )}
               </tbody>
               {companyStats.length > 0 && (
                 <tfoot className="bg-muted/30 text-xs font-mono">
                   <tr className="border-t border-border">
                     <td className="p-3">{companyStats.length} companies</td>
-                    <td className="p-3 text-right">{guests.length}</td>
-                    <td className="p-3 text-right">{guests.filter((g) => g.tableId).length}</td>
-                    <td className={`p-3 text-right ${guests.filter((g) => !g.tableId && g.rsvpStatus !== "Withdrawn" && g.rsvpStatus !== "Declined").length > 0 ? "text-amber-600" : ""}`}>
-                      {guests.filter((g) => !g.tableId && g.rsvpStatus !== "Withdrawn" && g.rsvpStatus !== "Declined").length || "—"}
+                    <td className="p-3 text-right">{guests.filter((g) => !g.isPlaceholder).length}</td>
+                    <td className="p-3 text-right">{guests.filter((g) => g.tableId && !g.isPlaceholder).length}</td>
+                    <td className={`p-3 text-right ${guests.filter((g) => !g.tableId && !g.isPlaceholder && g.rsvpStatus !== "Withdrawn" && g.rsvpStatus !== "Declined").length > 0 ? "text-amber-600" : ""}`}>
+                      {guests.filter((g) => !g.tableId && !g.isPlaceholder && g.rsvpStatus !== "Withdrawn" && g.rsvpStatus !== "Declined").length || "—"}
                     </td>
+                    <td className="p-3 text-right text-indigo-600">
+                      {guests.filter((g) => g.isPlaceholder).length || "—"}
+                    </td>
+                    <td className="p-3"></td>
                     <td className="p-3"></td>
                   </tr>
                 </tfoot>

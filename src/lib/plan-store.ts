@@ -33,6 +33,7 @@ export interface Guest {
   tableId?: string;
   seatIndex?: number;
   locked?: boolean;
+  isPlaceholder?: boolean;
 }
 
 export interface Table {
@@ -131,6 +132,7 @@ interface PlanState {
   removeTable: (tableId: string) => void;
 
   addGuests: (guests: Omit<Guest, "id">[]) => void;
+  addPlaceholder: (company: string) => void;
   updateGuest: (id: string, patch: Partial<Guest>) => void;
   removeGuest: (id: string) => void;
   clearGuests: () => void;
@@ -334,6 +336,23 @@ export const usePlanStore = create<PlanState>()(
           ],
         })),
 
+      addPlaceholder: (company) =>
+        set((s) => {
+          const n = s.guests.filter((g) => g.isPlaceholder && (g.company ?? "") === company).length + 1;
+          const label = company || "Unknown";
+          const guest: Guest = {
+            id: uid(),
+            name: `TBC · ${label} · ${n}`,
+            company: company || undefined,
+            meal: "None",
+            tags: [],
+            rsvpStatus: "Pending",
+            isPlaceholder: true,
+          };
+          return { guests: [...s.guests, guest] };
+        }),
+
+
       updateGuest: (id, patch) =>
         set((s) => ({
           guests: s.guests.map((g) => {
@@ -382,10 +401,16 @@ export const usePlanStore = create<PlanState>()(
             }
           }
           if (!seat) return s;
+          const assigningGuest = s.guests.find((g) => g.id === guestId);
+          const isAssigningReal = assigningGuest && !assigningGuest.isPlaceholder;
           return {
-            guests: s.guests.map((g) =>
-              g.id === guestId ? { ...g, tableId, seatIndex: seat } : g,
-            ),
+            guests: s.guests
+              .filter((g) =>
+                !(isAssigningReal && g.isPlaceholder && g.id !== guestId && g.tableId === tableId && g.seatIndex === seat),
+              )
+              .map((g) =>
+                g.id === guestId ? { ...g, tableId, seatIndex: seat } : g,
+              ),
           };
         }),
 
@@ -423,7 +448,7 @@ export const usePlanStore = create<PlanState>()(
         const state = get();
         const tables = state.tables.map((t) => ({ ...t }));
         const eligible = state.guests.filter(
-          (g) => g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show" && g.rsvpStatus !== "Withdrawn" && !g.locked,
+          (g) => !g.isPlaceholder && g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show" && g.rsvpStatus !== "Withdrawn" && !g.locked,
         );
         let guests = eligible.map((g) => ({ ...g, tableId: undefined, seatIndex: undefined as number | undefined }));
         const rules = state.rules.filter((r) => r.enabled);
@@ -455,6 +480,17 @@ export const usePlanStore = create<PlanState>()(
             cap[g.tableId!] = Math.max(0, cap[g.tableId!] - 1);
           }
         });
+
+        // Pre-occupy seats held by TBC placeholders so autoSeat doesn't overwrite them
+        const placeholderSeated = state.guests.filter((g) => g.isPlaceholder && g.tableId);
+        placeholderSeated.forEach((g) => {
+          if (occupants[g.tableId!]) {
+            occupants[g.tableId!].push(g.id);
+            cap[g.tableId!] = Math.max(0, cap[g.tableId!] - 1);
+          }
+        });
+
+
 
 
         const groupMap = new Map<string, Set<string>>();
@@ -685,6 +721,7 @@ export const usePlanStore = create<PlanState>()(
 
         const updated = state.guests.map((g) => {
           if (g.locked && g.tableId) return g; // preserve locked
+          if (g.isPlaceholder) return g; // preserve TBC placeholders
           return {
             ...g,
             tableId: g.rsvpStatus === "Declined" || g.rsvpStatus === "No-show" ? undefined : (undefined as string | undefined),
@@ -693,17 +730,17 @@ export const usePlanStore = create<PlanState>()(
         });
         let assigned = 0;
         for (const t of tables) {
-          // Seats already taken by locked guests at this table
+          // Seats already taken by locked guests or TBC placeholders at this table
           const lockedSeats = new Set(
             state.guests
-              .filter((g) => g.locked && g.tableId === t.id && g.seatIndex)
+              .filter((g) => ((g.locked || g.isPlaceholder) && g.tableId === t.id && g.seatIndex))
               .map((g) => g.seatIndex as number),
           );
           let cursor = 1;
           occupants[t.id].forEach((id) => {
             const u = updated.find((x) => x.id === id);
             if (!u) return;
-            if (u.locked && u.tableId === t.id && u.seatIndex) {
+            if ((u.locked || u.isPlaceholder) && u.tableId === t.id && u.seatIndex) {
               assigned += 1;
               return;
             }
@@ -762,7 +799,7 @@ export const usePlanStore = create<PlanState>()(
       fillGaps: () => {
         const { guests, tables } = get();
         const toAssign = guests.filter(
-          (g) => !g.tableId && g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show" && g.rsvpStatus !== "Withdrawn",
+          (g) => !g.tableId && !g.isPlaceholder && g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show" && g.rsvpStatus !== "Withdrawn",
         );
         if (toAssign.length === 0) return { assigned: 0, violations: 0, violatingGuestIds: [] };
         const occupied = new Set<string>();

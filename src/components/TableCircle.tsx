@@ -349,6 +349,7 @@ function TableCircleInner({
           const isHost = guest && table.hostGuestId === guest.id;
           const isSelected = selectedSeat?.tableId === table.id && selectedSeat.seatIndex === s;
           const isViolating = guest && violatingGuestIds?.has(guest.id);
+          const isPlaceholderSeat = guest?.isPlaceholder === true;
           let fill = "var(--color-seat)";
           let dash: string | undefined;
           if (guest) {
@@ -362,6 +363,10 @@ function TableCircleInner({
               fill = "var(--color-rsvp-waitlist)";
               dash = "1 2";
             }
+          }
+          if (isPlaceholderSeat) {
+            fill = "var(--color-muted, #e5e7eb)";
+            dash = "4 2";
           }
           const strokeColor = isSelected
             ? "var(--color-primary)"
@@ -381,10 +386,23 @@ function TableCircleInner({
                 strokeWidth={isSelected || isViolating ? 2.5 : 1}
                 strokeDasharray={dash}
               />
-              <text textAnchor="middle" dy="3" className="fill-foreground font-mono pointer-events-none" fontSize="9">
-                {s}
-              </text>
-              {guest && (
+              {isPlaceholderSeat ? (
+                <>
+                  <text textAnchor="middle" dy="1" className="fill-muted-foreground font-mono pointer-events-none" fontSize="11" fontWeight="600">?</text>
+                  {guest?.company && (
+                    <text textAnchor="middle" dy="10" className="fill-muted-foreground pointer-events-none" fontSize="6">
+                      {guest.company.slice(0, 4).toUpperCase()}
+                    </text>
+                  )}
+                </>
+              ) : (
+                <text textAnchor="middle" dy="3" className="fill-foreground font-mono pointer-events-none" fontSize="9">
+                  {s}
+                </text>
+              )}
+              {isPlaceholderSeat ? (
+                <title>TBC · {guest?.company ?? "Unknown"} — awaiting name{guest?.meal && guest.meal !== "None" ? ` · ${guest.meal}` : ""}</title>
+              ) : guest && (
                 <title>
                   {guest.name}
                   {guest.company ? ` · ${guest.company}` : ""}
@@ -416,7 +434,7 @@ function TableCircleInner({
         })}
         {isLabelMode && seats.map((s) => {
           const guest = seatMap.get(s);
-          if (!guest) return null;
+          if (!guest || guest.isPlaceholder) return null;
           const angle = ((s - 1 + seatOffset) / table.seats) * Math.PI * 2 + Math.PI / 2;
           const labelR = seatLabelMode === "name+firm" ? radius + 30 : radius + 24;
           const lx = cx + Math.cos(angle) * labelR;
@@ -452,6 +470,20 @@ function TableCircleInner({
             <div key={s} className="flex items-center gap-1.5 group/row break-inside-avoid">
               <span className="font-mono text-muted-foreground w-4 text-right">{s}</span>
               {guest ? (
+                guest.isPlaceholder ? (
+                  <>
+                    <span className="italic text-muted-foreground/70 flex-1 truncate">
+                      TBC {guest.company ? `· ${guest.company}` : ""}
+                    </span>
+                    <button
+                      onClick={() => unassignGuest(guest.id)}
+                      className="opacity-0 group-hover/row:opacity-100 text-destructive text-[10px] shrink-0"
+                      title="Remove TBC placeholder"
+                    >
+                      ×
+                    </button>
+                  </>
+                ) : (
                 <>
                   <span className="truncate flex-1">
                     {isHost && (
@@ -486,6 +518,7 @@ function TableCircleInner({
                     ×
                   </button>
                 </>
+                )
               ) : ghost ? (
                 <span className="line-through text-muted-foreground/60 flex-1 truncate">{ghost.name}</span>
               ) : (
