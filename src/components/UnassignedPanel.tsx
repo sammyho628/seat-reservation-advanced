@@ -2,6 +2,7 @@ import { usePlanStore, type RsvpStatus } from "@/lib/plan-store";
 import { Star, Accessibility, X, ChevronDown, ChevronRight, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface Props {
   selectedGuestId: string | null;
