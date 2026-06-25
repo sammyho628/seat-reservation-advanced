@@ -18,7 +18,7 @@ function PrintPage() {
   const tables = usePlanStore((s) => s.tables);
   const allGuests = usePlanStore((s) => s.guests);
   const settings = usePlanStore((s) => s.settings);
-  const [view, setView] = useState<"full" | "kitchen">("full");
+  const [view, setView] = useState<"full" | "kitchen" | "companies">("full");
 
   const guests = useMemo(
     () => allGuests.filter((g) => g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show"),
