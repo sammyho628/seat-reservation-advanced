@@ -88,6 +88,7 @@ function PlannerPage() {
   const settings = usePlanStore((s) => s.settings);
   const setSettings = usePlanStore((s) => s.setSettings);
   const applyNamingScheme = usePlanStore((s) => s.applyNamingScheme);
+  const updateTable = usePlanStore((s) => s.updateTable);
   const autoSeat = usePlanStore((s) => s.autoSeat);
   const resetAssignments = usePlanStore((s) => s.resetAssignments);
   const swapSeats = usePlanStore((s) => s.swapSeats);
@@ -216,6 +217,8 @@ function PlannerPage() {
     });
   }
 
+  const [pendingScheme, setPendingScheme] = useState<NamingScheme | null>(null);
+
   async function exportPNG() {
     const node = document.getElementById("planner-grid-capture");
     if (!node) return;
@@ -232,6 +235,29 @@ function PlannerPage() {
     } catch (e) {
       console.error(e);
       toast.error("PNG export failed");
+    }
+  }
+
+  async function exportFloorPlanPNG() {
+    const node = document.getElementById("planner-grid-capture");
+    if (!node) return;
+    try {
+      node.classList.add("floor-plan-mode");
+      await new Promise((r) => setTimeout(r, 50));
+      const domtoimage = (await import("dom-to-image-more")).default;
+      const blob = await domtoimage.toBlob(node, { scale: 2 });
+      node.classList.remove("floor-plan-mode");
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${settings.eventTitle.replace(/\s+/g, "-").toLowerCase()}-floor-plan.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Floor plan PNG downloaded");
+    } catch (e) {
+      document.getElementById("planner-grid-capture")?.classList.remove("floor-plan-mode");
+      console.error(e);
+      toast.error("Floor plan export failed");
     }
   }
 
@@ -298,6 +324,19 @@ function PlannerPage() {
   const activeRules = rules.filter((r) => r.enabled);
   const eligibleCount = guests.filter((g) => g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show").length;
   const totalSeats = tables.reduce((a, t) => a + t.seats, 0);
+  const seatedReal = useMemo(
+    () =>
+      guests.filter(
+        (g) =>
+          !g.isPlaceholder &&
+          g.tableId &&
+          g.rsvpStatus !== "Declined" &&
+          g.rsvpStatus !== "No-show" &&
+          g.rsvpStatus !== "Withdrawn",
+      ).length,
+    [guests],
+  );
+  const availableSeats = totalSeats - seatedReal;
 
   const selectedSeatGuest = selectedSeat
     ? guests.find((g) => g.tableId === selectedSeat.tableId && g.seatIndex === selectedSeat.seatIndex)
@@ -318,7 +357,16 @@ function PlannerPage() {
               <div className="flex-1 min-w-[260px]">
                 <h1 className="font-display text-4xl">{settings.eventTitle}</h1>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {tables.length} tables · {totalSeats} seats
+                  {tables.length} tables ·{" "}
+                  <span className={availableSeats <= 0 ? "text-emerald-600 font-medium" : "text-foreground font-medium"}>
+                    {seatedReal}/{totalSeats} seats filled
+                  </span>
+                  {availableSeats > 0 && (
+                    <span className="ml-1 text-amber-600 font-medium">· {availableSeats} available</span>
+                  )}
+                  {availableSeats <= 0 && totalSeats > 0 && (
+                    <span className="ml-1 text-emerald-600 font-medium">· Full 🎉</span>
+                  )}
                 </p>
               </div>
 
@@ -388,7 +436,7 @@ function PlannerPage() {
                         <Label>Table naming</Label>
                         <Select
                           value={settings.namingScheme}
-                          onValueChange={(v) => applyNamingScheme(v as NamingScheme)}
+                          onValueChange={(v) => setPendingScheme(v as NamingScheme)}
                         >
                           <SelectTrigger><SelectValue /></SelectTrigger>
                           <SelectContent>
@@ -550,12 +598,27 @@ function PlannerPage() {
               >
                 <RotateCcw className="h-4 w-4" /> Clear seats
               </button>
-              <button
-                onClick={exportPNG}
-                className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent"
-              >
-                <Camera className="h-4 w-4" /> PNG
-              </button>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent">
+                    <Camera className="h-4 w-4" /> PNG <ChevronDown className="h-3 w-3 opacity-60" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-48 p-1">
+                  <button
+                    onClick={exportPNG}
+                    className="w-full text-left px-3 py-2 text-sm rounded hover:bg-accent inline-flex items-center gap-2"
+                  >
+                    <Camera className="h-4 w-4 text-muted-foreground" /> Full seating map
+                  </button>
+                  <button
+                    onClick={exportFloorPlanPNG}
+                    className="w-full text-left px-3 py-2 text-sm rounded hover:bg-accent inline-flex items-center gap-2"
+                  >
+                    <Camera className="h-4 w-4 text-muted-foreground" /> Floor plan only
+                  </button>
+                </PopoverContent>
+              </Popover>
 
               <div className="h-8 w-px bg-border mx-1" />
 
@@ -940,6 +1003,39 @@ function PlannerPage() {
               }}
             >
               Replace and open
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog open={!!pendingScheme} onOpenChange={(v) => { if (!v) setPendingScheme(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Apply "{SCHEME_LABELS.find((s) => s.value === pendingScheme)?.label}" naming?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This will rename all {tables.length} tables.
+              {(() => {
+                const customCount = tables.filter((t) => t.customLabel).length;
+                return customCount > 0
+                  ? ` ${customCount} table(s) have custom names — they will also be overwritten.`
+                  : "";
+              })()}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingScheme(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (pendingScheme) {
+                  applyNamingScheme(pendingScheme);
+                  tables.forEach((t) => { if (t.customLabel) updateTable(t.id, { customLabel: undefined }); });
+                  toast.success("Table naming updated");
+                }
+                setPendingScheme(null);
+              }}
+            >
+              Apply naming
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

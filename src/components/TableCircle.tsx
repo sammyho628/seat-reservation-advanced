@@ -206,7 +206,12 @@ function TableCircleInner({
                 <Label className="text-xs">Label</Label>
                 <Input
                   defaultValue={table.label}
-                  onBlur={(e) => updateTable(table.id, { label: e.target.value.slice(0, 12) || table.label })}
+                  onBlur={(e) => {
+                    const newLabel = e.target.value.slice(0, 12);
+                    if (newLabel && newLabel !== table.label) {
+                      updateTable(table.id, { label: newLabel, customLabel: true });
+                    }
+                  }}
                 />
               </div>
               <div>
@@ -511,7 +516,7 @@ function TableCircleInner({
         })}
       </svg>
 
-      <div className={`mt-2 text-[11px] max-h-60 overflow-y-auto ${
+      <div className={`table-guest-list mt-2 text-[11px] max-h-60 overflow-y-auto ${
         table.seats >= 7 ? "grid grid-cols-2 gap-x-3 gap-y-0.5" : "space-y-0.5"
       }`}>
         {seats.map((s) => {
