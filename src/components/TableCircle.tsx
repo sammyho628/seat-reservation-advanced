@@ -161,6 +161,7 @@ function TableCircleInner({
 
   return (
     <div
+      ref={cardRef}
       className={`relative rounded-xl border bg-card p-3 group transition-shadow ${
         highlighted ? "ring-2 ring-primary animate-pulse border-primary" : "border-table-ring"
       } ${zoomed ? "scale-100" : ""}`}
