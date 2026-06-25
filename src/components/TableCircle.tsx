@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 
 const MEAL_EMOJI: Record<string, string> = {
   Chicken: "🍗",
@@ -96,11 +97,14 @@ function TableCircleInner({
   const setTableHost = usePlanStore((s) => s.setTableHost);
   const rotateTable = usePlanStore((s) => s.rotateTable);
   const removeTable = usePlanStore((s) => s.removeTable);
+  const checkSeatReduction = usePlanStore((s) => s.checkSeatReduction);
+  const reduceTableSeats = usePlanStore((s) => s.reduceTableSeats);
 
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [editingSeats, setEditingSeats] = useState(false);
   const [rotateOpen, setRotateOpen] = useState(false);
   const [rotateDir, setRotateDir] = useState<"cw" | "ccw">("cw");
+  const [seatReductionPending, setSeatReductionPending] = useState<{ tableId: string; newSeats: number; overflowGuests: Guest[] } | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
 
   async function downloadTablePNG() {
@@ -212,7 +216,18 @@ function TableCircleInner({
                   min={2}
                   max={24}
                   defaultValue={table.seats}
-                  onBlur={(e) => updateTable(table.id, { seats: Math.max(2, parseInt(e.target.value) || table.seats) })}
+                  onBlur={(e) => {
+                    const newSeats = Math.max(2, parseInt(e.target.value) || table.seats);
+                    if (newSeats < table.seats) {
+                      const { overflowGuests } = checkSeatReduction(table.id, newSeats);
+                      if (overflowGuests.length > 0) {
+                        setPopoverOpen(false);
+                        setSeatReductionPending({ tableId: table.id, newSeats, overflowGuests });
+                        return;
+                      }
+                    }
+                    updateTable(table.id, { seats: newSeats });
+                  }}
                 />
               </div>
               <div>
@@ -316,7 +331,16 @@ function TableCircleInner({
               className="w-12 font-mono text-xs border border-input rounded px-1 h-5"
               autoFocus
               onBlur={(e) => {
-                updateTable(table.id, { seats: Math.max(2, parseInt(e.target.value) || table.seats) });
+                const newSeats = Math.max(2, parseInt(e.target.value) || table.seats);
+                if (newSeats < table.seats) {
+                  const { overflowGuests } = checkSeatReduction(table.id, newSeats);
+                  if (overflowGuests.length > 0) {
+                    setSeatReductionPending({ tableId: table.id, newSeats, overflowGuests });
+                    setEditingSeats(false);
+                    return;
+                  }
+                }
+                updateTable(table.id, { seats: newSeats });
                 setEditingSeats(false);
               }}
               onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
@@ -339,11 +363,21 @@ function TableCircleInner({
               <Maximize2 className="h-3 w-3" />
             </button>
           )}
-          {!zoomed && isEmpty && (
+          {!zoomed && (
             <button
-              onClick={() => removeTable(table.id)}
+              onClick={() => {
+                const assignedCount = guests.filter(
+                  (g) => g.tableId === table.id && g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show",
+                ).length;
+                if (assignedCount > 0) {
+                  toast.error(`Table ${table.label} has ${assignedCount} assigned guest(s) — unassign them first`);
+                  return;
+                }
+                removeTable(table.id);
+                toast.success(`Table ${table.label} removed`);
+              }}
               className="opacity-0 group-hover:opacity-100 transition-opacity h-5 w-5 inline-flex items-center justify-center rounded hover:bg-destructive/10 hover:text-destructive ml-0.5"
-              title="Remove empty table"
+              title="Remove table"
             >
               <X className="h-3 w-3" />
             </button>
@@ -586,6 +620,41 @@ function TableCircleInner({
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={() => { rotateTable(table.id, rotateDir); setRotateOpen(false); }}>
               Rotate
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={!!seatReductionPending}
+        onOpenChange={(v) => { if (!v) setSeatReductionPending(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Reducing Table {table.label} to {seatReductionPending?.newSeats} seats
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {seatReductionPending?.overflowGuests.length} guest(s) are assigned to seats that would no longer exist:
+              {" "}<strong>{seatReductionPending?.overflowGuests.map((g) => g.name).join(", ")}</strong>.
+              They will be moved to Unassigned if you continue.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setSeatReductionPending(null)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/90"
+              onClick={() => {
+                if (seatReductionPending) {
+                  reduceTableSeats(seatReductionPending.tableId, seatReductionPending.newSeats, "unassign");
+                  toast.warning(`${seatReductionPending.overflowGuests.length} guest(s) moved to Unassigned`);
+                }
+                setSeatReductionPending(null);
+              }}
+            >
+              Reduce seats & unassign
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
