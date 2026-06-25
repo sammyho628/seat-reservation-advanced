@@ -88,6 +88,7 @@ function PlannerPage() {
   const settings = usePlanStore((s) => s.settings);
   const setSettings = usePlanStore((s) => s.setSettings);
   const applyNamingScheme = usePlanStore((s) => s.applyNamingScheme);
+  const updateTable = usePlanStore((s) => s.updateTable);
   const autoSeat = usePlanStore((s) => s.autoSeat);
   const resetAssignments = usePlanStore((s) => s.resetAssignments);
   const swapSeats = usePlanStore((s) => s.swapSeats);
