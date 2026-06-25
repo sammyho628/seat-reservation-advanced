@@ -217,6 +217,8 @@ function PlannerPage() {
     });
   }
 
+  const [pendingScheme, setPendingScheme] = useState<NamingScheme | null>(null);
+
   async function exportPNG() {
     const node = document.getElementById("planner-grid-capture");
     if (!node) return;
@@ -233,6 +235,29 @@ function PlannerPage() {
     } catch (e) {
       console.error(e);
       toast.error("PNG export failed");
+    }
+  }
+
+  async function exportFloorPlanPNG() {
+    const node = document.getElementById("planner-grid-capture");
+    if (!node) return;
+    try {
+      node.classList.add("floor-plan-mode");
+      await new Promise((r) => setTimeout(r, 50));
+      const domtoimage = (await import("dom-to-image-more")).default;
+      const blob = await domtoimage.toBlob(node, { scale: 2 });
+      node.classList.remove("floor-plan-mode");
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${settings.eventTitle.replace(/\s+/g, "-").toLowerCase()}-floor-plan.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Floor plan PNG downloaded");
+    } catch (e) {
+      document.getElementById("planner-grid-capture")?.classList.remove("floor-plan-mode");
+      console.error(e);
+      toast.error("Floor plan export failed");
     }
   }
 
