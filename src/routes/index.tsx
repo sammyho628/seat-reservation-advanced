@@ -436,7 +436,7 @@ function PlannerPage() {
                         <Label>Table naming</Label>
                         <Select
                           value={settings.namingScheme}
-                          onValueChange={(v) => applyNamingScheme(v as NamingScheme)}
+                          onValueChange={(v) => setPendingScheme(v as NamingScheme)}
                         >
                           <SelectTrigger><SelectValue /></SelectTrigger>
                           <SelectContent>
