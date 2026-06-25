@@ -99,6 +99,23 @@ export function UnassignedPanel({ selectedGuestId, onSelect, onEditGuest }: Prop
         </label>
       </div>
 
+      <div className="px-3 pt-2 pb-1">
+        <div className="relative">
+          <Search className="h-3.5 w-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <input
+            value={panelSearch}
+            onChange={(e) => setPanelSearch(e.target.value)}
+            placeholder="Search unassigned…"
+            className="w-full h-8 pl-8 pr-3 rounded-md border border-input bg-background text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+          />
+        </div>
+        {panelSearch && (
+          <p className="text-[10px] text-muted-foreground pt-1">
+            {visible.length} of {unfiltered.length} shown
+          </p>
+        )}
+      </div>
+
       <div className="flex-1 overflow-y-auto p-2 space-y-3">
         {visible.length === 0 && (
           <div className="text-center text-sm text-muted-foreground py-8">Everyone is seated 🎉</div>
