@@ -148,15 +148,13 @@ function GuestsPage() {
       toast.error("No rows with a 'Name' column.");
       return;
     }
-    // duplicate check inside incoming
-    const seen = new Set<string>();
-    let dupes = 0;
-    drafts.forEach((d) => {
-      const k = d.name.toLowerCase().trim();
-      if (seen.has(k)) dupes++;
-      seen.add(k);
-    });
-    if (dupes > 0) toast.warning(`${dupes} duplicate name(s) in the file.`);
+    const dupeCheck = detectImportDuplicates(drafts, []);
+    if (dupeCheck.intraFile.length > 0) {
+      toast.warning(
+        `${dupeCheck.intraFile.length} duplicate name(s) in file: ${dupeCheck.intraFile.slice(0, 3).join(", ")}${dupeCheck.intraFile.length > 3 ? "…" : ""}`,
+        { duration: 6000 }
+      );
+    }
     setMappingOpen(false);
     if (guests.length === 0) {
       addGuests(drafts);
