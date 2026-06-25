@@ -873,12 +873,74 @@ function PlannerPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Overwrite existing assignments?</AlertDialogTitle>
             <AlertDialogDescription>
-              {guests.filter((g) => g.tableId).length} guests are already seated. Auto-seat will reassign everyone from scratch.
+              {(() => {
+                const seatedRealCount = guests.filter(
+                  (g) => g.tableId && !g.isPlaceholder && g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show",
+                ).length;
+                const lockedCount = guests.filter((g) => g.locked && g.tableId).length;
+                return (
+                  <>
+                    {seatedRealCount} guests are currently seated.
+                    {lockedCount > 0
+                      ? ` ${lockedCount} locked guest(s) will stay in place. All others will be reassigned from scratch.`
+                      : " All assignments will be cleared and reassigned from scratch."}
+                    {" "}TBC placeholder seats are always preserved.
+                  </>
+                );
+              })()}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={commitAutoSeat} className="bg-destructive hover:bg-destructive/90">Reassign all</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={clearSeatsOpen} onOpenChange={setClearSeatsOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear all seat assignments?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will unassign all {guests.filter((g) => g.tableId && !g.isPlaceholder).length} seated guests. Tables and guest records are kept. This cannot be undone easily.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => { resetAssignments(); setClearSeatsOpen(false); toast.success("All seat assignments cleared"); }}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              Clear all assignments
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={importConfirmOpen} onOpenChange={setImportConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Replace current plan?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Opening this file will replace your current plan ({guests.length} guests, {tables.length} tables). Save your current plan first if you want to keep it.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingImportData(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/90"
+              onClick={() => {
+                if (pendingImportData) {
+                  const ok = importPlan(pendingImportData);
+                  if (ok) toast.success("Plan loaded");
+                  else toast.error("Could not load plan — invalid file");
+                }
+                setPendingImportData(null);
+                setImportConfirmOpen(false);
+              }}
+            >
+              Replace and open
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
