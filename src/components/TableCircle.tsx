@@ -624,6 +624,41 @@ function TableCircleInner({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog
+        open={!!seatReductionPending}
+        onOpenChange={(v) => { if (!v) setSeatReductionPending(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Reducing Table {table.label} to {seatReductionPending?.newSeats} seats
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {seatReductionPending?.overflowGuests.length} guest(s) are assigned to seats that would no longer exist:
+              {" "}<strong>{seatReductionPending?.overflowGuests.map((g) => g.name).join(", ")}</strong>.
+              They will be moved to Unassigned if you continue.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setSeatReductionPending(null)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/90"
+              onClick={() => {
+                if (seatReductionPending) {
+                  reduceTableSeats(seatReductionPending.tableId, seatReductionPending.newSeats, "unassign");
+                  toast.warning(`${seatReductionPending.overflowGuests.length} guest(s) moved to Unassigned`);
+                }
+                setSeatReductionPending(null);
+              }}
+            >
+              Reduce seats & unassign
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
