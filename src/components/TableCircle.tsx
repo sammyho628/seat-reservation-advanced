@@ -216,7 +216,18 @@ function TableCircleInner({
                   min={2}
                   max={24}
                   defaultValue={table.seats}
-                  onBlur={(e) => updateTable(table.id, { seats: Math.max(2, parseInt(e.target.value) || table.seats) })}
+                  onBlur={(e) => {
+                    const newSeats = Math.max(2, parseInt(e.target.value) || table.seats);
+                    if (newSeats < table.seats) {
+                      const { overflowGuests } = checkSeatReduction(table.id, newSeats);
+                      if (overflowGuests.length > 0) {
+                        setPopoverOpen(false);
+                        setSeatReductionPending({ tableId: table.id, newSeats, overflowGuests });
+                        return;
+                      }
+                    }
+                    updateTable(table.id, { seats: newSeats });
+                  }}
                 />
               </div>
               <div>
