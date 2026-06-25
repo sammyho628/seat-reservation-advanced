@@ -659,7 +659,7 @@ function PlannerPage() {
 {/* Step progress hint */}
             {(() => {
               const eligibleGuests = guests.filter(
-                (g) => g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show" && g.rsvpStatus !== "Withdrawn"
+                (g) => !g.isPlaceholder && g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show" && g.rsvpStatus !== "Withdrawn"
               );
               const seatedCount = eligibleGuests.filter((g) => g.tableId).length;
               const unassignedCount = eligibleGuests.length - seatedCount;
