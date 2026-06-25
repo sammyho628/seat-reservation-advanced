@@ -357,6 +357,7 @@ function PrintPage() {
                       <div className="font-display text-6xl mt-2">Table {t.label}</div>
                       {t.hostName && <div className="text-sm italic text-muted-foreground mt-1">Hosted by {t.hostName}</div>}
                       <div className="text-muted-foreground mt-1 font-mono text-sm">{list.length} of {t.seats} seated</div>
+                      {t.notes && <p className="text-xs text-muted-foreground italic mt-0.5 mb-2">{t.notes}</p>}
                     </div>
                     <table className="w-full">
                       <tbody>
