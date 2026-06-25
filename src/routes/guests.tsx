@@ -251,8 +251,12 @@ function GuestsPage() {
             {tab === "edit" && (
               <>
                 <label className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 cursor-pointer hover:bg-accent">
-                  <Upload className="h-4 w-4" /> Import CSV/Excel
+                  <Upload className="h-4 w-4" /> Import / Reconcile
                   <input type="file" accept=".csv,.xlsx,.xls" onChange={handleFile} className="hidden" />
+                </label>
+                <label className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 cursor-pointer hover:bg-accent">
+                  <Upload className="h-4 w-4" /> Import new batch
+                  <input type="file" accept=".csv,.xlsx,.xls" onChange={handleBatchFile} className="hidden" />
                 </label>
                 <button onClick={() => exportGuestsCSV(guests, tableLabel)} className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent">
                   <Download className="h-4 w-4" /> CSV
