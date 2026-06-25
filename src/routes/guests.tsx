@@ -266,7 +266,7 @@ function GuestsPage() {
         <div className="flex items-center gap-1 mb-6 p-1 bg-muted/40 rounded-lg w-fit">
           {([
             { id: "edit", label: "Edit" },
-            { id: "seating", label: "Seating View" },
+            { id: "seating", label: "Seat List" },
             { id: "companies", label: "Companies" },
           ] as const).map((t) => (
             <button
