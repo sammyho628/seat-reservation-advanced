@@ -470,6 +470,20 @@ function TableCircleInner({
             <div key={s} className="flex items-center gap-1.5 group/row break-inside-avoid">
               <span className="font-mono text-muted-foreground w-4 text-right">{s}</span>
               {guest ? (
+                guest.isPlaceholder ? (
+                  <>
+                    <span className="italic text-muted-foreground/70 flex-1 truncate">
+                      TBC {guest.company ? `· ${guest.company}` : ""}
+                    </span>
+                    <button
+                      onClick={() => unassignGuest(guest.id)}
+                      className="opacity-0 group-hover/row:opacity-100 text-destructive text-[10px] shrink-0"
+                      title="Remove TBC placeholder"
+                    >
+                      ×
+                    </button>
+                  </>
+                ) : (
                 <>
                   <span className="truncate flex-1">
                     {isHost && (
@@ -504,6 +518,7 @@ function TableCircleInner({
                     ×
                   </button>
                 </>
+                )
               ) : ghost ? (
                 <span className="line-through text-muted-foreground/60 flex-1 truncate">{ghost.name}</span>
               ) : (
