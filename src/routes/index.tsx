@@ -101,6 +101,7 @@ function PlannerPage() {
   const importPlan = usePlanStore((s) => s.importPlan);
   const resetPlan = usePlanStore((s) => s.resetPlan);
   const fillGaps = usePlanStore((s) => s.fillGaps);
+  const updateGuest = usePlanStore((s) => s.updateGuest);
 
   const [newPlanOpen, setNewPlanOpen] = useState(false);
   const [clearSeatsOpen, setClearSeatsOpen] = useState(false);
