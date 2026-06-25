@@ -347,11 +347,15 @@ function GuestsPage() {
                 <tfoot className="bg-muted/30 text-xs font-mono">
                   <tr className="border-t border-border">
                     <td className="p-3">{companyStats.length} companies</td>
-                    <td className="p-3 text-right">{guests.length}</td>
-                    <td className="p-3 text-right">{guests.filter((g) => g.tableId).length}</td>
-                    <td className={`p-3 text-right ${guests.filter((g) => !g.tableId && g.rsvpStatus !== "Withdrawn" && g.rsvpStatus !== "Declined").length > 0 ? "text-amber-600" : ""}`}>
-                      {guests.filter((g) => !g.tableId && g.rsvpStatus !== "Withdrawn" && g.rsvpStatus !== "Declined").length || "—"}
+                    <td className="p-3 text-right">{guests.filter((g) => !g.isPlaceholder).length}</td>
+                    <td className="p-3 text-right">{guests.filter((g) => g.tableId && !g.isPlaceholder).length}</td>
+                    <td className={`p-3 text-right ${guests.filter((g) => !g.tableId && !g.isPlaceholder && g.rsvpStatus !== "Withdrawn" && g.rsvpStatus !== "Declined").length > 0 ? "text-amber-600" : ""}`}>
+                      {guests.filter((g) => !g.tableId && !g.isPlaceholder && g.rsvpStatus !== "Withdrawn" && g.rsvpStatus !== "Declined").length || "—"}
                     </td>
+                    <td className="p-3 text-right text-indigo-600">
+                      {guests.filter((g) => g.isPlaceholder).length || "—"}
+                    </td>
+                    <td className="p-3"></td>
                     <td className="p-3"></td>
                   </tr>
                 </tfoot>
