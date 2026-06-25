@@ -292,7 +292,9 @@ function PlannerPage() {
       }
     });
     Object.entries(byCohort).forEach(([c, ts]) => { if (ts.size > 1) splitCohorts.push(c); });
-    return { capacity, seated, unassigned, meals, fullTables, topCompanies, splitCohorts };
+    const rsvpCounts: Record<string, number> = {};
+    guests.forEach((g) => { if (!g.isPlaceholder) rsvpCounts[g.rsvpStatus] = (rsvpCounts[g.rsvpStatus] ?? 0) + 1; });
+    return { capacity, seated, unassigned, meals, fullTables, topCompanies, splitCohorts, rsvpCounts };
   }, [guests, tables]);
 
   const fillPct = stats.capacity ? Math.round((stats.seated / stats.capacity) * 100) : 0;
