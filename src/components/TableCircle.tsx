@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { usePlanStore, type Table, type Guest } from "@/lib/plan-store";
 import {
   Star, Accessibility, TriangleAlert, RotateCw, RotateCcw,
-  Pencil, Maximize2, X,
+  Pencil, Maximize2, X, Camera,
 } from "lucide-react";
 import {
   Popover,
