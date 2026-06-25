@@ -1,12 +1,11 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { LayoutGrid, Users, Sliders, Printer, UserCheck, MoreVertical, Plus, Copy, Download, Upload, RotateCcw, ListFilter } from "lucide-react";
+import { LayoutGrid, Users, Printer, UserCheck, MoreVertical, Copy } from "lucide-react";
 import { usePlanStore } from "@/lib/plan-store";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -22,7 +21,6 @@ import { toast } from "sonner";
 const nav = [
   { to: "/", label: "Planner", icon: LayoutGrid },
   { to: "/guests", label: "Guests", icon: Users },
-  { to: "/rules", label: "Rules", icon: Sliders },
   { to: "/checkin", label: "Check-in", icon: UserCheck },
   { to: "/print", label: "Print", icon: Printer },
 ] as const;
@@ -30,17 +28,17 @@ const nav = [
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const eventTitle = usePlanStore((s) => s.settings.eventTitle);
+  const eventDate = usePlanStore((s) => s.settings.eventDate);
+  const eventVenue = usePlanStore((s) => s.settings.eventVenue);
   const logoDataUrl = usePlanStore((s) => s.settings.logoDataUrl);
   const allGuests = usePlanStore((s) => s.guests);
   const guestCount = allGuests.length;
   const unassigned = allGuests.filter((g) => !g.tableId && g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show").length;
   const importPlan = usePlanStore((s) => s.importPlan);
-  const resetAssignments = usePlanStore((s) => s.resetAssignments);
 
   const [savedFlash, setSavedFlash] = useState(false);
   const [dupOpen, setDupOpen] = useState(false);
   const [dupTitle, setDupTitle] = useState("");
-  const importRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const off = (window as any).__seatcraftOnSave?.((_t: number) => {
@@ -49,44 +47,6 @@ export function AppShell({ children }: { children: ReactNode }) {
     });
     return () => off?.();
   }, []);
-
-  function exportJSON() {
-    const s = usePlanStore.getState();
-    const blob = new Blob(
-      [JSON.stringify({ settings: s.settings, tables: s.tables, guests: s.guests, rules: s.rules }, null, 2)],
-      { type: "application/json" },
-    );
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${s.settings.eventTitle.replace(/\s+/g, "-").toLowerCase()}-plan.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  async function importJSON(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    try {
-      const data = JSON.parse(await f.text());
-      const ok = importPlan(data);
-      if (ok) toast.success("Plan imported");
-      else toast.error("Invalid plan file shape");
-    } catch {
-      toast.error("Could not read file");
-    } finally {
-      e.target.value = "";
-    }
-  }
-
-  function newPlan() {
-    if (!confirm("Start a new plan? Current plan will be cleared.")) return;
-    try {
-      window.localStorage.removeItem("seating-plan-v2");
-      window.localStorage.removeItem("seatcraft-welcomed");
-    } catch {}
-    window.location.reload();
-  }
 
   function doDuplicate() {
     const s = usePlanStore.getState();
@@ -104,7 +64,15 @@ export function AppShell({ children }: { children: ReactNode }) {
           <Link to="/" className="flex items-center gap-2">
             {logoDataUrl && <img src={logoDataUrl} alt="" className="h-8 w-auto rounded" />}
             <span className="font-display text-2xl">Seatcraft</span>
-            <span className="text-muted-foreground text-sm hidden sm:inline">· {eventTitle}</span>
+            <span className="text-muted-foreground text-sm hidden sm:inline">
+              · {eventTitle}
+              {eventDate && (
+                <span className="ml-1 opacity-60">
+                  {new Date(eventDate + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                </span>
+              )}
+              {eventVenue && <span className="ml-1 opacity-60">· {eventVenue}</span>}
+            </span>
           </Link>
           <nav className="flex items-center gap-1 ml-4">
             {nav.map((item) => {
@@ -146,9 +114,6 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <MoreVertical className="h-4 w-4" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuItem onClick={newPlan}>
-                  <Plus className="h-4 w-4 mr-2" /> New plan
-                </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => {
                     setDupTitle(`${usePlanStore.getState().settings.eventTitle} (copy)`);
@@ -157,20 +122,8 @@ export function AppShell({ children }: { children: ReactNode }) {
                 >
                   <Copy className="h-4 w-4 mr-2" /> Duplicate plan
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={exportJSON}>
-                  <Download className="h-4 w-4 mr-2" /> Export JSON
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => importRef.current?.click()}>
-                  <Upload className="h-4 w-4 mr-2" /> Import JSON
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => { resetAssignments(); toast.success("Cleared seat assignments"); }}>
-                  <RotateCcw className="h-4 w-4 mr-2" /> Reset assignments
-                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <input ref={importRef} type="file" accept=".json" className="hidden" onChange={importJSON} />
           </div>
         </div>
       </header>
