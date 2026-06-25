@@ -101,6 +101,7 @@ function PlannerPage() {
   const importPlan = usePlanStore((s) => s.importPlan);
   const resetPlan = usePlanStore((s) => s.resetPlan);
   const fillGaps = usePlanStore((s) => s.fillGaps);
+  const updateGuest = usePlanStore((s) => s.updateGuest);
 
   const [newPlanOpen, setNewPlanOpen] = useState(false);
   const [clearSeatsOpen, setClearSeatsOpen] = useState(false);
@@ -298,6 +299,32 @@ function PlannerPage() {
   }, [guests, tables]);
 
   const fillPct = stats.capacity ? Math.round((stats.seated / stats.capacity) * 100) : 0;
+
+  const waitlistGuests = useMemo(
+    () => guests.filter((g) => !g.isPlaceholder && g.rsvpStatus === "Waitlist"),
+    [guests],
+  );
+  const totalSeatsForPromo = tables.reduce((a, t) => a + t.seats, 0);
+  const seatedForPromo = guests.filter(
+    (g) =>
+      !g.isPlaceholder &&
+      g.tableId &&
+      g.rsvpStatus !== "Declined" &&
+      g.rsvpStatus !== "No-show" &&
+      g.rsvpStatus !== "Withdrawn",
+  ).length;
+  const emptySeatsForPromo = totalSeatsForPromo - seatedForPromo;
+  const showWaitlistBanner = waitlistGuests.length > 0 && emptySeatsForPromo > 0;
+  const promoteCount = Math.min(waitlistGuests.length, emptySeatsForPromo);
+
+  function promoteWaitlist() {
+    const toPromote = waitlistGuests.slice(0, promoteCount);
+    toPromote.forEach((g) => updateGuest(g.id, { rsvpStatus: "Confirmed" }));
+    toast.success(
+      `${toPromote.length} guest${toPromote.length !== 1 ? "s" : ""} promoted to Confirmed`,
+      { description: toPromote.map((g) => g.name).join(", ") },
+    );
+  }
 
   const cohortColorMap = useMemo(() => {
     const m = new Map<string, string>();
@@ -593,8 +620,15 @@ function PlannerPage() {
                   </a>
                   <button
                     onClick={() => {
-                      addGuests([{ name: "New guest", meal: "None", tags: [], rsvpStatus: "Confirmed" }]);
-                      toast.success("Added blank guest — edit in Guests page");
+                      const existingCount = guests.filter((g) => g.name.startsWith("New guest")).length;
+                      const newName = existingCount === 0 ? "New guest" : `New guest ${existingCount + 1}`;
+                      addGuests([{ name: newName, meal: "None", tags: [], rsvpStatus: "Confirmed" }]);
+                      setTimeout(() => {
+                        const allGuests = usePlanStore.getState().guests;
+                        const newGuest = [...allGuests].reverse().find((g) => g.name === newName);
+                        if (newGuest) setEditingGuestId(newGuest.id);
+                      }, 0);
+                      toast.success(`${newName} added — fill in the details`);
                     }}
                     className="w-full text-left px-3 py-2 text-sm rounded hover:bg-accent inline-flex items-center gap-2"
                   >
@@ -856,7 +890,27 @@ function PlannerPage() {
                 </div>
               </div>
             ) : (
-              <PlannerGrid
+              <>
+                {showWaitlistBanner && (
+                  <div className="mb-4 flex items-center gap-3 px-4 py-3 rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800">
+                    <span className="text-amber-600 text-lg shrink-0">⏳</span>
+                    <div className="flex-1 min-w-0 text-sm">
+                      <span className="font-medium text-amber-900 dark:text-amber-100">
+                        {waitlistGuests.length} waitlisted guest{waitlistGuests.length !== 1 ? "s" : ""}
+                      </span>
+                      <span className="text-amber-700 dark:text-amber-300">
+                        {" "}· {emptySeatsForPromo} seat{emptySeatsForPromo !== 1 ? "s" : ""} available
+                      </span>
+                    </div>
+                    <button
+                      onClick={promoteWaitlist}
+                      className="shrink-0 h-8 px-3 rounded-md bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold"
+                    >
+                      Promote {promoteCount} to Confirmed
+                    </button>
+                  </div>
+                )}
+                <PlannerGrid
                 selectedGuestId={selectedGuestId}
                 onAfterAssign={() => setSelectedGuestId(null)}
                 highlightedTableId={highlightedTableId}
@@ -867,6 +921,7 @@ function PlannerPage() {
                 onSelectSeat={handleSelectSeat}
                 onEditGuest={setEditingGuestId}
               />
+              </>
             )}
           </div>
         </div>
