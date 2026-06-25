@@ -921,6 +921,7 @@ function PlannerPage() {
                 onSelectSeat={handleSelectSeat}
                 onEditGuest={setEditingGuestId}
               />
+              </>
             )}
           </div>
         </div>
