@@ -598,12 +598,27 @@ function PlannerPage() {
               >
                 <RotateCcw className="h-4 w-4" /> Clear seats
               </button>
-              <button
-                onClick={exportPNG}
-                className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent"
-              >
-                <Camera className="h-4 w-4" /> PNG
-              </button>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent">
+                    <Camera className="h-4 w-4" /> PNG <ChevronDown className="h-3 w-3 opacity-60" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-48 p-1">
+                  <button
+                    onClick={exportPNG}
+                    className="w-full text-left px-3 py-2 text-sm rounded hover:bg-accent inline-flex items-center gap-2"
+                  >
+                    <Camera className="h-4 w-4 text-muted-foreground" /> Full seating map
+                  </button>
+                  <button
+                    onClick={exportFloorPlanPNG}
+                    className="w-full text-left px-3 py-2 text-sm rounded hover:bg-accent inline-flex items-center gap-2"
+                  >
+                    <Camera className="h-4 w-4 text-muted-foreground" /> Floor plan only
+                  </button>
+                </PopoverContent>
+              </Popover>
 
               <div className="h-8 w-px bg-border mx-1" />
 
