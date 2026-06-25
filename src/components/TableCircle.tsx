@@ -331,7 +331,16 @@ function TableCircleInner({
               className="w-12 font-mono text-xs border border-input rounded px-1 h-5"
               autoFocus
               onBlur={(e) => {
-                updateTable(table.id, { seats: Math.max(2, parseInt(e.target.value) || table.seats) });
+                const newSeats = Math.max(2, parseInt(e.target.value) || table.seats);
+                if (newSeats < table.seats) {
+                  const { overflowGuests } = checkSeatReduction(table.id, newSeats);
+                  if (overflowGuests.length > 0) {
+                    setSeatReductionPending({ tableId: table.id, newSeats, overflowGuests });
+                    setEditingSeats(false);
+                    return;
+                  }
+                }
+                updateTable(table.id, { seats: newSeats });
                 setEditingSeats(false);
               }}
               onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
@@ -354,11 +363,21 @@ function TableCircleInner({
               <Maximize2 className="h-3 w-3" />
             </button>
           )}
-          {!zoomed && isEmpty && (
+          {!zoomed && (
             <button
-              onClick={() => removeTable(table.id)}
+              onClick={() => {
+                const assignedCount = guests.filter(
+                  (g) => g.tableId === table.id && g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show",
+                ).length;
+                if (assignedCount > 0) {
+                  toast.error(`Table ${table.label} has ${assignedCount} assigned guest(s) — unassign them first`);
+                  return;
+                }
+                removeTable(table.id);
+                toast.success(`Table ${table.label} removed`);
+              }}
               className="opacity-0 group-hover:opacity-100 transition-opacity h-5 w-5 inline-flex items-center justify-center rounded hover:bg-destructive/10 hover:text-destructive ml-0.5"
-              title="Remove empty table"
+              title="Remove table"
             >
               <X className="h-3 w-3" />
             </button>
