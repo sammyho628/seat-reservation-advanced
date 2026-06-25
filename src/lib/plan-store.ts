@@ -39,6 +39,7 @@ export interface Guest {
 export interface Table {
   id: string;
   label: string;
+  customLabel?: boolean;
   seats: number;
   hostName?: string;
   hostGuestId?: string;
