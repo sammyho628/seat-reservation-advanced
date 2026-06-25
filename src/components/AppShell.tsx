@@ -73,6 +73,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   {new Date(eventDate + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
                 </span>
               )}
+              {eventTime && <span className="ml-1 opacity-60">· {eventTime}</span>}
               {eventVenue && <span className="ml-1 opacity-60">· {eventVenue}</span>}
             </span>
           </Link>
