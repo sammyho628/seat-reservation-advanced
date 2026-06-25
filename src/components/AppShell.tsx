@@ -32,8 +32,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   const eventVenue = usePlanStore((s) => s.settings.eventVenue);
   const logoDataUrl = usePlanStore((s) => s.settings.logoDataUrl);
   const allGuests = usePlanStore((s) => s.guests);
-  const guestCount = allGuests.length;
-  const unassigned = allGuests.filter((g) => !g.tableId && g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show").length;
+  const guestCount = allGuests.filter((g) => !g.isPlaceholder).length;
+  const unassigned = allGuests.filter((g) => !g.tableId && !g.isPlaceholder && g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show" && g.rsvpStatus !== "Withdrawn").length;
+  const tbcCount = allGuests.filter((g) => g.isPlaceholder).length;
   const importPlan = usePlanStore((s) => s.importPlan);
 
   const [savedFlash, setSavedFlash] = useState(false);
