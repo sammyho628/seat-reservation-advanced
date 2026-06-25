@@ -67,7 +67,7 @@ function PrintPage() {
   }, [tables, guests]);
 
   const alpha = useMemo(
-    () => [...guests].filter((g) => g.tableId).sort((a, b) => a.name.localeCompare(b.name)),
+    () => [...guests].filter((g) => g.tableId && !g.isPlaceholder).sort((a, b) => a.name.localeCompare(b.name)),
     [guests],
   );
 
