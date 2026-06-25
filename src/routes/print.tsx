@@ -206,7 +206,17 @@ function PrintPage() {
             {settings.logoDataUrl && <img src={settings.logoDataUrl} alt="" className="h-14" />}
             <div>
               <h1 className="font-display text-5xl">{settings.eventTitle}</h1>
-              <p className="text-muted-foreground">Seating Plan · {tables.length} tables · {guests.length} attendees</p>
+              <p className="text-muted-foreground">
+                {settings.eventDate && (
+                  <span>
+                    {new Date(settings.eventDate + "T00:00").toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+                    {settings.eventTime && ` · ${settings.eventTime}`}
+                    {settings.eventVenue && ` · ${settings.eventVenue}`}
+                    {" — "}
+                  </span>
+                )}
+                Seating Plan · {tables.length} tables · {guests.length} attendees
+              </p>
             </div>
           </div>
 
