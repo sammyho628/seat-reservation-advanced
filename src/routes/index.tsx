@@ -1140,6 +1140,11 @@ function PlannerPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <SmartChecksSheet
+        open={checksOpen}
+        onOpenChange={setChecksOpen}
+        onEditGuest={(id) => { setEditingGuestId(id); setChecksOpen(false); }}
+      />
     </AppShell>
   );
 }
