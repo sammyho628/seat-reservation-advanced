@@ -204,7 +204,7 @@ function PrintPage() {
             </div>
           </div>
 
-          {view === "kitchen" ? (
+          {view === "kitchen" && (
             <div className="mt-8">
               <h2 className="font-display text-3xl mb-4" style={{ borderBottom: `2px solid ${settings.primaryColor}` }}>Kitchen sheet</h2>
               <table className="w-full text-sm border border-border">
