@@ -206,7 +206,12 @@ function TableCircleInner({
                 <Label className="text-xs">Label</Label>
                 <Input
                   defaultValue={table.label}
-                  onBlur={(e) => updateTable(table.id, { label: e.target.value.slice(0, 12) || table.label })}
+                  onBlur={(e) => {
+                    const newLabel = e.target.value.slice(0, 12);
+                    if (newLabel && newLabel !== table.label) {
+                      updateTable(table.id, { label: newLabel, customLabel: true });
+                    }
+                  }}
                 />
               </div>
               <div>
