@@ -133,6 +133,27 @@ export interface ReconciliationDiff {
   unchanged: number;
 }
 
+export function detectImportDuplicates(
+  drafts: GuestDraft[],
+  existingGuests: { name: string }[],
+): { intraFile: string[]; againstExisting: string[] } {
+  const seen = new Map<string, number>();
+  drafts.forEach((d) => {
+    const k = d.name.toLowerCase().trim();
+    seen.set(k, (seen.get(k) ?? 0) + 1);
+  });
+  const intraFile = [...seen.entries()]
+    .filter(([, count]) => count > 1)
+    .map(([name]) => name);
+
+  const existingNames = new Set(existingGuests.map((g) => g.name.toLowerCase().trim()));
+  const againstExisting = drafts
+    .filter((d) => !d.isPlaceholder && existingNames.has(d.name.toLowerCase().trim()))
+    .map((d) => d.name);
+
+  return { intraFile, againstExisting };
+}
+
 export function reconcileGuests(existing: Guest[], incoming: GuestDraft[]): ReconciliationDiff {
   const norm = (s: string) => s.toLowerCase().trim();
   const existingByName = new Map(existing.map((g) => [norm(g.name), g]));
