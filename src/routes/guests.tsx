@@ -60,6 +60,7 @@ function GuestsPage() {
   const clearGuests = usePlanStore((s) => s.clearGuests);
   const assignGuest = usePlanStore((s) => s.assignGuest);
   const unassignGuest = usePlanStore((s) => s.unassignGuest);
+  const addPlaceholder = usePlanStore((s) => s.addPlaceholder);
 
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "assigned" | "unassigned">("all");
