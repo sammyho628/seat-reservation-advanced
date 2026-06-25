@@ -43,7 +43,22 @@ export function GuestEditSheet({ guestId, onClose }: { guestId: string | null; o
             </SheetHeader>
 
             <div className="space-y-4 mt-4 pb-12">
-              {field("Full name", <input value={guest.name} onChange={(e) => updateGuest(guest.id, { name: e.target.value })} className={cls} />)}
+              {guest.isPlaceholder && (
+                <div className="rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 px-4 py-3">
+                  <div className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-1">
+                    TBC — awaiting real name
+                  </div>
+                  <p className="text-xs text-amber-700/80 dark:text-amber-400/80">
+                    {guest.company ? `Reserved for ${guest.company}. ` : ""}
+                    Assign an unassigned guest to this seat to fill it, or type a name below to convert directly.
+                  </p>
+                </div>
+              )}
+              {field("Full name", <input value={guest.name} onChange={(e) => {
+                const newName = e.target.value;
+                const stillTbc = newName.trim() === "" || newName.trim().toUpperCase().startsWith("TBC");
+                updateGuest(guest.id, { name: newName, isPlaceholder: stillTbc ? true : undefined });
+              }} className={cls} />)}
               {field("First name", <input value={guest.firstName ?? ""} onChange={(e) => updateGuest(guest.id, { firstName: e.target.value || undefined })} placeholder="—" className={cls} />)}
               {field("Last name", <input value={guest.lastName ?? ""} onChange={(e) => updateGuest(guest.id, { lastName: e.target.value || undefined })} placeholder="—" className={cls} />)}
               {field("Company", <input value={guest.company ?? ""} onChange={(e) => updateGuest(guest.id, { company: e.target.value || undefined })} placeholder="—" className={cls} />)}
