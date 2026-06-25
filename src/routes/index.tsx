@@ -501,7 +501,7 @@ function PlannerPage() {
             {/* Row 2 — secondary actions + search + view controls */}
             <div className="flex items-center gap-3 mb-4 flex-wrap">
               <button
-                onClick={addTable}
+                onClick={() => addTable()}
                 className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent"
                 title="Add a table"
               >
