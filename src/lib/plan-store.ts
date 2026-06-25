@@ -128,7 +128,7 @@ interface PlanState {
   applyNamingScheme: (scheme: NamingScheme) => void;
   setTableHost: (tableId: string, guestId: string | undefined) => void;
   rotateTable: (tableId: string, direction: "cw" | "ccw") => void;
-  addTable: () => void;
+  addTable: (seats?: number) => void;
   removeTable: (tableId: string) => void;
 
   addGuests: (guests: Omit<Guest, "id">[]) => void;
