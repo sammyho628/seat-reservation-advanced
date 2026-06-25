@@ -491,16 +491,33 @@ function PlannerPage() {
               >
                 <Plus className="h-4 w-4" /> Table
               </button>
-              <button
-                onClick={() => {
-                  addGuests([{ name: "New guest", meal: "None", tags: [], rsvpStatus: "Confirmed" }]);
-                  toast.success("Added blank guest");
-                }}
-                className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent"
-                title="Add a blank guest"
-              >
-                <UserPlus className="h-4 w-4" /> Guest
-              </button>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent"
+                    title="Add guests"
+                  >
+                    <UserPlus className="h-4 w-4" /> Guest <ChevronDown className="h-3 w-3 opacity-60" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-52 p-1">
+                  <a
+                    href="/guests"
+                    className="w-full text-left px-3 py-2 text-sm rounded hover:bg-accent inline-flex items-center gap-2"
+                  >
+                    <Upload className="h-4 w-4 text-muted-foreground" /> Import CSV / Excel
+                  </a>
+                  <button
+                    onClick={() => {
+                      addGuests([{ name: "New guest", meal: "None", tags: [], rsvpStatus: "Confirmed" }]);
+                      toast.success("Added blank guest — edit in Guests page");
+                    }}
+                    className="w-full text-left px-3 py-2 text-sm rounded hover:bg-accent inline-flex items-center gap-2"
+                  >
+                    <UserPlus className="h-4 w-4 text-muted-foreground" /> Add one blank guest
+                  </button>
+                </PopoverContent>
+              </Popover>
               <button
                 onClick={resetAssignments}
                 className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent"
