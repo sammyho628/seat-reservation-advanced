@@ -97,6 +97,10 @@ function PlannerPage() {
   const guests = usePlanStore((s) => s.guests);
   const tables = usePlanStore((s) => s.tables);
   const rules = usePlanStore((s) => s.rules);
+  const checkWarningCount = useMemo(
+    () => runSmartChecks(guests, tables, rules).length,
+    [guests, tables, rules]
+  );
   const addTable = usePlanStore((s) => s.addTable);
   const addGuests = usePlanStore((s) => s.addGuests);
   const exportPlan = usePlanStore((s) => s.exportPlan);
