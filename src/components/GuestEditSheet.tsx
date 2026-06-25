@@ -24,7 +24,10 @@ export function GuestEditSheet({ guestId, onClose }: { guestId: string | null; o
   const guest = usePlanStore((s) => s.guests.find((g) => g.id === guestId));
   const updateGuest = usePlanStore((s) => s.updateGuest);
   const tables = usePlanStore((s) => s.tables);
+  const guests = usePlanStore((s) => s.guests);
   const unassignGuest = usePlanStore((s) => s.unassignGuest);
+  const removeGuest = usePlanStore((s) => s.removeGuest);
+  const assignGuest = usePlanStore((s) => s.assignGuest);
 
   const open = !!guestId && !!guest;
   const table = guest ? tables.find((t) => t.id === guest.tableId) : null;
