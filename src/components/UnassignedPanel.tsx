@@ -21,6 +21,7 @@ export function UnassignedPanel({ selectedGuestId, onSelect, onEditGuest }: Prop
   const allGuests = usePlanStore((s) => s.guests);
   const tables = usePlanStore((s) => s.tables);
   const assignGuest = usePlanStore((s) => s.assignGuest);
+  const updateGuest = usePlanStore((s) => s.updateGuest);
   const [filter, setFilter] = useState<"All" | RsvpStatus>("All");
   const [showDeclined, setShowDeclined] = useState(false);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
