@@ -237,7 +237,7 @@ function PlannerPage() {
 
   // analytics
   const stats = useMemo(() => {
-    const eligible = guests.filter((g) => g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show");
+    const eligible = guests.filter((g) => !g.isPlaceholder && g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show");
     const capacity = tables.reduce((a, t) => a + t.seats, 0);
     const seated = eligible.filter((g) => g.tableId).length;
     const unassigned = eligible.length - seated;
