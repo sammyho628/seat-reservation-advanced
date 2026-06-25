@@ -336,6 +336,23 @@ export const usePlanStore = create<PlanState>()(
           ],
         })),
 
+      addPlaceholder: (company) =>
+        set((s) => {
+          const n = s.guests.filter((g) => g.isPlaceholder && (g.company ?? "") === company).length + 1;
+          const label = company || "Unknown";
+          const guest: Guest = {
+            id: uid(),
+            name: `TBC · ${label} · ${n}`,
+            company: company || undefined,
+            meal: "None",
+            tags: [],
+            rsvpStatus: "Pending",
+            isPlaceholder: true,
+          };
+          return { guests: [...s.guests, guest] };
+        }),
+
+
       updateGuest: (id, patch) =>
         set((s) => ({
           guests: s.guests.map((g) => {
