@@ -962,6 +962,8 @@ if (typeof window !== "undefined") {
         })),
         rules: data.rules ?? [],
       });
+      // Clear undo history so we don't undo into a previous session
+      try { (usePlanStore as any).temporal.getState().clear(); } catch {}
     }
   } catch {}
 
