@@ -677,7 +677,7 @@ function PlannerPage() {
                   label: "Tables",
                   done: tables.length > 0,
                   value: tables.length > 0 ? `${tables.length} tables · ${totalSeatsForHint} seats` : "none yet",
-                  action: addTable,
+                  action: () => addTable(),
                   actionLabel: tables.length === 0 ? "+ Add table" : null,
                 },
                 {
