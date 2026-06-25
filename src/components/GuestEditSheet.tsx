@@ -1,9 +1,23 @@
+import { useEffect, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { usePlanStore, type Meal, type RsvpStatus, type Tag } from "@/lib/plan-store";
 
 const MEALS: Meal[] = ["None", "Chicken", "Fish", "Vegetarian", "Vegan", "Kids"];
 const RSVPS: RsvpStatus[] = ["Confirmed", "Pending", "Declined", "Waitlist", "No-show", "Withdrawn"];
 const TAGS: Tag[] = ["VIP", "Wheelchair", "Child", "Speaker", "Sponsor"];
+
+type Draft = {
+  name: string;
+  firstName: string;
+  lastName: string;
+  company: string;
+  title: string;
+  cohort: string;
+  dietary: string;
+  notes: string;
+};
+
+const EMPTY: Draft = { name: "", firstName: "", lastName: "", company: "", title: "", cohort: "", dietary: "", notes: "" };
 
 export function GuestEditSheet({ guestId, onClose }: { guestId: string | null; onClose: () => void }) {
   const guest = usePlanStore((s) => s.guests.find((g) => g.id === guestId));
@@ -13,6 +27,24 @@ export function GuestEditSheet({ guestId, onClose }: { guestId: string | null; o
 
   const open = !!guestId && !!guest;
   const table = guest ? tables.find((t) => t.id === guest.tableId) : null;
+
+  const [draft, setDraft] = useState<Draft>(EMPTY);
+
+  useEffect(() => {
+    if (guest) {
+      setDraft({
+        name: guest.name ?? "",
+        firstName: guest.firstName ?? "",
+        lastName: guest.lastName ?? "",
+        company: guest.company ?? "",
+        title: guest.title ?? "",
+        cohort: guest.cohort ?? "",
+        dietary: guest.dietary ?? "",
+        notes: guest.notes ?? "",
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [guest?.id]);
 
   function field(label: string, content: React.ReactNode) {
     return (
@@ -24,6 +56,18 @@ export function GuestEditSheet({ guestId, onClose }: { guestId: string | null; o
   }
 
   const cls = "w-full h-9 px-3 rounded-md border border-input bg-background text-sm";
+
+  function flush<K extends keyof Draft>(key: K, opts?: { isName?: boolean }) {
+    if (!guest) return;
+    const value = draft[key];
+    if (opts?.isName) {
+      const newName = value;
+      const stillTbc = newName.trim() === "" || newName.trim().toUpperCase().startsWith("TBC");
+      updateGuest(guest.id, { name: newName, isPlaceholder: stillTbc ? true : undefined });
+      return;
+    }
+    updateGuest(guest.id, { [key]: value || undefined } as any);
+  }
 
   return (
     <Sheet open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
@@ -54,28 +98,88 @@ export function GuestEditSheet({ guestId, onClose }: { guestId: string | null; o
                   </p>
                 </div>
               )}
-              {field("Full name", <input value={guest.name} onChange={(e) => {
-                const newName = e.target.value;
-                const stillTbc = newName.trim() === "" || newName.trim().toUpperCase().startsWith("TBC");
-                updateGuest(guest.id, { name: newName, isPlaceholder: stillTbc ? true : undefined });
-              }} className={cls} />)}
-              {field("First name", <input value={guest.firstName ?? ""} onChange={(e) => updateGuest(guest.id, { firstName: e.target.value || undefined })} placeholder="—" className={cls} />)}
-              {field("Last name", <input value={guest.lastName ?? ""} onChange={(e) => updateGuest(guest.id, { lastName: e.target.value || undefined })} placeholder="—" className={cls} />)}
-              {field("Company", <input value={guest.company ?? ""} onChange={(e) => updateGuest(guest.id, { company: e.target.value || undefined })} placeholder="—" className={cls} />)}
-              {field("Title", <input value={guest.title ?? ""} onChange={(e) => updateGuest(guest.id, { title: e.target.value || undefined })} placeholder="—" className={cls} />)}
-              {field("Cohort", <input value={guest.cohort ?? ""} onChange={(e) => updateGuest(guest.id, { cohort: e.target.value || undefined })} placeholder="—" className={cls} />)}
+              {field("Full name", (
+                <input
+                  value={draft.name}
+                  onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
+                  onBlur={() => flush("name", { isName: true })}
+                  className={cls}
+                />
+              ))}
+              {field("First name", (
+                <input
+                  value={draft.firstName}
+                  onChange={(e) => setDraft((d) => ({ ...d, firstName: e.target.value }))}
+                  onBlur={() => flush("firstName")}
+                  placeholder="—"
+                  className={cls}
+                />
+              ))}
+              {field("Last name", (
+                <input
+                  value={draft.lastName}
+                  onChange={(e) => setDraft((d) => ({ ...d, lastName: e.target.value }))}
+                  onBlur={() => flush("lastName")}
+                  placeholder="—"
+                  className={cls}
+                />
+              ))}
+              {field("Company", (
+                <input
+                  value={draft.company}
+                  onChange={(e) => setDraft((d) => ({ ...d, company: e.target.value }))}
+                  onBlur={() => flush("company")}
+                  placeholder="—"
+                  className={cls}
+                />
+              ))}
+              {field("Title", (
+                <input
+                  value={draft.title}
+                  onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
+                  onBlur={() => flush("title")}
+                  placeholder="—"
+                  className={cls}
+                />
+              ))}
+              {field("Cohort", (
+                <input
+                  value={draft.cohort}
+                  onChange={(e) => setDraft((d) => ({ ...d, cohort: e.target.value }))}
+                  onBlur={() => flush("cohort")}
+                  placeholder="—"
+                  className={cls}
+                />
+              ))}
               {field("Meal", (
                 <select value={guest.meal} onChange={(e) => updateGuest(guest.id, { meal: e.target.value as Meal })} className={cls}>
                   {MEALS.map((m) => <option key={m} value={m}>{m}</option>)}
                 </select>
               ))}
-              {field("Dietary requirements", <input value={guest.dietary ?? ""} onChange={(e) => updateGuest(guest.id, { dietary: e.target.value || undefined })} placeholder="Allergies, restrictions…" className={cls} />)}
+              {field("Dietary requirements", (
+                <input
+                  value={draft.dietary}
+                  onChange={(e) => setDraft((d) => ({ ...d, dietary: e.target.value }))}
+                  onBlur={() => flush("dietary")}
+                  placeholder="Allergies, restrictions…"
+                  className={cls}
+                />
+              ))}
               {field("RSVP", (
                 <select value={guest.rsvpStatus} onChange={(e) => updateGuest(guest.id, { rsvpStatus: e.target.value as RsvpStatus })} className={cls}>
                   {RSVPS.map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
               ))}
-              {field("Notes", <textarea value={guest.notes ?? ""} onChange={(e) => updateGuest(guest.id, { notes: e.target.value || undefined })} placeholder="Any notes…" rows={3} className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm resize-none" />)}
+              {field("Notes", (
+                <textarea
+                  value={draft.notes}
+                  onChange={(e) => setDraft((d) => ({ ...d, notes: e.target.value }))}
+                  onBlur={() => flush("notes")}
+                  placeholder="Any notes…"
+                  rows={3}
+                  className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm resize-none"
+                />
+              ))}
               {field("Tags", (
                 <div className="flex flex-wrap gap-1.5">
                   {TAGS.map((t) => {
