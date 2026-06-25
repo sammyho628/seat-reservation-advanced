@@ -799,7 +799,7 @@ export const usePlanStore = create<PlanState>()(
       fillGaps: () => {
         const { guests, tables } = get();
         const toAssign = guests.filter(
-          (g) => !g.tableId && g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show" && g.rsvpStatus !== "Withdrawn",
+          (g) => !g.tableId && !g.isPlaceholder && g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show" && g.rsvpStatus !== "Withdrawn",
         );
         if (toAssign.length === 0) return { assigned: 0, violations: 0, violatingGuestIds: [] };
         const occupied = new Set<string>();
