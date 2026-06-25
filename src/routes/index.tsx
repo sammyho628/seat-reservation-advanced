@@ -671,6 +671,22 @@ function PlannerPage() {
                 </PopoverContent>
               </Popover>
 
+              <button
+                onClick={() => setChecksOpen(true)}
+                className={`h-10 px-3 rounded-md border text-sm inline-flex items-center gap-1.5 relative ${
+                  checkWarningCount > 0
+                    ? "border-amber-400 text-amber-700 bg-amber-50 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-300 dark:bg-amber-950/30"
+                    : "border-input hover:bg-accent"
+                }`}
+              >
+                🔍 Checks
+                {checkWarningCount > 0 && (
+                  <span className="inline-flex items-center justify-center h-4 min-w-[1rem] px-1 rounded-full bg-destructive text-white text-[10px] font-bold leading-none">
+                    {checkWarningCount}
+                  </span>
+                )}
+              </button>
+
               <div className="h-8 w-px bg-border mx-1" />
 
 
