@@ -685,7 +685,7 @@ function PlannerPage() {
             </div>
 
             {analyticsOpen && (
-              <div className="mb-6 p-4 border border-border rounded-xl bg-card grid sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+              <div className="mb-6 p-4 border border-border rounded-xl bg-card grid sm:grid-cols-2 lg:grid-cols-5 gap-4 text-sm">
                 <div>
                   <div className="text-xs text-muted-foreground uppercase">Fill rate</div>
                   <div className="font-display text-xl">{stats.seated}/{stats.capacity} ({fillPct}%)</div>
