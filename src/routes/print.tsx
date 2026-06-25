@@ -80,6 +80,77 @@ function PrintPage() {
 
   const tableLabel = Object.fromEntries(tables.map((t) => [t.id, t.label]));
 
+  const byCompany = useMemo(() => {
+    const m = new Map<string, typeof guests>();
+    guests.forEach((g) => {
+      if (!g.isPlaceholder) {
+        const key = g.company?.trim() || "(No company)";
+        if (!m.has(key)) m.set(key, []);
+        m.get(key)!.push(g);
+      }
+    });
+    m.forEach((list) =>
+      list.sort((a, b) => {
+        const ta = tableLabel[a.tableId ?? ""] ?? "z";
+        const tb = tableLabel[b.tableId ?? ""] ?? "z";
+        if (ta !== tb) return ta.localeCompare(tb);
+        return (a.seatIndex ?? 0) - (b.seatIndex ?? 0);
+      })
+    );
+    return [...m.entries()].sort(([a], [b]) => a.localeCompare(b));
+  }, [guests, tableLabel]);
+
+  async function exportZip() {
+    const zip = new JSZip();
+    const mmRows = [
+      ["Name", "FirstName", "LastName", "Company", "Title", "Table", "Seat", "Meal", "Dietary", "Tags", "RSVP"],
+      ...eligibleGuests.map((g) => {
+        const tbl = tables.find((t) => t.id === g.tableId);
+        return [
+          g.name, g.firstName ?? "", g.lastName ?? "", g.company ?? "",
+          g.title ?? "", tbl?.label ?? "", String(g.seatIndex ?? ""),
+          g.meal, g.dietary ?? "", g.tags.join("; "), g.rsvpStatus,
+        ];
+      }),
+    ];
+    const mmCsv = mmRows
+      .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+    zip.file("mail-merge.csv", "\uFEFF" + mmCsv);
+
+    const allRows = [
+      ["Name", "Company", "Title", "Cohort", "Table", "Seat", "Meal", "Dietary", "RSVP", "Notes", "TBC"],
+      ...allGuests
+        .filter((g) => g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show")
+        .map((g) => {
+          const tbl = tables.find((t) => t.id === g.tableId);
+          return [
+            g.name, g.company ?? "", g.title ?? "", g.cohort ?? "",
+            tbl?.label ?? "", String(g.seatIndex ?? ""),
+            g.meal, g.dietary ?? "", g.rsvpStatus, g.notes ?? "",
+            g.isPlaceholder ? "Yes" : "",
+          ];
+        }),
+    ];
+    const allCsv = allRows
+      .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+    zip.file("all-guests.csv", "\uFEFF" + allCsv);
+
+    const planState = usePlanStore.getState();
+    zip.file("plan.seatcraft.json", JSON.stringify(planState, null, 2));
+
+    const blob = await zip.generateAsync({ type: "blob" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    const slug = settings.eventTitle.replace(/\s+/g, "-").toLowerCase();
+    a.download = `${slug}-export.zip`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+
   return (
     <div className="min-h-screen bg-background">
       <div className="no-print sticky top-0 z-30 bg-background/90 backdrop-blur border-b border-border">
