@@ -85,6 +85,8 @@ export interface Settings {
   showStage: boolean;
   namingScheme: NamingScheme;
   showFirmInList: boolean;
+  eventDate?: string;
+  eventVenue?: string;
 }
 
 export const NAMING_VOCAB: Record<NamingScheme, string[] | null> = {
