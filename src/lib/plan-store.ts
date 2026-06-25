@@ -294,13 +294,13 @@ export const usePlanStore = create<PlanState>()(
           }),
         })),
 
-      addTable: () =>
+      addTable: (seats) =>
         set((s) => {
           const i = s.tables.length;
           const newTable: Table = {
             id: uid(),
             label: labelFor(i, s.settings.namingScheme),
-            seats: s.settings.defaultSeats,
+            seats: seats ?? s.settings.defaultSeats,
           };
           return { tables: [...s.tables, newTable] };
         }),
