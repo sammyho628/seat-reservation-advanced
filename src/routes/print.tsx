@@ -18,7 +18,7 @@ function PrintPage() {
   const tables = usePlanStore((s) => s.tables);
   const allGuests = usePlanStore((s) => s.guests);
   const settings = usePlanStore((s) => s.settings);
-  const [view, setView] = useState<"full" | "kitchen" | "companies">("full");
+  const [view, setView] = useState<"full" | "kitchen" | "companies" | "dietary">("full");
 
   const guests = useMemo(
     () => allGuests.filter((g) => g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show"),
@@ -165,9 +165,15 @@ function PrintPage() {
             </button>
             <button
               onClick={() => setView(view === "companies" ? "full" : "companies")}
-              className="h-9 px-3 rounded-md border border-input text-sm"
+              className={`h-9 px-3 rounded-md border text-sm ${view === "companies" ? "bg-primary text-primary-foreground border-primary" : "border-input"}`}
             >
               🏢 {view === "companies" ? "Full view" : "By company"}
+            </button>
+            <button
+              onClick={() => setView(view === "dietary" ? "full" : "dietary")}
+              className={`h-9 px-3 rounded-md border text-sm ${view === "dietary" ? "bg-primary text-primary-foreground border-primary" : "border-input"}`}
+            >
+              🥗 {view === "dietary" ? "Full view" : "Dietary"}
             </button>
             <button
               onClick={exportMailMerge}
@@ -200,7 +206,17 @@ function PrintPage() {
             {settings.logoDataUrl && <img src={settings.logoDataUrl} alt="" className="h-14" />}
             <div>
               <h1 className="font-display text-5xl">{settings.eventTitle}</h1>
-              <p className="text-muted-foreground">Seating Plan · {tables.length} tables · {guests.length} attendees</p>
+              <p className="text-muted-foreground">
+                {settings.eventDate && (
+                  <span>
+                    {new Date(settings.eventDate + "T00:00").toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+                    {settings.eventTime && ` · ${settings.eventTime}`}
+                    {settings.eventVenue && ` · ${settings.eventVenue}`}
+                    {" — "}
+                  </span>
+                )}
+                Seating Plan · {tables.length} tables · {guests.length} attendees
+              </p>
             </div>
           </div>
 
@@ -313,6 +329,80 @@ function PrintPage() {
           </section>
         )}
 
+        {view === "dietary" && (() => {
+          const dietaryGuests = allGuests.filter(
+            (g) => !g.isPlaceholder && g.dietary && g.dietary.trim() &&
+              g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show",
+          ).sort((a, b) => (tableLabel[a.tableId ?? ""] ?? "").localeCompare(tableLabel[b.tableId ?? ""] ?? ""));
+          const specialMealGuests = allGuests.filter(
+            (g) => !g.isPlaceholder && g.meal !== "None" && g.meal !== "Chicken" &&
+              g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show",
+          ).sort((a, b) => a.meal.localeCompare(b.meal));
+          return (
+            <section className="space-y-8 print:space-y-6">
+              <div>
+                <h2 className="text-lg font-bold mb-3 border-b pb-2">⚠️ Dietary Requirements ({dietaryGuests.length})</h2>
+                {dietaryGuests.length === 0 ? (
+                  <p className="text-muted-foreground text-sm">No dietary requirements recorded.</p>
+                ) : (
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-xs uppercase text-muted-foreground border-b">
+                        <th className="py-1 pr-4">Guest</th>
+                        <th className="py-1 pr-4">Company</th>
+                        <th className="py-1 pr-4">Table · Seat</th>
+                        <th className="py-1">Dietary requirement</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {dietaryGuests.map((g) => (
+                        <tr key={g.id} className="border-b border-border/40">
+                          <td className="py-1.5 pr-4 font-medium">{g.name}</td>
+                          <td className="py-1.5 pr-4 text-muted-foreground">{g.company ?? "—"}</td>
+                          <td className="py-1.5 pr-4 font-mono text-xs">
+                            {g.tableId ? `${tableLabel[g.tableId]} · ${g.seatIndex}` : "Unassigned"}
+                          </td>
+                          <td className="py-1.5 font-medium text-amber-700 dark:text-amber-400">{g.dietary}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+              <div>
+                <h2 className="text-lg font-bold mb-3 border-b pb-2">🍽️ Special Meal Choices ({specialMealGuests.length})</h2>
+                {specialMealGuests.length === 0 ? (
+                  <p className="text-muted-foreground text-sm">No special meal choices.</p>
+                ) : (
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-xs uppercase text-muted-foreground border-b">
+                        <th className="py-1 pr-4">Meal</th>
+                        <th className="py-1 pr-4">Guest</th>
+                        <th className="py-1 pr-4">Company</th>
+                        <th className="py-1">Table · Seat</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {specialMealGuests.map((g) => (
+                        <tr key={g.id} className="border-b border-border/40">
+                          <td className="py-1.5 pr-4 font-medium">{g.meal}</td>
+                          <td className="py-1.5 pr-4">{g.name}</td>
+                          <td className="py-1.5 pr-4 text-muted-foreground">{g.company ?? "—"}</td>
+                          <td className="py-1.5 font-mono text-xs">
+                            {g.tableId ? `${tableLabel[g.tableId]} · ${g.seatIndex}` : "Unassigned"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </section>
+          );
+        })()}
+
+
 
         {view === "full" && (
           <>
@@ -341,6 +431,7 @@ function PrintPage() {
                       <div className="font-display text-6xl mt-2">Table {t.label}</div>
                       {t.hostName && <div className="text-sm italic text-muted-foreground mt-1">Hosted by {t.hostName}</div>}
                       <div className="text-muted-foreground mt-1 font-mono text-sm">{list.length} of {t.seats} seated</div>
+                      {t.notes && <p className="text-xs text-muted-foreground italic mt-0.5 mb-2">{t.notes}</p>}
                     </div>
                     <table className="w-full">
                       <tbody>

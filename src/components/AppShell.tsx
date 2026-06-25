@@ -30,6 +30,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const eventTitle = usePlanStore((s) => s.settings.eventTitle);
   const eventDate = usePlanStore((s) => s.settings.eventDate);
   const eventVenue = usePlanStore((s) => s.settings.eventVenue);
+  const eventTime = usePlanStore((s) => s.settings.eventTime);
   const logoDataUrl = usePlanStore((s) => s.settings.logoDataUrl);
   const allGuests = usePlanStore((s) => s.guests);
   const guestCount = allGuests.filter((g) => !g.isPlaceholder).length;
@@ -72,6 +73,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   {new Date(eventDate + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
                 </span>
               )}
+              {eventTime && <span className="ml-1 opacity-60">· {eventTime}</span>}
               {eventVenue && <span className="ml-1 opacity-60">· {eventVenue}</span>}
             </span>
           </Link>

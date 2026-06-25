@@ -292,7 +292,9 @@ function PlannerPage() {
       }
     });
     Object.entries(byCohort).forEach(([c, ts]) => { if (ts.size > 1) splitCohorts.push(c); });
-    return { capacity, seated, unassigned, meals, fullTables, topCompanies, splitCohorts };
+    const rsvpCounts: Record<string, number> = {};
+    guests.forEach((g) => { if (!g.isPlaceholder) rsvpCounts[g.rsvpStatus] = (rsvpCounts[g.rsvpStatus] ?? 0) + 1; });
+    return { capacity, seated, unassigned, meals, fullTables, topCompanies, splitCohorts, rsvpCounts };
   }, [guests, tables]);
 
   const fillPct = stats.capacity ? Math.round((stats.seated / stats.capacity) * 100) : 0;
@@ -418,6 +420,14 @@ function PlannerPage() {
                           type="date"
                           value={settings.eventDate ?? ""}
                           onChange={(e) => setSettings({ eventDate: e.target.value || undefined })}
+                        />
+                      </div>
+                      <div>
+                        <Label>Event time</Label>
+                        <Input
+                          type="time"
+                          value={settings.eventTime ?? ""}
+                          onChange={(e) => setSettings({ eventTime: e.target.value || undefined })}
                         />
                       </div>
                       <div>
@@ -683,7 +693,7 @@ function PlannerPage() {
             </div>
 
             {analyticsOpen && (
-              <div className="mb-6 p-4 border border-border rounded-xl bg-card grid sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+              <div className="mb-6 p-4 border border-border rounded-xl bg-card grid sm:grid-cols-2 lg:grid-cols-5 gap-4 text-sm">
                 <div>
                   <div className="text-xs text-muted-foreground uppercase">Fill rate</div>
                   <div className="font-display text-xl">{stats.seated}/{stats.capacity} ({fillPct}%)</div>
@@ -714,6 +724,18 @@ function PlannerPage() {
                       Cohorts split: {stats.splitCohorts.join(", ")}
                     </div>
                   )}
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground uppercase">RSVP</div>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {(["Confirmed","Pending","Waitlist","Declined","No-show","Withdrawn"] as const)
+                      .filter((s) => (stats.rsvpCounts?.[s] ?? 0) > 0)
+                      .map((s) => (
+                        <span key={s} className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-muted">
+                          {s}: {stats.rsvpCounts?.[s]}
+                        </span>
+                      ))}
+                  </div>
                 </div>
               </div>
             )}
