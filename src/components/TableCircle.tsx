@@ -101,6 +101,23 @@ function TableCircleInner({
   const [editingSeats, setEditingSeats] = useState(false);
   const [rotateOpen, setRotateOpen] = useState(false);
   const [rotateDir, setRotateDir] = useState<"cw" | "ccw">("cw");
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  async function downloadTablePNG() {
+    if (!cardRef.current) return;
+    try {
+      const domtoimage = (await import("dom-to-image-more")).default;
+      const blob = await domtoimage.toBlob(cardRef.current, { scale: 2 });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `table-${table.label.replace(/\s+/g, "-").toLowerCase()}.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error("Table PNG export failed", e);
+    }
+  }
 
   const seatMap = new Map<number, Guest>();
   guests.forEach((g) => {
