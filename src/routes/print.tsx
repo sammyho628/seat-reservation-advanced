@@ -24,7 +24,7 @@ function PrintPage() {
     [allGuests],
   );
 
-  const eligibleGuests = useMemo(() => guests.filter((g) => g.tableId), [guests]);
+  const eligibleGuests = useMemo(() => guests.filter((g) => g.tableId && !g.isPlaceholder), [guests]);
 
   function exportMailMerge() {
     const rows = [
