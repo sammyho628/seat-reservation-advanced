@@ -97,11 +97,14 @@ function TableCircleInner({
   const setTableHost = usePlanStore((s) => s.setTableHost);
   const rotateTable = usePlanStore((s) => s.rotateTable);
   const removeTable = usePlanStore((s) => s.removeTable);
+  const checkSeatReduction = usePlanStore((s) => s.checkSeatReduction);
+  const reduceTableSeats = usePlanStore((s) => s.reduceTableSeats);
 
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [editingSeats, setEditingSeats] = useState(false);
   const [rotateOpen, setRotateOpen] = useState(false);
   const [rotateDir, setRotateDir] = useState<"cw" | "ccw">("cw");
+  const [seatReductionPending, setSeatReductionPending] = useState<{ tableId: string; newSeats: number; overflowGuests: Guest[] } | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
 
   async function downloadTablePNG() {
