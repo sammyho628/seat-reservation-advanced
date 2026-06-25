@@ -249,12 +249,16 @@ export const usePlanStore = create<PlanState>()(
       rules: [],
 
       setSettings: (patch) => {
-        set((s) => ({ settings: { ...s.settings, ...patch } }));
-        if (patch.rowPattern !== undefined || patch.defaultSeats !== undefined) {
-          set((s) => ({
-            tables: buildTables(s.settings.rowPattern, s.settings.defaultSeats, s.tables, s.settings.namingScheme),
-          }));
-        }
+        set((s) => {
+          const newSettings = { ...s.settings, ...patch };
+          const needsRebuild = patch.rowPattern !== undefined || patch.defaultSeats !== undefined;
+          return {
+            settings: newSettings,
+            ...(needsRebuild
+              ? { tables: buildTables(newSettings.rowPattern, newSettings.defaultSeats, s.tables, newSettings.namingScheme) }
+              : {}),
+          };
+        });
       },
 
       regenerateTables: () =>
