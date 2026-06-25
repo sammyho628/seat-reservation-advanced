@@ -434,7 +434,7 @@ function TableCircleInner({
         })}
         {isLabelMode && seats.map((s) => {
           const guest = seatMap.get(s);
-          if (!guest) return null;
+          if (!guest || guest.isPlaceholder) return null;
           const angle = ((s - 1 + seatOffset) / table.seats) * Math.PI * 2 + Math.PI / 2;
           const labelR = seatLabelMode === "name+firm" ? radius + 30 : radius + 24;
           const lx = cx + Math.cos(angle) * labelR;
