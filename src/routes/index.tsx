@@ -623,9 +623,77 @@ function PlannerPage() {
               </div>
             )}
 
-            <p className="text-xs text-muted-foreground mb-4">
-              Click a seat to select · click another seat to swap · select a guest then click an empty seat · click a table label to edit details · drag tables to reorder.
-            </p>
+{/* Step progress hint */}
+            {(() => {
+              const eligibleGuests = guests.filter(
+                (g) => g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show" && g.rsvpStatus !== "Withdrawn"
+              );
+              const seatedCount = eligibleGuests.filter((g) => g.tableId).length;
+              const unassignedCount = eligibleGuests.length - seatedCount;
+              const totalSeatsForHint = tables.reduce((a, t) => a + t.seats, 0);
+
+              const steps = [
+                {
+                  label: "Guests",
+                  done: eligibleGuests.length > 0,
+                  value: eligibleGuests.length > 0 ? `${eligibleGuests.length} added` : "none yet",
+                  action: () => {},
+                  actionLabel: eligibleGuests.length === 0 ? "→ Guests page to import" : null,
+                },
+                {
+                  label: "Tables",
+                  done: tables.length > 0,
+                  value: tables.length > 0 ? `${tables.length} tables · ${totalSeatsForHint} seats` : "none yet",
+                  action: addTable,
+                  actionLabel: tables.length === 0 ? "+ Add table" : null,
+                },
+                {
+                  label: "Seating",
+                  done: unassignedCount === 0 && eligibleGuests.length > 0,
+                  value:
+                    eligibleGuests.length === 0
+                      ? "—"
+                      : unassignedCount === 0
+                      ? "Everyone seated 🎉"
+                      : `${unassignedCount} unassigned`,
+                  action: openAutoSeat,
+                  actionLabel: unassignedCount > 0 && eligibleGuests.length > 0 && tables.length > 0 ? "Auto-Assign" : null,
+                },
+              ];
+
+              return (
+                <div className="flex items-center gap-0 mb-5 rounded-xl border border-border/60 overflow-hidden bg-card text-sm">
+                  {steps.map((step, i) => (
+                    <div
+                      key={step.label}
+                      className={`flex-1 px-4 py-2.5 flex items-center gap-2 ${
+                        i < steps.length - 1 ? "border-r border-border/60" : ""
+                      } ${step.done ? "bg-emerald-50/50 dark:bg-emerald-950/20" : ""}`}
+                    >
+                      <span
+                        className={`flex-shrink-0 h-5 w-5 rounded-full text-[10px] font-bold inline-flex items-center justify-center ${
+                          step.done ? "bg-emerald-500 text-white" : "bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        {step.done ? "✓" : i + 1}
+                      </span>
+                      <div className="min-w-0">
+                        <span className="font-medium text-xs">{step.label}</span>
+                        <span className="text-muted-foreground text-[11px] ml-2">{step.value}</span>
+                      </div>
+                      {step.actionLabel && (
+                        <button
+                          onClick={step.action}
+                          className="ml-auto text-[11px] text-primary hover:underline font-medium whitespace-nowrap"
+                        >
+                          {step.actionLabel}
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
 
             {tables.length === 0 && guests.length === 0 ? (
               <div className="flex items-center justify-center py-20">
