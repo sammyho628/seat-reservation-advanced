@@ -324,6 +324,19 @@ function PlannerPage() {
   const activeRules = rules.filter((r) => r.enabled);
   const eligibleCount = guests.filter((g) => g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show").length;
   const totalSeats = tables.reduce((a, t) => a + t.seats, 0);
+  const seatedReal = useMemo(
+    () =>
+      guests.filter(
+        (g) =>
+          !g.isPlaceholder &&
+          g.tableId &&
+          g.rsvpStatus !== "Declined" &&
+          g.rsvpStatus !== "No-show" &&
+          g.rsvpStatus !== "Withdrawn",
+      ).length,
+    [guests],
+  );
+  const availableSeats = totalSeats - seatedReal;
 
   const selectedSeatGuest = selectedSeat
     ? guests.find((g) => g.tableId === selectedSeat.tableId && g.seatIndex === selectedSeat.seatIndex)
