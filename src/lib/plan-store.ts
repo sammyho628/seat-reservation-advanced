@@ -33,6 +33,7 @@ export interface Guest {
   tableId?: string;
   seatIndex?: number;
   locked?: boolean;
+  isPlaceholder?: boolean;
 }
 
 export interface Table {
