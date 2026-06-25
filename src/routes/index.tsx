@@ -423,6 +423,14 @@ function PlannerPage() {
                         />
                       </div>
                       <div>
+                        <Label>Event time</Label>
+                        <Input
+                          type="time"
+                          value={settings.eventTime ?? ""}
+                          onChange={(e) => setSettings({ eventTime: e.target.value || undefined })}
+                        />
+                      </div>
+                      <div>
                         <Label>Venue</Label>
                         <Input
                           value={settings.eventVenue ?? ""}
