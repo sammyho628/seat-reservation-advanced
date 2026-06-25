@@ -737,7 +737,7 @@ function PlannerPage() {
                   </div>
                   <div className="grid sm:grid-cols-2 gap-4">
                     <button
-                      onClick={addTable}
+                      onClick={() => addTable()}
                       className="flex flex-col items-center gap-2 p-6 border-2 border-dashed border-border rounded-xl hover:border-primary hover:bg-accent/30 transition group"
                     >
                       <FilePlus className="h-8 w-8 text-muted-foreground group-hover:text-primary transition" />
