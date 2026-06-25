@@ -162,3 +162,7 @@
     justify-content: space-between;
   }
 }
+
+.floor-plan-mode .table-guest-list {
+  display: none !important;
+}
