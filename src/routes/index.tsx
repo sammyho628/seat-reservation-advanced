@@ -357,7 +357,16 @@ function PlannerPage() {
               <div className="flex-1 min-w-[260px]">
                 <h1 className="font-display text-4xl">{settings.eventTitle}</h1>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {tables.length} tables · {totalSeats} seats
+                  {tables.length} tables ·{" "}
+                  <span className={availableSeats <= 0 ? "text-emerald-600 font-medium" : "text-foreground font-medium"}>
+                    {seatedReal}/{totalSeats} seats filled
+                  </span>
+                  {availableSeats > 0 && (
+                    <span className="ml-1 text-amber-600 font-medium">· {availableSeats} available</span>
+                  )}
+                  {availableSeats <= 0 && totalSeats > 0 && (
+                    <span className="ml-1 text-emerald-600 font-medium">· Full 🎉</span>
+                  )}
                 </p>
               </div>
 
