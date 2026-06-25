@@ -401,10 +401,16 @@ export const usePlanStore = create<PlanState>()(
             }
           }
           if (!seat) return s;
+          const assigningGuest = s.guests.find((g) => g.id === guestId);
+          const isAssigningReal = assigningGuest && !assigningGuest.isPlaceholder;
           return {
-            guests: s.guests.map((g) =>
-              g.id === guestId ? { ...g, tableId, seatIndex: seat } : g,
-            ),
+            guests: s.guests
+              .filter((g) =>
+                !(isAssigningReal && g.isPlaceholder && g.id !== guestId && g.tableId === tableId && g.seatIndex === seat),
+              )
+              .map((g) =>
+                g.id === guestId ? { ...g, tableId, seatIndex: seat } : g,
+              ),
           };
         }),
 
