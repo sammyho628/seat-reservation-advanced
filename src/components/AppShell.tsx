@@ -110,6 +110,12 @@ export function AppShell({ children }: { children: ReactNode }) {
                 "all seated"
               )}
             </span>
+            {tbcCount > 0 && (
+              <>
+                <span className="opacity-50">·</span>
+                <span className="font-mono text-indigo-600 font-semibold">{tbcCount} TBC</span>
+              </>
+            )}
             <DropdownMenu>
               <DropdownMenuTrigger className="ml-2 h-8 w-8 inline-flex items-center justify-center rounded-md hover:bg-accent">
                 <MoreVertical className="h-4 w-4" />
