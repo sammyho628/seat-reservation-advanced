@@ -185,6 +185,93 @@ function GuestsPage() {
     toast.success("Reconciled imported list");
   }
 
+  async function handleBatchFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    try {
+      const { rows, headers } = await parseFileRows(f);
+      if (rows.length === 0) { toast.error("File is empty"); return; }
+      setBatchRows(rows);
+      setBatchHeaders(headers);
+      setBatchColumnMap(detectColumnMap(headers));
+      setBatchMappingOpen(true);
+    } catch (err) {
+      toast.error("Could not parse file");
+      console.error(err);
+    } finally {
+      e.target.value = "";
+    }
+  }
+
+  function confirmBatchMapping() {
+    const drafts = rowsToGuestsWithMap(batchRows, batchColumnMap);
+    if (drafts.length === 0) {
+      toast.error("No rows with a 'Name' column.");
+      return;
+    }
+    addGuests(drafts);
+    setTimeout(() => {
+      const allGuests = usePlanStore.getState().guests;
+      const draftNames = new Set(drafts.map((d) => d.name?.toLowerCase().trim()));
+      const newIds = allGuests
+        .filter((g) => !g.tableId && draftNames.has(g.name.toLowerCase().trim()))
+        .slice(-drafts.length)
+        .map((g) => g.id);
+      setBatchImportedGuests(newIds);
+    }, 50);
+    setBatchMappingOpen(false);
+    setBatchAssignOpen(true);
+    toast.success(`${drafts.length} guests added`);
+  }
+
+  function handleBatchAddTable() {
+    const count = batchImportedGuests.length;
+    const seatCount = Math.max(count, usePlanStore.getState().settings.defaultSeats ?? 10);
+    addTable(seatCount);
+    setTimeout(() => {
+      const state = usePlanStore.getState();
+      const newTable = state.tables[state.tables.length - 1];
+      if (!newTable) return;
+      batchImportedGuests.forEach((guestId, i) => {
+        const seatIndex = i + 1;
+        if (seatIndex <= newTable.seats) assignGuest(guestId, newTable.id, seatIndex);
+      });
+      toast.success(`Added Table ${newTable.label} and assigned ${count} guests`);
+      setBatchAssignOpen(false);
+      setBatchImportedGuests([]);
+    }, 50);
+  }
+
+  function handleBatchAssignToTable(tableId: string) {
+    if (!tableId) return;
+    const state = usePlanStore.getState();
+    const table = state.tables.find((t) => t.id === tableId);
+    if (!table) return;
+    const occupied = new Set(
+      state.guests.filter((g) => g.tableId === tableId).map((g) => g.seatIndex),
+    );
+    const emptySeats: number[] = [];
+    for (let s = 1; s <= table.seats; s++) if (!occupied.has(s)) emptySeats.push(s);
+    let assigned = 0;
+    batchImportedGuests.forEach((guestId, i) => {
+      if (i < emptySeats.length) { assignGuest(guestId, tableId, emptySeats[i]); assigned++; }
+    });
+    const skipped = batchImportedGuests.length - assigned;
+    toast.success(
+      `Assigned ${assigned} to Table ${table.label}${skipped > 0 ? ` · ${skipped} remain unassigned (table full)` : ""}`,
+    );
+    setBatchAssignOpen(false);
+    setBatchImportedGuests([]);
+    setBatchTargetTable("");
+  }
+
+  function handleBatchAutoAssign() {
+    const r = fillGaps("smart");
+    toast.success(`Auto-assigned ${r.assigned} guests to empty seats`);
+    setBatchAssignOpen(false);
+    setBatchImportedGuests([]);
+  }
+
   const filtered = guests.filter((g) => {
     if (filter === "assigned" && !g.tableId) return false;
     if (filter === "unassigned" && g.tableId) return false;
