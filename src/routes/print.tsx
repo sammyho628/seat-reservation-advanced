@@ -164,11 +164,24 @@ function PrintPage() {
               🍽️ {view === "kitchen" ? "Full view" : "Kitchen sheet"}
             </button>
             <button
+              onClick={() => setView(view === "companies" ? "full" : "companies")}
+              className="h-9 px-3 rounded-md border border-input text-sm"
+            >
+              🏢 {view === "companies" ? "Full view" : "By company"}
+            </button>
+            <button
               onClick={exportMailMerge}
               className="h-9 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent"
               title="Export CSV for Word/Excel mail merge"
             >
               📋 Mail merge CSV
+            </button>
+            <button
+              onClick={exportZip}
+              className="h-9 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent"
+              title="Download ZIP: mail-merge CSV + all guests CSV + plan backup"
+            >
+              📦 Export ZIP
             </button>
             <button
               onClick={() => window.print()}
