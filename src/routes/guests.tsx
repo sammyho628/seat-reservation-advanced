@@ -208,6 +208,17 @@ function GuestsPage() {
       toast.error("No rows with a 'Name' column.");
       return;
     }
+    const dupeCheck = detectImportDuplicates(drafts, guests);
+    const dupeWarnings: string[] = [];
+    if (dupeCheck.intraFile.length > 0) {
+      dupeWarnings.push(`${dupeCheck.intraFile.length} duplicate(s) within the file`);
+    }
+    if (dupeCheck.againstExisting.length > 0) {
+      dupeWarnings.push(`${dupeCheck.againstExisting.length} name(s) already in plan`);
+    }
+    if (dupeWarnings.length > 0) {
+      toast.warning(`Possible duplicates: ${dupeWarnings.join(" · ")}`, { duration: 8000 });
+    }
     addGuests(drafts);
     setTimeout(() => {
       const allGuests = usePlanStore.getState().guests;
