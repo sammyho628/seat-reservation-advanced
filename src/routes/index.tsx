@@ -717,6 +717,18 @@ function PlannerPage() {
                     </div>
                   )}
                 </div>
+                <div>
+                  <div className="text-xs text-muted-foreground uppercase">RSVP</div>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {(["Confirmed","Pending","Waitlist","Declined","No-show","Withdrawn"] as const)
+                      .filter((s) => (stats.rsvpCounts?.[s] ?? 0) > 0)
+                      .map((s) => (
+                        <span key={s} className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-muted">
+                          {s}: {stats.rsvpCounts?.[s]}
+                        </span>
+                      ))}
+                  </div>
+                </div>
               </div>
             )}
 
