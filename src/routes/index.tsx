@@ -593,8 +593,15 @@ function PlannerPage() {
                   </a>
                   <button
                     onClick={() => {
-                      addGuests([{ name: "New guest", meal: "None", tags: [], rsvpStatus: "Confirmed" }]);
-                      toast.success("Added blank guest — edit in Guests page");
+                      const existingCount = guests.filter((g) => g.name.startsWith("New guest")).length;
+                      const newName = existingCount === 0 ? "New guest" : `New guest ${existingCount + 1}`;
+                      addGuests([{ name: newName, meal: "None", tags: [], rsvpStatus: "Confirmed" }]);
+                      setTimeout(() => {
+                        const allGuests = usePlanStore.getState().guests;
+                        const newGuest = [...allGuests].reverse().find((g) => g.name === newName);
+                        if (newGuest) setEditingGuestId(newGuest.id);
+                      }, 0);
+                      toast.success(`${newName} added — fill in the details`);
                     }}
                     className="w-full text-left px-3 py-2 text-sm rounded hover:bg-accent inline-flex items-center gap-2"
                   >
