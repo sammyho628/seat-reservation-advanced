@@ -162,17 +162,16 @@ export function UnassignedPanel({ selectedGuestId, onSelect, onEditGuest }: Prop
                     const active = selectedGuestId === g.id;
                     const ghosted = g.rsvpStatus === "Declined" || g.rsvpStatus === "No-show";
                     return (
-                      <button
+                      <div
                         key={g.id}
-                        onClick={() => onSelect(active ? null : g.id)}
-                        disabled={ghosted}
-                        className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors flex items-start gap-2 ${
+                        className={`group/row w-full text-left px-3 py-2 rounded-md text-sm transition-colors flex items-start gap-2 cursor-pointer ${
                           active
                             ? "bg-primary text-primary-foreground"
                             : ghosted
                             ? "opacity-50 line-through"
                             : "hover:bg-accent text-foreground"
-                        }`}
+                        } ${ghosted ? "pointer-events-none" : ""}`}
+                        onClick={() => onSelect(active ? null : g.id)}
                       >
                         <div className="flex-1 min-w-0">
                           <div
@@ -198,8 +197,38 @@ export function UnassignedPanel({ selectedGuestId, onSelect, onEditGuest }: Prop
                             <Star className={`h-3 w-3 ${active ? "" : "text-vip"} fill-current`} />
                           )}
                           {g.tags.includes("Wheelchair") && <Accessibility className="h-3 w-3" />}
+                          {tbcSeats.length > 0 && !ghosted && (
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <button
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="opacity-0 group-hover/row:opacity-100 text-[10px] px-1.5 py-0.5 rounded border border-indigo-200 text-indigo-600 hover:bg-indigo-50 shrink-0 transition-opacity"
+                                  title="Assign to a TBC seat"
+                                >
+                                  → TBC
+                                </button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-56 p-1" align="end" onClick={(e) => e.stopPropagation()}>
+                                <p className="text-[10px] text-muted-foreground px-2 py-1 font-semibold uppercase tracking-wider">Put on TBC seat at…</p>
+                                {tbcSeats.map((ts) => (
+                                  <button
+                                    key={ts.guestId}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      assignGuest(g.id, ts.tableId, ts.seatIndex);
+                                      toast.success(`Moved to Table ${ts.tableLabel} · Seat ${ts.seatIndex}`);
+                                    }}
+                                    className="w-full text-left px-3 py-2 text-sm rounded hover:bg-accent"
+                                  >
+                                    Table {ts.tableLabel} · Seat {ts.seatIndex}
+                                    {ts.company && <span className="text-muted-foreground ml-1">({ts.company})</span>}
+                                  </button>
+                                ))}
+                              </PopoverContent>
+                            </Popover>
+                          )}
                         </div>
-                      </button>
+                      </div>
                     );
                   })}
                 </div>
