@@ -1,5 +1,5 @@
 import { usePlanStore, type RsvpStatus } from "@/lib/plan-store";
-import { Star, Accessibility, X, ChevronDown, ChevronRight } from "lucide-react";
+import { Star, Accessibility, X, ChevronDown, ChevronRight, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
