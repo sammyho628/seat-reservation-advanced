@@ -91,14 +91,18 @@ function GuestsPage() {
   }, [guests]);
 
   const companyStats = useMemo(() => {
-    const m = new Map<string, { total: number; seated: number; meals: Record<string, number> }>();
+    const m = new Map<string, { total: number; seated: number; tbc: number; meals: Record<string, number> }>();
     guests.forEach((g) => {
       const key = g.company?.trim() || "(No company)";
-      if (!m.has(key)) m.set(key, { total: 0, seated: 0, meals: {} });
+      if (!m.has(key)) m.set(key, { total: 0, seated: 0, tbc: 0, meals: {} });
       const e = m.get(key)!;
-      e.total++;
-      if (g.tableId) e.seated++;
-      if (g.meal !== "None") e.meals[g.meal] = (e.meals[g.meal] || 0) + 1;
+      if (g.isPlaceholder) {
+        e.tbc++;
+      } else {
+        e.total++;
+        if (g.tableId) e.seated++;
+        if (g.meal !== "None") e.meals[g.meal] = (e.meals[g.meal] || 0) + 1;
+      }
     });
     return [...m.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
