@@ -209,6 +209,51 @@ export function GuestEditSheet({ guestId, onClose }: { guestId: string | null; o
                   {guest.locked ? "🔒 Locked to seat" : "○ Not locked"}
                 </button>
               ))}
+              {guest.tableId && field("Move to seat", (
+                <div className="flex gap-2">
+                  <select
+                    className="flex-1 h-9 rounded-md border border-input bg-background px-2 text-sm"
+                    value=""
+                    onChange={(e) => {
+                      const [tableId, seatStr] = e.target.value.split("::");
+                      if (!tableId) return;
+                      const seatIndex = seatStr ? parseInt(seatStr) : undefined;
+                      assignGuest(guest.id, tableId, seatIndex || undefined);
+                      toast.success(`Moved to Table ${tables.find((t) => t.id === tableId)?.label}`);
+                    }}
+                  >
+                    <option value="">— select destination —</option>
+                    {tables.map((t) => {
+                      const occupiedSeats = new Set(
+                        guests.filter((g) => g.tableId === t.id && g.id !== guest.id).map((g) => g.seatIndex)
+                      );
+                      const emptySeats = Array.from({ length: t.seats }, (_, i) => i + 1).filter((s) => !occupiedSeats.has(s));
+                      if (emptySeats.length === 0) return null;
+                      return (
+                        <optgroup key={t.id} label={`Table ${t.label} (${emptySeats.length} free)`}>
+                          {emptySeats.map((s) => (
+                            <option key={s} value={`${t.id}::${s}`}>Table {t.label} · Seat {s}</option>
+                          ))}
+                        </optgroup>
+                      );
+                    })}
+                  </select>
+                </div>
+              ))}
+              <div className="pt-4 border-t border-border mt-2">
+                <button
+                  onClick={() => {
+                    if (window.confirm(`Delete ${guest.name} from the plan? This cannot be undone.`)) {
+                      removeGuest(guest.id);
+                      onClose();
+                      toast.success(`${guest.name} removed from plan`);
+                    }
+                  }}
+                  className="w-full h-9 rounded-md border border-destructive/40 text-destructive text-sm hover:bg-destructive/5 transition"
+                >
+                  Delete guest from plan
+                </button>
+              </div>
             </div>
           </>
         )}
