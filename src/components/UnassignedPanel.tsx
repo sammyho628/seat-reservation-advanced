@@ -28,12 +28,26 @@ export function UnassignedPanel({ selectedGuestId, onSelect, onEditGuest }: Prop
 
   const unfiltered = useMemo(() => {
     return allGuests.filter((g) => {
+      if (g.isPlaceholder) return false;
       if (g.tableId) return false;
       if (g.rsvpStatus === "Declined" || g.rsvpStatus === "No-show") return showDeclined;
+      if (g.rsvpStatus === "Withdrawn") return false;
       if (filter === "All") return true;
       return g.rsvpStatus === filter;
     });
   }, [allGuests, filter, showDeclined]);
+
+  const tbcSeats = useMemo(() => {
+    return allGuests
+      .filter((g) => g.isPlaceholder && g.tableId)
+      .map((g) => ({
+        guestId: g.id,
+        tableId: g.tableId!,
+        seatIndex: g.seatIndex!,
+        company: g.company,
+        tableLabel: tables.find((t) => t.id === g.tableId)?.label ?? "?",
+      }));
+  }, [allGuests, tables]);
 
   const visible = useMemo(() => {
     const q = panelSearch.trim().toLowerCase();
