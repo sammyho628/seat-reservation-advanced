@@ -740,7 +740,7 @@ export const usePlanStore = create<PlanState>()(
           occupants[t.id].forEach((id) => {
             const u = updated.find((x) => x.id === id);
             if (!u) return;
-            if (u.locked && u.tableId === t.id && u.seatIndex) {
+            if ((u.locked || u.isPlaceholder) && u.tableId === t.id && u.seatIndex) {
               assigned += 1;
               return;
             }
