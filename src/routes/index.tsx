@@ -102,6 +102,9 @@ function PlannerPage() {
   const fillGaps = usePlanStore((s) => s.fillGaps);
 
   const [newPlanOpen, setNewPlanOpen] = useState(false);
+  const [clearSeatsOpen, setClearSeatsOpen] = useState(false);
+  const [pendingImportData, setPendingImportData] = useState<any>(null);
+  const [importConfirmOpen, setImportConfirmOpen] = useState(false);
   const [editingGuestId, setEditingGuestId] = useState<string | null>(null);
 
   async function handleOpenFile() {
@@ -113,9 +116,16 @@ function PlannerPage() {
       if (!file) return;
       try {
         const data = JSON.parse(await file.text());
-        const ok = importPlan(data);
-        if (ok) toast.success(`Loaded "${file.name}"`);
-        else toast.error("Could not load file — invalid Seatcraft plan");
+        if (!data || typeof data !== "object") { toast.error("Invalid Seatcraft plan file"); return; }
+        const hasPlan = guests.length > 0 || tables.length > 0;
+        if (hasPlan) {
+          setPendingImportData(data);
+          setImportConfirmOpen(true);
+        } else {
+          const ok = importPlan(data);
+          if (ok) toast.success(`Loaded "${file.name}"`);
+          else toast.error("Could not load file — invalid Seatcraft plan");
+        }
       } catch {
         toast.error("Could not load file — is it a valid Seatcraft plan?");
       }
