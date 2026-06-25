@@ -132,6 +132,7 @@ interface PlanState {
   removeTable: (tableId: string) => void;
 
   addGuests: (guests: Omit<Guest, "id">[]) => void;
+  addPlaceholder: (company: string) => void;
   updateGuest: (id: string, patch: Partial<Guest>) => void;
   removeGuest: (id: string) => void;
   clearGuests: () => void;
