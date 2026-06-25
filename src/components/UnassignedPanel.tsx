@@ -133,6 +133,49 @@ export function UnassignedPanel({ selectedGuestId, onSelect, onEditGuest }: Prop
       </div>
 
       <div className="flex-1 overflow-y-auto p-2 space-y-3">
+        {(() => {
+          const waitlisted = allGuests.filter((g) => !g.isPlaceholder && g.rsvpStatus === "Waitlist");
+          if (waitlisted.length === 0) return null;
+          return (
+            <div className="mb-1 border border-amber-200 dark:border-amber-800 rounded-lg overflow-hidden">
+              <div className="flex items-center justify-between px-3 py-2 bg-amber-50 dark:bg-amber-950/30">
+                <span className="text-xs font-medium text-amber-800 dark:text-amber-300 uppercase tracking-wider">
+                  Waitlist ({waitlisted.length})
+                </span>
+                {waitlisted.length > 1 && (
+                  <button
+                    onClick={() => {
+                      waitlisted.forEach((g) => updateGuest(g.id, { rsvpStatus: "Confirmed" }));
+                      toast.success(`${waitlisted.length} promoted to Confirmed`);
+                    }}
+                    className="text-[10px] px-2 py-0.5 rounded bg-amber-600 text-white hover:bg-amber-700"
+                  >
+                    Promote all
+                  </button>
+                )}
+              </div>
+              <div className="divide-y divide-border/60">
+                {waitlisted.map((g) => (
+                  <div key={g.id} className="flex items-center gap-2 px-3 py-1.5">
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-medium truncate">{g.name}</div>
+                      {g.company && <div className="text-[10px] text-muted-foreground truncate">{g.company}</div>}
+                    </div>
+                    <button
+                      onClick={() => {
+                        updateGuest(g.id, { rsvpStatus: "Confirmed" });
+                        toast.success(`${g.name} promoted to Confirmed`);
+                      }}
+                      className="shrink-0 text-[10px] px-2 py-0.5 rounded border border-amber-300 text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/40"
+                    >
+                      Promote
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
         {visible.length === 0 && (
           <div className="text-center text-sm text-muted-foreground py-8">Everyone is seated 🎉</div>
         )}
