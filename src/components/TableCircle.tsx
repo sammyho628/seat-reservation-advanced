@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { usePlanStore, type Table, type Guest } from "@/lib/plan-store";
 import {
   Star, Accessibility, TriangleAlert, RotateCw, RotateCcw,
-  Pencil, Maximize2, X,
+  Pencil, Maximize2, X, Camera,
 } from "lucide-react";
 import {
   Popover,
@@ -101,6 +101,23 @@ function TableCircleInner({
   const [editingSeats, setEditingSeats] = useState(false);
   const [rotateOpen, setRotateOpen] = useState(false);
   const [rotateDir, setRotateDir] = useState<"cw" | "ccw">("cw");
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  async function downloadTablePNG() {
+    if (!cardRef.current) return;
+    try {
+      const domtoimage = (await import("dom-to-image-more")).default;
+      const blob = await domtoimage.toBlob(cardRef.current, { scale: 2 });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `table-${table.label.replace(/\s+/g, "-").toLowerCase()}.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error("Table PNG export failed", e);
+    }
+  }
 
   const seatMap = new Map<number, Guest>();
   guests.forEach((g) => {
@@ -144,6 +161,7 @@ function TableCircleInner({
 
   return (
     <div
+      ref={cardRef}
       className={`relative rounded-xl border bg-card p-3 group transition-shadow ${
         highlighted ? "ring-2 ring-primary animate-pulse border-primary" : "border-table-ring"
       } ${zoomed ? "scale-100" : ""}`}
@@ -531,6 +549,13 @@ function TableCircleInner({
 
       {!zoomed && (
         <div className="absolute bottom-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+          <button
+            onClick={(e) => { e.stopPropagation(); downloadTablePNG(); }}
+            className="h-7 w-7 rounded-md border border-input bg-card/90 hover:bg-accent inline-flex items-center justify-center shadow-sm"
+            title={`Download Table ${table.label} as PNG`}
+          >
+            <Camera className="h-3.5 w-3.5" />
+          </button>
           <button
             onClick={(e) => { e.stopPropagation(); requestRotate("ccw"); }}
             className="h-7 w-7 rounded-md border border-input bg-card/90 hover:bg-accent inline-flex items-center justify-center shadow-sm"

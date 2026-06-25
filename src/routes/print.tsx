@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { usePlanStore } from "@/lib/plan-store";
 import { useMemo, useState } from "react";
 import { Printer } from "lucide-react";
+import JSZip from "jszip";
 
 export const Route = createFileRoute("/print")({
   ssr: false,
@@ -17,7 +18,7 @@ function PrintPage() {
   const tables = usePlanStore((s) => s.tables);
   const allGuests = usePlanStore((s) => s.guests);
   const settings = usePlanStore((s) => s.settings);
-  const [view, setView] = useState<"full" | "kitchen">("full");
+  const [view, setView] = useState<"full" | "kitchen" | "companies">("full");
 
   const guests = useMemo(
     () => allGuests.filter((g) => g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show"),
@@ -79,6 +80,77 @@ function PrintPage() {
 
   const tableLabel = Object.fromEntries(tables.map((t) => [t.id, t.label]));
 
+  const byCompany = useMemo(() => {
+    const m = new Map<string, typeof guests>();
+    guests.forEach((g) => {
+      if (!g.isPlaceholder) {
+        const key = g.company?.trim() || "(No company)";
+        if (!m.has(key)) m.set(key, []);
+        m.get(key)!.push(g);
+      }
+    });
+    m.forEach((list) =>
+      list.sort((a, b) => {
+        const ta = tableLabel[a.tableId ?? ""] ?? "z";
+        const tb = tableLabel[b.tableId ?? ""] ?? "z";
+        if (ta !== tb) return ta.localeCompare(tb);
+        return (a.seatIndex ?? 0) - (b.seatIndex ?? 0);
+      })
+    );
+    return [...m.entries()].sort(([a], [b]) => a.localeCompare(b));
+  }, [guests, tableLabel]);
+
+  async function exportZip() {
+    const zip = new JSZip();
+    const mmRows = [
+      ["Name", "FirstName", "LastName", "Company", "Title", "Table", "Seat", "Meal", "Dietary", "Tags", "RSVP"],
+      ...eligibleGuests.map((g) => {
+        const tbl = tables.find((t) => t.id === g.tableId);
+        return [
+          g.name, g.firstName ?? "", g.lastName ?? "", g.company ?? "",
+          g.title ?? "", tbl?.label ?? "", String(g.seatIndex ?? ""),
+          g.meal, g.dietary ?? "", g.tags.join("; "), g.rsvpStatus,
+        ];
+      }),
+    ];
+    const mmCsv = mmRows
+      .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+    zip.file("mail-merge.csv", "\uFEFF" + mmCsv);
+
+    const allRows = [
+      ["Name", "Company", "Title", "Cohort", "Table", "Seat", "Meal", "Dietary", "RSVP", "Notes", "TBC"],
+      ...allGuests
+        .filter((g) => g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show")
+        .map((g) => {
+          const tbl = tables.find((t) => t.id === g.tableId);
+          return [
+            g.name, g.company ?? "", g.title ?? "", g.cohort ?? "",
+            tbl?.label ?? "", String(g.seatIndex ?? ""),
+            g.meal, g.dietary ?? "", g.rsvpStatus, g.notes ?? "",
+            g.isPlaceholder ? "Yes" : "",
+          ];
+        }),
+    ];
+    const allCsv = allRows
+      .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+    zip.file("all-guests.csv", "\uFEFF" + allCsv);
+
+    const planState = usePlanStore.getState();
+    zip.file("plan.seatcraft.json", JSON.stringify(planState, null, 2));
+
+    const blob = await zip.generateAsync({ type: "blob" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    const slug = settings.eventTitle.replace(/\s+/g, "-").toLowerCase();
+    a.download = `${slug}-export.zip`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+
   return (
     <div className="min-h-screen bg-background">
       <div className="no-print sticky top-0 z-30 bg-background/90 backdrop-blur border-b border-border">
@@ -92,11 +164,24 @@ function PrintPage() {
               🍽️ {view === "kitchen" ? "Full view" : "Kitchen sheet"}
             </button>
             <button
+              onClick={() => setView(view === "companies" ? "full" : "companies")}
+              className="h-9 px-3 rounded-md border border-input text-sm"
+            >
+              🏢 {view === "companies" ? "Full view" : "By company"}
+            </button>
+            <button
               onClick={exportMailMerge}
               className="h-9 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent"
               title="Export CSV for Word/Excel mail merge"
             >
               📋 Mail merge CSV
+            </button>
+            <button
+              onClick={exportZip}
+              className="h-9 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent"
+              title="Download ZIP: mail-merge CSV + all guests CSV + plan backup"
+            >
+              📦 Export ZIP
             </button>
             <button
               onClick={() => window.print()}
@@ -119,7 +204,7 @@ function PrintPage() {
             </div>
           </div>
 
-          {view === "kitchen" ? (
+          {view === "kitchen" && (
             <div className="mt-8">
               <h2 className="font-display text-3xl mb-4" style={{ borderBottom: `2px solid ${settings.primaryColor}` }}>Kitchen sheet</h2>
               <table className="w-full text-sm border border-border">
@@ -163,7 +248,8 @@ function PrintPage() {
                 </tbody>
               </table>
             </div>
-          ) : (
+          )}
+          {view === "full" && (
             <>
               <h2 className="font-display text-2xl mt-10 mb-3">Meal totals</h2>
               <table className="w-full max-w-md border border-border">
@@ -179,6 +265,54 @@ function PrintPage() {
             </>
           )}
         </section>
+
+        {view === "companies" && (
+          <section>
+            <h2 className="font-display text-3xl mb-6">Guest list by company</h2>
+            {byCompany.map(([company, list]) => (
+              <div key={company} className="mb-8 print-page">
+                <h3 className="font-display text-xl mb-2 pb-1" style={{ borderBottom: `2px solid ${settings.primaryColor}` }}>
+                  {company}
+                  <span className="text-sm font-sans font-normal text-muted-foreground ml-2">
+                    {list.length} guest{list.length !== 1 ? "s" : ""}
+                    {" · "}
+                    {list.filter((g) => g.tableId).length} seated
+                    {list.some((g) => !g.tableId) ? ` · ${list.filter((g) => !g.tableId).length} unassigned` : ""}
+                  </span>
+                </h3>
+                <table className="w-full text-sm border border-border">
+                  <thead className="bg-muted text-xs uppercase tracking-wider text-muted-foreground">
+                    <tr>
+                      <th className="text-left p-2">Name</th>
+                      <th className="text-left p-2">Title</th>
+                      <th className="text-left p-2">Table</th>
+                      <th className="text-left p-2">Seat</th>
+                      <th className="text-left p-2">Meal</th>
+                      <th className="text-left p-2">Dietary</th>
+                      <th className="text-left p-2">RSVP</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {list.map((g) => (
+                      <tr key={g.id} className="border-t border-border/60">
+                        <td className="p-2 font-medium">{g.name}</td>
+                        <td className="p-2 text-muted-foreground text-xs">{g.title ?? "—"}</td>
+                        <td className="p-2 font-mono">{g.tableId ? tableLabel[g.tableId] : <span className="text-amber-600">Unassigned</span>}</td>
+                        <td className="p-2 font-mono">{g.seatIndex ?? "—"}</td>
+                        <td className="p-2 text-xs">{g.meal !== "None" ? g.meal : "—"}</td>
+                        <td className={`p-2 text-xs ${g.dietary ? "text-[color:var(--color-violation)] font-medium" : "text-muted-foreground"}`}>
+                          {g.dietary || "—"}
+                        </td>
+                        <td className="p-2 text-xs">{g.rsvpStatus}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ))}
+          </section>
+        )}
+
 
         {view === "full" && (
           <>
