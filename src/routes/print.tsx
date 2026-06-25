@@ -329,6 +329,80 @@ function PrintPage() {
           </section>
         )}
 
+        {view === "dietary" && (() => {
+          const dietaryGuests = allGuests.filter(
+            (g) => !g.isPlaceholder && g.dietary && g.dietary.trim() &&
+              g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show",
+          ).sort((a, b) => (tableLabel[a.tableId ?? ""] ?? "").localeCompare(tableLabel[b.tableId ?? ""] ?? ""));
+          const specialMealGuests = allGuests.filter(
+            (g) => !g.isPlaceholder && g.meal !== "None" && g.meal !== "Chicken" &&
+              g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show",
+          ).sort((a, b) => a.meal.localeCompare(b.meal));
+          return (
+            <section className="space-y-8 print:space-y-6">
+              <div>
+                <h2 className="text-lg font-bold mb-3 border-b pb-2">⚠️ Dietary Requirements ({dietaryGuests.length})</h2>
+                {dietaryGuests.length === 0 ? (
+                  <p className="text-muted-foreground text-sm">No dietary requirements recorded.</p>
+                ) : (
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-xs uppercase text-muted-foreground border-b">
+                        <th className="py-1 pr-4">Guest</th>
+                        <th className="py-1 pr-4">Company</th>
+                        <th className="py-1 pr-4">Table · Seat</th>
+                        <th className="py-1">Dietary requirement</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {dietaryGuests.map((g) => (
+                        <tr key={g.id} className="border-b border-border/40">
+                          <td className="py-1.5 pr-4 font-medium">{g.name}</td>
+                          <td className="py-1.5 pr-4 text-muted-foreground">{g.company ?? "—"}</td>
+                          <td className="py-1.5 pr-4 font-mono text-xs">
+                            {g.tableId ? `${tableLabel[g.tableId]} · ${g.seatIndex}` : "Unassigned"}
+                          </td>
+                          <td className="py-1.5 font-medium text-amber-700 dark:text-amber-400">{g.dietary}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+              <div>
+                <h2 className="text-lg font-bold mb-3 border-b pb-2">🍽️ Special Meal Choices ({specialMealGuests.length})</h2>
+                {specialMealGuests.length === 0 ? (
+                  <p className="text-muted-foreground text-sm">No special meal choices.</p>
+                ) : (
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-xs uppercase text-muted-foreground border-b">
+                        <th className="py-1 pr-4">Meal</th>
+                        <th className="py-1 pr-4">Guest</th>
+                        <th className="py-1 pr-4">Company</th>
+                        <th className="py-1">Table · Seat</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {specialMealGuests.map((g) => (
+                        <tr key={g.id} className="border-b border-border/40">
+                          <td className="py-1.5 pr-4 font-medium">{g.meal}</td>
+                          <td className="py-1.5 pr-4">{g.name}</td>
+                          <td className="py-1.5 pr-4 text-muted-foreground">{g.company ?? "—"}</td>
+                          <td className="py-1.5 font-mono text-xs">
+                            {g.tableId ? `${tableLabel[g.tableId]} · ${g.seatIndex}` : "Unassigned"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </section>
+          );
+        })()}
+
+
 
         {view === "full" && (
           <>
