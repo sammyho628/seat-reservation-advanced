@@ -545,7 +545,7 @@ function PlannerPage() {
                 </PopoverContent>
               </Popover>
               <button
-                onClick={resetAssignments}
+                onClick={() => setClearSeatsOpen(true)}
                 className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent"
               >
                 <RotateCcw className="h-4 w-4" /> Clear seats
