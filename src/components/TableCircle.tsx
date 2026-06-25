@@ -392,6 +392,7 @@ function TableCircleInner({
                   {guest.cohort ? ` · ${guest.cohort}` : ""}
                   {guest.rsvpStatus !== "Confirmed" ? ` · ${guest.rsvpStatus}` : ""}
                   {guest.dietary ? `\n⚠️ ${guest.dietary}` : ""}
+                  {guest.notes ? `\n📝 ${guest.notes}` : ""}
                   {guest.locked ? `\n🔒 Locked` : ""}
                 </title>
               )}
