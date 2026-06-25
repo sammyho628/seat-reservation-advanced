@@ -354,6 +354,22 @@ function PlannerPage() {
                         <Label>Event title</Label>
                         <Input value={settings.eventTitle} onChange={(e) => setSettings({ eventTitle: e.target.value })} />
                       </div>
+                      <div>
+                        <Label>Event date</Label>
+                        <Input
+                          type="date"
+                          value={settings.eventDate ?? ""}
+                          onChange={(e) => setSettings({ eventDate: e.target.value || undefined })}
+                        />
+                      </div>
+                      <div>
+                        <Label>Venue</Label>
+                        <Input
+                          value={settings.eventVenue ?? ""}
+                          placeholder="e.g. Grand Ballroom, Ritz-Carlton"
+                          onChange={(e) => setSettings({ eventVenue: e.target.value || undefined })}
+                        />
+                      </div>
                       <div className="flex items-center justify-between">
                         <Label>Show stage marker</Label>
                         <Switch checked={settings.showStage} onCheckedChange={(v) => setSettings({ showStage: v })} />
