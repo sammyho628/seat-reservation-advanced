@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { usePlanStore } from "@/lib/plan-store";
 import { useMemo, useState } from "react";
 import { Printer } from "lucide-react";
+import JSZip from "jszip";
 
 export const Route = createFileRoute("/print")({
   ssr: false,
