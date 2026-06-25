@@ -300,6 +300,32 @@ function PlannerPage() {
 
   const fillPct = stats.capacity ? Math.round((stats.seated / stats.capacity) * 100) : 0;
 
+  const waitlistGuests = useMemo(
+    () => guests.filter((g) => !g.isPlaceholder && g.rsvpStatus === "Waitlist"),
+    [guests],
+  );
+  const totalSeatsForPromo = tables.reduce((a, t) => a + t.seats, 0);
+  const seatedForPromo = guests.filter(
+    (g) =>
+      !g.isPlaceholder &&
+      g.tableId &&
+      g.rsvpStatus !== "Declined" &&
+      g.rsvpStatus !== "No-show" &&
+      g.rsvpStatus !== "Withdrawn",
+  ).length;
+  const emptySeatsForPromo = totalSeatsForPromo - seatedForPromo;
+  const showWaitlistBanner = waitlistGuests.length > 0 && emptySeatsForPromo > 0;
+  const promoteCount = Math.min(waitlistGuests.length, emptySeatsForPromo);
+
+  function promoteWaitlist() {
+    const toPromote = waitlistGuests.slice(0, promoteCount);
+    toPromote.forEach((g) => updateGuest(g.id, { rsvpStatus: "Confirmed" }));
+    toast.success(
+      `${toPromote.length} guest${toPromote.length !== 1 ? "s" : ""} promoted to Confirmed`,
+      { description: toPromote.map((g) => g.name).join(", ") },
+    );
+  }
+
   const cohortColorMap = useMemo(() => {
     const m = new Map<string, string>();
     const cohorts = [...new Set(guests.map((g) => g.cohort).filter(Boolean) as string[])];
