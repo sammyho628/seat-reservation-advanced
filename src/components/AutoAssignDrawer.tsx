@@ -219,7 +219,40 @@ export function AutoAssignDrawer({
             >
               <Wand2 className="h-4 w-4" /> Run Auto-Seat
             </button>
+
+            {lastReport && lastReport.skipped > 0 && (
+              <div className="mt-4 p-3 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 text-sm">
+                <p className="font-medium text-amber-800 dark:text-amber-200">
+                  ⚠️ {lastReport.skipped} guest{lastReport.skipped !== 1 ? "s" : ""} could not be placed
+                </p>
+                <p className="text-amber-700 dark:text-amber-300 text-xs mt-1">
+                  Not enough seats, or conflicting hard rules. Check the Unassigned panel.
+                </p>
+                {lastReport.skippedGuests.length > 0 && (
+                  <p className="text-amber-700 dark:text-amber-300 text-xs mt-1 break-words">
+                    {lastReport.skippedGuests.slice(0, 8).join(", ")}
+                    {lastReport.skippedGuests.length > 8 ? ` … +${lastReport.skippedGuests.length - 8} more` : ""}
+                  </p>
+                )}
+                {lastReport.splitCohorts.length > 0 && (
+                  <p className="text-amber-600 dark:text-amber-400 text-xs mt-1">
+                    Groups split across tables: {lastReport.splitCohorts.join(", ")}
+                  </p>
+                )}
+              </div>
+            )}
+            {lastReport && lastReport.skipped === 0 && lastReport.splitCohorts.length > 0 && (
+              <div className="mt-4 p-3 rounded-lg border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-800 text-sm">
+                <p className="font-medium text-emerald-800 dark:text-emerald-200">
+                  ✓ All {lastReport.placed} guests seated
+                </p>
+                <p className="text-emerald-700 dark:text-emerald-300 text-xs mt-1">
+                  Groups split across tables: {lastReport.splitCohorts.join(", ")}
+                </p>
+              </div>
+            )}
           </section>
+
         </div>
       </SheetContent>
     </Sheet>
