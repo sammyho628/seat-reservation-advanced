@@ -855,13 +855,19 @@ export const usePlanStore = create<PlanState>()(
         });
 
         if (commit) set({ guests: updated });
+        const skippedGuests = skippedIds
+          .map((id) => state.guests.find((g) => g.id === id)?.name)
+          .filter(Boolean) as string[];
         return {
           assigned,
           unassigned: eligible.length - assigned,
           violations: violatingGuestIds.length,
           violatingGuestIds,
+          skippedGuests,
+          splitCohorts: Array.from(splitCohorts),
         };
       },
+
 
       fillGaps: () => {
         const { guests, tables } = get();
