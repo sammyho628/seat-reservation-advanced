@@ -438,16 +438,29 @@ function PlannerPage() {
                   <Label className="text-xs">Tables per row</Label>
                   <div className="flex gap-1 mt-1">
                     <Input
-                      className="w-28 font-mono"
+                      className={`w-28 font-mono ${twoUpView ? "opacity-50 pointer-events-none" : ""}`}
                       value={rowPatternDraft}
                       onChange={(e) => setRowPatternDraft(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && setSettings({ rowPattern: rowPatternDraft })}
+                      disabled={twoUpView}
                     />
                     <button
                       onClick={() => setSettings({ rowPattern: rowPatternDraft })}
-                      className="h-10 px-2.5 rounded-md border border-input hover:bg-accent text-sm font-medium"
+                      disabled={twoUpView}
+                      className={`h-10 px-2.5 rounded-md border border-input hover:bg-accent text-sm font-medium ${twoUpView ? "opacity-50 pointer-events-none" : ""}`}
                     >
                       Apply
+                    </button>
+                    <button
+                      onClick={() => setTwoUpView((v) => !v)}
+                      title="Show 2 tables per row"
+                      className={`h-10 px-2.5 rounded-md border text-sm font-medium transition ${
+                        twoUpView
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "border-input hover:bg-accent"
+                      }`}
+                    >
+                      ⊟ 2-Up
                     </button>
                   </div>
                   <p className="text-[10px] text-muted-foreground mt-0.5">e.g. 4:4:4 = 3 rows of 4</p>
