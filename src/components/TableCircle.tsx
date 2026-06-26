@@ -284,6 +284,31 @@ function TableCircleInner({
                   onBlur={(e) => updateTable(table.id, { notes: e.target.value || undefined })}
                 />
               </div>
+              {(() => {
+                const assignedGuests = guests.filter(
+                  (g) => g.tableId === table.id && !g.isPlaceholder,
+                );
+                if (assignedGuests.length === 0) return null;
+                return (
+                  <div className="pt-2 border-t border-border">
+                    <button
+                      onClick={() => {
+                        if (!window.confirm(
+                          `Unassign all ${assignedGuests.length} guests from Table ${table.label}? They will move to Unassigned.`,
+                        )) return;
+                        assignedGuests.forEach((g) =>
+                          updateGuest(g.id, { tableId: undefined, seatIndex: undefined }),
+                        );
+                        toast.success(`${assignedGuests.length} guests moved to Unassigned`);
+                        setPopoverOpen(false);
+                      }}
+                      className="w-full h-8 text-xs rounded-md border border-amber-300 text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/30"
+                    >
+                      Unassign all {assignedGuests.length} guests
+                    </button>
+                  </div>
+                );
+              })()}
               <div className="flex items-center justify-between pt-2 border-t border-border">
                 <span className="text-xs text-muted-foreground">Rotate seats</span>
                 <div className="flex gap-1">
