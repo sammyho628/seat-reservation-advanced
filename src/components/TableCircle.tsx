@@ -62,7 +62,7 @@ export function TableCircle(props: Props) {
     <>
       <TableCircleInner {...props} onRequestZoom={() => setZoomOpen(true)} />
       <Dialog open={zoomOpen} onOpenChange={setZoomOpen}>
-        <DialogContent className="max-w-xl">
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>Table {props.table.label}</DialogTitle>
           </DialogHeader>
@@ -284,6 +284,31 @@ function TableCircleInner({
                   onBlur={(e) => updateTable(table.id, { notes: e.target.value || undefined })}
                 />
               </div>
+              {(() => {
+                const assignedGuests = guests.filter(
+                  (g) => g.tableId === table.id && !g.isPlaceholder,
+                );
+                if (assignedGuests.length === 0) return null;
+                return (
+                  <div className="pt-2 border-t border-border">
+                    <button
+                      onClick={() => {
+                        if (!window.confirm(
+                          `Unassign all ${assignedGuests.length} guests from Table ${table.label}? They will move to Unassigned.`,
+                        )) return;
+                        assignedGuests.forEach((g) =>
+                          updateGuest(g.id, { tableId: undefined, seatIndex: undefined }),
+                        );
+                        toast.success(`${assignedGuests.length} guests moved to Unassigned`);
+                        setPopoverOpen(false);
+                      }}
+                      className="w-full h-8 text-xs rounded-md border border-amber-300 text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/30"
+                    >
+                      Unassign all {assignedGuests.length} guests
+                    </button>
+                  </div>
+                );
+              })()}
               <div className="flex items-center justify-between pt-2 border-t border-border">
                 <span className="text-xs text-muted-foreground">Rotate seats</span>
                 <div className="flex gap-1">
@@ -390,7 +415,7 @@ function TableCircleInner({
         </div>
       </div>
 
-      <svg viewBox={`0 0 ${viewSize} ${viewSize}`} className="w-full h-auto">
+      <svg viewBox={`0 0 ${viewSize} ${viewSize}`} className="w-full h-auto overflow-visible" style={{ overflow: "visible" }}>
         <circle cx={cx} cy={cy} r={isLabelMode ? 80 : 70} fill="var(--color-table-surface)" stroke="var(--color-table-ring)" strokeWidth="1" />
         <text x={cx} y={cy - 4} textAnchor="middle" className="font-display fill-foreground" fontSize="18">
           {table.label}
@@ -618,7 +643,7 @@ function TableCircleInner({
             <AlertDialogTitle>Rotate Table {table.label} {rotateDir === "cw" ? "clockwise" : "counter-clockwise"}?</AlertDialogTitle>
             <AlertDialogDescription>
               All guests at this table will shift one seat {rotateDir === "cw" ? "clockwise" : "counter-clockwise"}.
-              Seat numbers stay the same — only the visual positions rotate.
+              Seat number positions stay fixed — only guest assignments rotate.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

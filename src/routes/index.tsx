@@ -411,7 +411,7 @@ function PlannerPage() {
     <AppShell>
       <div className="flex">
         <div className="flex-1 min-w-0">
-          <div className="max-w-[1300px] mx-auto px-6 py-8">
+          <div className="w-full px-3 py-8">
             {/* Toolbar */}
             <div className="flex flex-wrap items-end gap-4 mb-6 pb-6 border-b border-border/60">
               <div className="flex-1 min-w-[260px]">
