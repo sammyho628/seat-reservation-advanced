@@ -485,7 +485,7 @@ function GuestsPage() {
           <Select value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
             <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="all">All Guests</SelectItem>
               <SelectItem value="assigned">Seated</SelectItem>
               <SelectItem value="unassigned">Unassigned</SelectItem>
             </SelectContent>
