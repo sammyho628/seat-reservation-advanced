@@ -983,6 +983,7 @@ function PlannerPage() {
                 selectedSeat={selectedSeat}
                 onSelectSeat={handleSelectSeat}
                 onEditGuest={setEditingGuestId}
+                rowPatternOverride={twoUpView ? effectiveRowPattern : undefined}
               />
               </>
             )}
