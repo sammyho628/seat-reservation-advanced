@@ -153,6 +153,13 @@ function PlannerPage() {
   const [autoSeatOpen, setAutoSeatOpen] = useState(false);
   const [strategy, setStrategy] = useState<SeatStrategy>("smart");
   const [overwriteOpen, setOverwriteOpen] = useState(false);
+  const [lastRunReport, setLastRunReport] = useState<{
+    placed: number;
+    skipped: number;
+    skippedGuests: string[];
+    splitCohorts: string[];
+  } | null>(null);
+
   const [rowPatternDraft, setRowPatternDraft] = useState(settings.rowPattern);
   const searchRef = useRef<HTMLInputElement>(null);
 
