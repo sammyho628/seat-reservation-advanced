@@ -161,9 +161,12 @@ function PlannerPage() {
   } | null>(null);
 
   const [rowPatternDraft, setRowPatternDraft] = useState(settings.rowPattern);
+  const [twoUpView, setTwoUpView] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => setRowPatternDraft(settings.rowPattern), [settings.rowPattern]);
+
+  const effectiveRowPattern = twoUpView ? "2" : settings.rowPattern;
 
   // intercept seat clicks for swap confirmation
   function handleSelectSeat(sel: typeof selectedSeat) {
