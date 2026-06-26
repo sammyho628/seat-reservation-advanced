@@ -643,7 +643,7 @@ function TableCircleInner({
             <AlertDialogTitle>Rotate Table {table.label} {rotateDir === "cw" ? "clockwise" : "counter-clockwise"}?</AlertDialogTitle>
             <AlertDialogDescription>
               All guests at this table will shift one seat {rotateDir === "cw" ? "clockwise" : "counter-clockwise"}.
-              Seat numbers stay the same — only the visual positions rotate.
+              Seat number positions stay fixed — only guest assignments rotate.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
