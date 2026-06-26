@@ -75,6 +75,7 @@ export function AutoAssignDrawer({
   setStrategy,
   onRun,
   onFillGaps,
+  lastReport,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -82,7 +83,14 @@ export function AutoAssignDrawer({
   setStrategy: (s: SeatStrategy) => void;
   onRun: () => void;
   onFillGaps: () => void;
+  lastReport?: {
+    placed: number;
+    skipped: number;
+    skippedGuests: string[];
+    splitCohorts: string[];
+  } | null;
 }) {
+
   const rules = usePlanStore((s) => s.rules);
   const guests = usePlanStore((s) => s.guests);
   const addRule = usePlanStore((s) => s.addRule);
