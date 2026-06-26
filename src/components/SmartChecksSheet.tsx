@@ -1,8 +1,9 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { usePlanStore } from "@/lib/plan-store";
+import { usePlanStore, type Guest } from "@/lib/plan-store";
 import { runSmartChecks, type CheckWarning } from "@/lib/smart-checks";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { TriangleAlert, Info } from "lucide-react";
+import { toast } from "sonner";
 
 const CATEGORY_LABELS: Record<CheckWarning["category"], string> = {
   duplicate_name: "Duplicate Names",
@@ -24,10 +25,112 @@ interface Props {
   onEditGuest: (id: string) => void;
 }
 
+function BulkRenamePanel({
+  warning,
+  guests,
+  updateGuest,
+}: {
+  warning: CheckWarning;
+  guests: Guest[];
+  updateGuest: (id: string, patch: Partial<Guest>) => void;
+}) {
+  const affectedGuests = useMemo(
+    () => guests.filter((g) => warning.guestIds.includes(g.id)),
+    [guests, warning.guestIds],
+  );
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(
+    () => new Set(warning.guestIds),
+  );
+  const [newName, setNewName] = useState("");
+  const [applying, setApplying] = useState(false);
+
+  const allSelected = selectedIds.size === affectedGuests.length;
+
+  return (
+    <div className="mt-3 p-3 rounded-lg border border-border bg-muted/30">
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+          Bulk rename {affectedGuests.length} guests
+        </span>
+        <button
+          onClick={() =>
+            setSelectedIds(
+              allSelected ? new Set() : new Set(affectedGuests.map((g) => g.id)),
+            )
+          }
+          className="text-xs text-primary underline-offset-2 hover:underline"
+        >
+          {allSelected ? "Deselect all" : "Select all"}
+        </button>
+      </div>
+
+      <div className="space-y-1 mb-3">
+        {affectedGuests.map((g) => (
+          <label
+            key={g.id}
+            className="flex items-center gap-2 text-sm cursor-pointer"
+          >
+            <input
+              type="checkbox"
+              checked={selectedIds.has(g.id)}
+              onChange={(e) => {
+                const next = new Set(selectedIds);
+                if (e.target.checked) next.add(g.id);
+                else next.delete(g.id);
+                setSelectedIds(next);
+              }}
+              className="rounded"
+            />
+            <span className="flex-1 truncate">{g.name}</span>
+            <span className="text-xs text-muted-foreground truncate max-w-[140px]">
+              {g.company}
+            </span>
+          </label>
+        ))}
+      </div>
+
+      <div className="flex gap-2">
+        <input
+          type="text"
+          placeholder="Type canonical company name…"
+          value={newName}
+          onChange={(e) => setNewName(e.target.value)}
+          className="flex-1 h-8 px-3 rounded-md border border-input bg-background text-sm"
+        />
+        <button
+          disabled={!newName.trim() || selectedIds.size === 0 || applying}
+          onClick={() => {
+            const trimmed = newName.trim();
+            if (!trimmed || selectedIds.size === 0) return;
+            setApplying(true);
+            Array.from(selectedIds).forEach((id) =>
+              updateGuest(id, { company: trimmed }),
+            );
+            toast.success(
+              `Company renamed to "${trimmed}" for ${selectedIds.size} guest(s)`,
+            );
+            setNewName("");
+            setApplying(false);
+          }}
+          className="h-8 px-3 rounded-md bg-primary text-primary-foreground text-sm font-medium disabled:opacity-50"
+        >
+          Rename
+        </button>
+      </div>
+      {selectedIds.size === 0 && (
+        <p className="text-xs text-muted-foreground mt-1">
+          Select at least one guest to rename.
+        </p>
+      )}
+    </div>
+  );
+}
+
 export function SmartChecksSheet({ open, onOpenChange, onEditGuest }: Props) {
   const guests = usePlanStore((s) => s.guests);
   const tables = usePlanStore((s) => s.tables);
   const rules = usePlanStore((s) => s.rules);
+  const updateGuest = usePlanStore((s) => s.updateGuest);
 
   const warnings = useMemo(
     () => runSmartChecks(guests, tables, rules),
@@ -109,6 +212,13 @@ export function SmartChecksSheet({ open, onOpenChange, onEditGuest }: Props) {
                                   );
                                 })}
                               </div>
+                            )}
+                            {w.category === "similar_company" && (
+                              <BulkRenamePanel
+                                warning={w}
+                                guests={guests}
+                                updateGuest={updateGuest}
+                              />
                             )}
                           </div>
                         </div>

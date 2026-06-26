@@ -22,6 +22,7 @@ interface Props {
   selectedSeat: { tableId: string; seatIndex: number } | null;
   onSelectSeat: (sel: { tableId: string; seatIndex: number } | null) => void;
   onEditGuest?: (id: string) => void;
+  rowPatternOverride?: string;
 }
 
 function SortableTable({ id, children }: { id: string; children: React.ReactNode }) {
@@ -48,6 +49,7 @@ export function PlannerGrid({
   selectedSeat,
   onSelectSeat,
   onEditGuest,
+  rowPatternOverride,
 }: Props) {
   const tables = usePlanStore((s) => s.tables);
   const guests = usePlanStore((s) => s.guests);
@@ -55,7 +57,7 @@ export function PlannerGrid({
   const assignGuest = usePlanStore((s) => s.assignGuest);
   const reorderTables = usePlanStore((s) => s.reorderTables);
 
-  const rowSizes = parseRowPattern(settings.rowPattern);
+  const rowSizes = parseRowPattern(rowPatternOverride ?? settings.rowPattern);
   const rows: { id: string; tables: typeof tables }[] = [];
   let cursor = 0;
   rowSizes.forEach((count, i) => {
