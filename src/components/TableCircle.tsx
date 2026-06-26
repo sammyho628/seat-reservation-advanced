@@ -390,7 +390,7 @@ function TableCircleInner({
         </div>
       </div>
 
-      <svg viewBox={`0 0 ${viewSize} ${viewSize}`} className="w-full h-auto">
+      <svg viewBox={`0 0 ${viewSize} ${viewSize}`} className="w-full h-auto overflow-visible" style={{ overflow: "visible" }}>
         <circle cx={cx} cy={cy} r={isLabelMode ? 80 : 70} fill="var(--color-table-surface)" stroke="var(--color-table-ring)" strokeWidth="1" />
         <text x={cx} y={cy - 4} textAnchor="middle" className="font-display fill-foreground" fontSize="18">
           {table.label}
