@@ -158,12 +158,15 @@ interface PlanState {
     unassigned: number;
     violations: number;
     violatingGuestIds: string[];
+    skippedGuests: string[];
+    splitCohorts: string[];
   };
   fillGaps: (strategy?: SeatStrategy) => {
     assigned: number;
     violations: number;
     violatingGuestIds: string[];
   };
+
   resetAssignments: () => void;
   importPlan: (data: Partial<PlanState>) => boolean;
   exportPlan: () => void;
