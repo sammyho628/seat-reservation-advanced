@@ -1042,7 +1042,10 @@ function PlannerPage() {
 
       <AutoAssignDrawer
         open={autoSeatOpen}
-        onOpenChange={setAutoSeatOpen}
+        onOpenChange={(v) => {
+          setAutoSeatOpen(v);
+          if (!v) setLastRunReport(null);
+        }}
         strategy={strategy}
         setStrategy={setStrategy}
         onRun={runAutoSeat}
@@ -1051,7 +1054,9 @@ function PlannerPage() {
           toast.success(`Filled ${r.assigned} empty seat${r.assigned !== 1 ? "s" : ""} — existing assignments unchanged`);
           setAutoSeatOpen(false);
         }}
+        lastReport={lastRunReport}
       />
+
 
       <GuestEditSheet guestId={editingGuestId} onClose={() => setEditingGuestId(null)} />
 
