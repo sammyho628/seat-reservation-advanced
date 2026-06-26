@@ -158,12 +158,15 @@ interface PlanState {
     unassigned: number;
     violations: number;
     violatingGuestIds: string[];
+    skippedGuests: string[];
+    splitCohorts: string[];
   };
   fillGaps: (strategy?: SeatStrategy) => {
     assigned: number;
     violations: number;
     violatingGuestIds: string[];
   };
+
   resetAssignments: () => void;
   importPlan: (data: Partial<PlanState>) => boolean;
   exportPlan: () => void;
@@ -715,6 +718,8 @@ export const usePlanStore = create<PlanState>()(
         }
 
         const violatingGuestIds: string[] = [];
+        const skippedIds: string[] = [];
+        const splitCohorts = new Set<string>();
         for (const group of groups) {
           let bestId: string | null = null;
 
@@ -741,12 +746,45 @@ export const usePlanStore = create<PlanState>()(
               violatingGuestIds.push(...group.ids);
             }
           }
-          if (!bestId) continue;
-          for (const id of group.ids) {
-            occupants[bestId].push(id);
-            cap[bestId] -= 1;
+          if (bestId) {
+            for (const id of group.ids) {
+              occupants[bestId].push(id);
+              cap[bestId] -= 1;
+            }
+            continue;
           }
+          // Group too large for any single table — split greedily across tables.
+          const cohortNames = group.ids
+            .map((id) => guests.find((g) => g.id === id)?.cohort)
+            .filter(Boolean) as string[];
+          const cohortName =
+            cohortNames.length === group.size && cohortNames.every((c) => c === cohortNames[0])
+              ? cohortNames[0]
+              : undefined;
+          let remaining = [...group.ids];
+          const sortedTables = [...tables].sort((a, b) => cap[b.id] - cap[a.id]);
+          let tablesUsed = 0;
+          for (const t of sortedTables) {
+            if (remaining.length === 0) break;
+            if (cap[t.id] <= 0) continue;
+            const fits: string[] = [];
+            for (const id of remaining) {
+              if (fits.length >= cap[t.id]) break;
+              if (!violatesApart(t.id, id)) fits.push(id);
+            }
+            if (fits.length === 0) continue;
+            for (const id of fits) {
+              occupants[t.id].push(id);
+              cap[t.id] -= 1;
+            }
+            const placedSet = new Set(fits);
+            remaining = remaining.filter((id) => !placedSet.has(id));
+            tablesUsed++;
+          }
+          if (tablesUsed > 1 && cohortName) splitCohorts.add(cohortName);
+          if (remaining.length > 0) skippedIds.push(...remaining);
         }
+
 
         const updated = state.guests.map((g) => {
           if (g.locked && g.tableId) return g; // preserve locked
@@ -817,13 +855,19 @@ export const usePlanStore = create<PlanState>()(
         });
 
         if (commit) set({ guests: updated });
+        const skippedGuests = skippedIds
+          .map((id) => state.guests.find((g) => g.id === id)?.name)
+          .filter(Boolean) as string[];
         return {
           assigned,
           unassigned: eligible.length - assigned,
           violations: violatingGuestIds.length,
           violatingGuestIds,
+          skippedGuests,
+          splitCohorts: Array.from(splitCohorts),
         };
       },
+
 
       fillGaps: () => {
         const { guests, tables } = get();

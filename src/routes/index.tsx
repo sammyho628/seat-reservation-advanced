@@ -153,6 +153,13 @@ function PlannerPage() {
   const [autoSeatOpen, setAutoSeatOpen] = useState(false);
   const [strategy, setStrategy] = useState<SeatStrategy>("smart");
   const [overwriteOpen, setOverwriteOpen] = useState(false);
+  const [lastRunReport, setLastRunReport] = useState<{
+    placed: number;
+    skipped: number;
+    skippedGuests: string[];
+    splitCohorts: string[];
+  } | null>(null);
+
   const [rowPatternDraft, setRowPatternDraft] = useState(settings.rowPattern);
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -215,15 +222,32 @@ function PlannerPage() {
   function commitAutoSeat() {
     const r = autoSeat(strategy);
     setViolatingGuestIds(new Set(r.violatingGuestIds));
-    setAutoSeatOpen(false);
-    setOverwriteOpen(false);
-    const label = STRATEGIES.find((s) => s.value === strategy)?.label ?? strategy;
-    toast.success(`${label}: seated ${r.assigned} of ${guests.length}`, {
-      description: r.violations
-        ? `${r.violations} guest(s) violate rules.`
-        : "No constraint violations.",
+    setLastRunReport({
+      placed: r.assigned,
+      skipped: r.unassigned,
+      skippedGuests: r.skippedGuests,
+      splitCohorts: r.splitCohorts,
     });
+    setOverwriteOpen(false);
+    if (r.unassigned === 0) {
+      toast.success(`All ${r.assigned} guests seated successfully`, {
+        description: r.splitCohorts.length > 0
+          ? `Split across tables: ${r.splitCohorts.join(", ")}`
+          : undefined,
+      });
+    } else {
+      const names = r.skippedGuests;
+      toast.warning(`${r.assigned} guests seated · ${r.unassigned} could not be placed`, {
+        description: names.length === 0
+          ? undefined
+          : names.length <= 5
+            ? `Unplaced: ${names.join(", ")}`
+            : `Unplaced: ${names.slice(0, 4).join(", ")} and ${names.length - 4} more`,
+        duration: 8000,
+      });
+    }
   }
+
 
   const [pendingScheme, setPendingScheme] = useState<NamingScheme | null>(null);
 
@@ -1018,7 +1042,10 @@ function PlannerPage() {
 
       <AutoAssignDrawer
         open={autoSeatOpen}
-        onOpenChange={setAutoSeatOpen}
+        onOpenChange={(v) => {
+          setAutoSeatOpen(v);
+          if (!v) setLastRunReport(null);
+        }}
         strategy={strategy}
         setStrategy={setStrategy}
         onRun={runAutoSeat}
@@ -1027,7 +1054,9 @@ function PlannerPage() {
           toast.success(`Filled ${r.assigned} empty seat${r.assigned !== 1 ? "s" : ""} — existing assignments unchanged`);
           setAutoSeatOpen(false);
         }}
+        lastReport={lastRunReport}
       />
+
 
       <GuestEditSheet guestId={editingGuestId} onClose={() => setEditingGuestId(null)} />
 
