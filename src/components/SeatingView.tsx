@@ -93,11 +93,11 @@ export function SeatingView({ initialQuery = "" }: { initialQuery?: string }) {
         </Select>
         <Select value={rsvp} onValueChange={(v) => setRsvp(v as any)}>
           <SelectTrigger><SelectValue /></SelectTrigger>
-          <SelectContent>{RSVPS.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
+          <SelectContent>{RSVPS.map((r) => <SelectItem key={r} value={r}>{r === "All" ? "All Status" : r}</SelectItem>)}</SelectContent>
         </Select>
         <Select value={cohort} onValueChange={setCohort}>
           <SelectTrigger><SelectValue placeholder="Cohort" /></SelectTrigger>
-          <SelectContent>{cohorts.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+          <SelectContent>{cohorts.map((c) => <SelectItem key={c} value={c}>{c === "All" ? "All Groups" : c}</SelectItem>)}</SelectContent>
         </Select>
         <Select value={tableFilter} onValueChange={setTableFilter}>
           <SelectTrigger><SelectValue placeholder="Table" /></SelectTrigger>
