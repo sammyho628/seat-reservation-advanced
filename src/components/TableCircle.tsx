@@ -62,7 +62,7 @@ export function TableCircle(props: Props) {
     <>
       <TableCircleInner {...props} onRequestZoom={() => setZoomOpen(true)} />
       <Dialog open={zoomOpen} onOpenChange={setZoomOpen}>
-        <DialogContent className="max-w-xl">
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>Table {props.table.label}</DialogTitle>
           </DialogHeader>
