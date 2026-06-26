@@ -316,15 +316,21 @@ export const usePlanStore = create<PlanState>()(
         })),
 
       rotateTable: (tableId, direction) =>
-        set((s) => ({
-          tables: s.tables.map((t) => {
-            if (t.id !== tableId) return t;
-            const n = t.seats;
-            const current = t.seatOffset ?? 0;
-            const next = direction === "cw" ? (current + 1) % n : (current - 1 + n) % n;
-            return { ...t, seatOffset: next };
-          }),
-        })),
+        set((s) => {
+          const table = s.tables.find((t) => t.id === tableId);
+          if (!table) return s;
+          const n = table.seats;
+          return {
+            guests: s.guests.map((g) => {
+              if (g.tableId !== tableId || g.seatIndex == null) return g;
+              const newSeat =
+                direction === "cw"
+                  ? (g.seatIndex % n) + 1
+                  : ((g.seatIndex - 2 + n) % n) + 1;
+              return { ...g, seatIndex: newSeat };
+            }),
+          };
+        }),
 
       addTable: (seats) =>
         set((s) => {
