@@ -560,7 +560,7 @@ function TableCircleInner({
                     </span>
                     <button
                       onClick={() => unassignGuest(guest.id)}
-                      className="opacity-0 group-hover/row:opacity-100 text-destructive text-[10px] shrink-0"
+                      className="text-destructive text-[11px] shrink-0 hover:underline"
                       title="Remove TBC placeholder"
                     >
                       ×
