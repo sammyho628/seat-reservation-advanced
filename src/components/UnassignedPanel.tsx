@@ -22,10 +22,13 @@ export function UnassignedPanel({ selectedGuestId, onSelect, onEditGuest }: Prop
   const tables = usePlanStore((s) => s.tables);
   const assignGuest = usePlanStore((s) => s.assignGuest);
   const updateGuest = usePlanStore((s) => s.updateGuest);
+  const removeGuest = usePlanStore((s) => s.removeGuest);
+  const addPlaceholder = usePlanStore((s) => s.addPlaceholder);
   const [filter, setFilter] = useState<"All" | RsvpStatus>("All");
   const [showDeclined, setShowDeclined] = useState(false);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [panelSearch, setPanelSearch] = useState("");
+  const [tbcCompany, setTbcCompany] = useState("");
 
   const unfiltered = useMemo(() => {
     return allGuests.filter((g) => {
@@ -38,6 +41,11 @@ export function UnassignedPanel({ selectedGuestId, onSelect, onEditGuest }: Prop
     });
   }, [allGuests, filter, showDeclined]);
 
+  const unassignedTbcs = useMemo(
+    () => allGuests.filter((g) => g.isPlaceholder && !g.tableId),
+    [allGuests],
+  );
+
   const tbcSeats = useMemo(() => {
     return allGuests
       .filter((g) => g.isPlaceholder && g.tableId)
@@ -49,6 +57,13 @@ export function UnassignedPanel({ selectedGuestId, onSelect, onEditGuest }: Prop
         tableLabel: tables.find((t) => t.id === g.tableId)?.label ?? "?",
       }));
   }, [allGuests, tables]);
+
+  function tableSeatInfo(tableId: string) {
+    const t = tables.find((x) => x.id === tableId);
+    if (!t) return { taken: 0, capacity: 0 };
+    const taken = allGuests.filter((g) => g.tableId === tableId).length;
+    return { taken, capacity: t.seats };
+  }
 
   const visible = useMemo(() => {
     const q = panelSearch.trim().toLowerCase();
