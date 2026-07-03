@@ -123,6 +123,98 @@ function TableCircleInner({
     }
   }
 
+  async function downloadTableLandscape(opts: {
+    mealMode: "icons" | "text" | "none";
+    showNames: boolean;
+  }) {
+    if (!cardRef.current) return;
+    try {
+      const domtoimage = (await import("dom-to-image-more")).default;
+      // Build an off-screen landscape twin with the table on the left and a bigger name list on the right.
+      const wrapper = document.createElement("div");
+      wrapper.style.cssText =
+        "position:fixed;left:-99999px;top:0;background:var(--color-background,#fff);padding:28px;display:flex;gap:32px;align-items:flex-start;font-family:inherit;";
+      wrapper.style.width = "1400px";
+      // Left: clone of the card (svg + title only, hide guest list + toolbar)
+      const clone = cardRef.current.cloneNode(true) as HTMLElement;
+      clone.style.width = "560px";
+      clone.style.flex = "0 0 560px";
+      clone.querySelectorAll(".table-guest-list").forEach((el) => (el as HTMLElement).style.display = "none");
+      clone.querySelectorAll("[data-capture-hide]").forEach((el) => (el as HTMLElement).style.display = "none");
+      wrapper.appendChild(clone);
+      // Right: single-column name/company list, bigger font
+      const list = document.createElement("div");
+      list.style.cssText = "flex:1;display:flex;flex-direction:column;gap:8px;font-size:18px;line-height:1.35;";
+      const title = document.createElement("div");
+      title.style.cssText = "font-size:26px;font-weight:600;letter-spacing:0.05em;margin-bottom:12px;";
+      title.textContent = `TABLE ${table.label}`;
+      list.appendChild(title);
+      guests
+        .filter((g) => g.seatIndex && g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show")
+        .sort((a, b) => (a.seatIndex ?? 0) - (b.seatIndex ?? 0))
+        .forEach((g) => {
+          const row = document.createElement("div");
+          row.style.cssText = "display:flex;gap:10px;align-items:baseline;border-bottom:1px solid #e5e7eb;padding-bottom:4px;";
+          const seat = document.createElement("span");
+          seat.style.cssText = "font-family:ui-monospace,monospace;color:#6b7280;width:28px;text-align:right;font-size:16px;";
+          seat.textContent = String(g.seatIndex);
+          row.appendChild(seat);
+          const nameCol = document.createElement("div");
+          nameCol.style.cssText = "flex:1;";
+          const name = document.createElement("div");
+          name.style.fontWeight = "600";
+          name.textContent = opts.showNames ? (g.isPlaceholder ? "TBC" : g.name) : "—";
+          nameCol.appendChild(name);
+          if (g.company) {
+            const co = document.createElement("div");
+            co.style.cssText = "font-size:14px;color:#6b7280;";
+            co.textContent = g.company;
+            nameCol.appendChild(co);
+          }
+          row.appendChild(nameCol);
+          if (opts.mealMode !== "none" && g.meal && g.meal !== "None") {
+            const meal = document.createElement("span");
+            meal.style.cssText = "font-size:16px;color:#374151;";
+            meal.textContent = opts.mealMode === "icons" ? (MEAL_EMOJI[g.meal] ?? g.meal) : g.meal;
+            row.appendChild(meal);
+          }
+          list.appendChild(row);
+        });
+      wrapper.appendChild(list);
+      document.body.appendChild(wrapper);
+      const blob = await domtoimage.toBlob(wrapper, { scale: 2, bgcolor: "#ffffff" });
+      document.body.removeChild(wrapper);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `table-${table.label.replace(/\s+/g, "-").toLowerCase()}-landscape.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error("Landscape export failed", e);
+    }
+  }
+
+  async function downloadAllTables() {
+    const node = document.getElementById("planner-grid-capture");
+    if (!node) {
+      toast.error("Planner grid not found");
+      return;
+    }
+    try {
+      const domtoimage = (await import("dom-to-image-more")).default;
+      const blob = await domtoimage.toBlob(node, { scale: 2 });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `all-tables.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
   const seatMap = new Map<number, Guest>();
   guests.forEach((g) => {
     if (g.seatIndex && g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show") {
