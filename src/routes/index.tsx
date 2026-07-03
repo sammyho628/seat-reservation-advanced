@@ -994,7 +994,7 @@ function PlannerPage() {
 
       {/* Persistent swap status bar */}
       {(selectedSeat || pendingSwap) && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 border-t-2 border-amber-400 bg-amber-50 dark:bg-amber-950/90 shadow-xl px-6 py-3 flex items-center justify-between gap-4">
+        <div className="fixed bottom-0 left-0 right-0 z-[100] border-t-2 border-amber-400 bg-amber-50 dark:bg-amber-950/90 shadow-xl px-6 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
             <div className="h-2.5 w-2.5 rounded-full bg-amber-500 animate-pulse shrink-0" />
             {selectedSeat ? (
