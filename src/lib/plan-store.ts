@@ -323,6 +323,7 @@ export const usePlanStore = create<PlanState>()(
           return {
             guests: s.guests.map((g) => {
               if (g.tableId !== tableId || g.seatIndex == null) return g;
+              if (g.locked) return g; // locked guests do not rotate
               const newSeat =
                 direction === "cw"
                   ? (g.seatIndex % n) + 1
