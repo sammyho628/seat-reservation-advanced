@@ -158,22 +158,28 @@ function PrintPage() {
           <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">← Back to planner</Link>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setView(view === "kitchen" ? "full" : "kitchen")}
-              className="h-9 px-3 rounded-md border border-input text-sm"
+              onClick={() => setView("full")}
+              className={`h-9 px-3 rounded-md border text-sm ${view === "full" ? "bg-primary text-primary-foreground border-primary" : "border-input"}`}
             >
-              🍽️ {view === "kitchen" ? "Full view" : "Kitchen sheet"}
+              📄 Full view
             </button>
             <button
-              onClick={() => setView(view === "companies" ? "full" : "companies")}
+              onClick={() => setView("kitchen")}
+              className={`h-9 px-3 rounded-md border text-sm ${view === "kitchen" ? "bg-primary text-primary-foreground border-primary" : "border-input"}`}
+            >
+              🍽️ Kitchen sheet
+            </button>
+            <button
+              onClick={() => setView("companies")}
               className={`h-9 px-3 rounded-md border text-sm ${view === "companies" ? "bg-primary text-primary-foreground border-primary" : "border-input"}`}
             >
-              🏢 {view === "companies" ? "Full view" : "By company"}
+              🏢 By company
             </button>
             <button
-              onClick={() => setView(view === "dietary" ? "full" : "dietary")}
+              onClick={() => setView("dietary")}
               className={`h-9 px-3 rounded-md border text-sm ${view === "dietary" ? "bg-primary text-primary-foreground border-primary" : "border-input"}`}
             >
-              🥗 {view === "dietary" ? "Full view" : "Dietary"}
+              🥗 Dietary
             </button>
             <button
               onClick={exportMailMerge}
