@@ -147,7 +147,87 @@ export function UnassignedPanel({ selectedGuestId, onSelect, onEditGuest }: Prop
         )}
       </div>
 
+      <div className="px-3 pb-2">
+        <div className="flex gap-1">
+          <input
+            value={tbcCompany}
+            onChange={(e) => setTbcCompany(e.target.value)}
+            placeholder="Company (optional)"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                addPlaceholder(tbcCompany.trim());
+                setTbcCompany("");
+                toast.success("TBC placeholder added");
+              }
+            }}
+            className="flex-1 h-7 px-2 rounded-md border border-input bg-background text-[11px] focus:outline-none focus:ring-1 focus:ring-ring"
+          />
+          <button
+            onClick={() => {
+              addPlaceholder(tbcCompany.trim());
+              setTbcCompany("");
+              toast.success("TBC placeholder added");
+            }}
+            className="h-7 px-2 rounded-md border border-input text-[11px] hover:bg-accent"
+            title="Add a TBC placeholder to Unassigned"
+          >
+            + TBC
+          </button>
+        </div>
+      </div>
+
       <div className="flex-1 overflow-y-auto p-2 space-y-3">
+        {unassignedTbcs.length > 0 && (
+          <div className="border border-indigo-200 dark:border-indigo-800 rounded-lg overflow-hidden">
+            <div className="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-950/30 text-[10px] font-semibold uppercase tracking-wider text-indigo-700 dark:text-indigo-300">
+              TBC — awaiting name ({unassignedTbcs.length})
+            </div>
+            <div className="divide-y divide-border/60">
+              {unassignedTbcs.map((g) => (
+                <div key={g.id} className="flex items-center gap-2 px-3 py-1.5 text-xs">
+                  <div className="flex-1 min-w-0 italic text-muted-foreground truncate">
+                    TBC {g.company ? `· ${g.company}` : ""}
+                  </div>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button className="text-[10px] px-1.5 py-0.5 rounded border border-input hover:bg-accent shrink-0">
+                        Seat…
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-56 p-1 max-h-72 overflow-y-auto" align="end">
+                      <p className="text-[10px] text-muted-foreground px-2 py-1 font-semibold uppercase tracking-wider">Assign TBC to table</p>
+                      {tables.map((t) => {
+                        const { taken, capacity } = tableSeatInfo(t.id);
+                        const full = taken >= capacity;
+                        return (
+                          <button
+                            key={t.id}
+                            disabled={full}
+                            onClick={() => {
+                              assignGuest(g.id, t.id);
+                              toast.success(`TBC seated at Table ${t.label}`);
+                            }}
+                            className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-accent disabled:opacity-40 disabled:pointer-events-none flex justify-between"
+                          >
+                            <span>Table {t.label}</span>
+                            <span className="font-mono text-muted-foreground">{taken}/{capacity}</span>
+                          </button>
+                        );
+                      })}
+                    </PopoverContent>
+                  </Popover>
+                  <button
+                    onClick={() => { removeGuest(g.id); toast.success("TBC removed"); }}
+                    className="text-destructive text-[13px] leading-none shrink-0 hover:opacity-70"
+                    title="Delete TBC placeholder"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         {(() => {
           const waitlisted = allGuests.filter((g) => !g.isPlaceholder && g.rsvpStatus === "Waitlist");
           if (waitlisted.length === 0) return null;
