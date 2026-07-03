@@ -336,6 +336,41 @@ export function UnassignedPanel({ selectedGuestId, onSelect, onEditGuest }: Prop
                             <Star className={`h-3 w-3 ${active ? "" : "text-vip"} fill-current`} />
                           )}
                           {g.tags.includes("Wheelchair") && <Accessibility className="h-3 w-3" />}
+                          {!ghosted && (
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <button
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="opacity-0 group-hover/row:opacity-100 text-[10px] px-1.5 py-0.5 rounded border border-input hover:bg-accent shrink-0 transition-opacity"
+                                  title="Assign to a table (first available seat)"
+                                >
+                                  → Seat
+                                </button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-56 p-1 max-h-72 overflow-y-auto" align="end" onClick={(e) => e.stopPropagation()}>
+                                <p className="text-[10px] text-muted-foreground px-2 py-1 font-semibold uppercase tracking-wider">Assign to table…</p>
+                                {tables.map((t) => {
+                                  const { taken, capacity } = tableSeatInfo(t.id);
+                                  const full = taken >= capacity;
+                                  return (
+                                    <button
+                                      key={t.id}
+                                      disabled={full}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        assignGuest(g.id, t.id);
+                                        toast.success(`${g.name} seated at Table ${t.label}`);
+                                      }}
+                                      className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-accent disabled:opacity-40 disabled:pointer-events-none flex justify-between"
+                                    >
+                                      <span>Table {t.label}</span>
+                                      <span className="font-mono text-muted-foreground">{taken}/{capacity}</span>
+                                    </button>
+                                  );
+                                })}
+                              </PopoverContent>
+                            </Popover>
+                          )}
                           {tbcSeats.length > 0 && !ghosted && (
                             <Popover>
                               <PopoverTrigger asChild>
