@@ -803,3 +803,70 @@ function TableCircleInner({
     </div>
   );
 }
+
+type CameraOpts = { mealMode: "icons" | "text" | "none"; showNames: boolean };
+
+function CameraOptions({
+  onCompact,
+  onLandscape,
+  onAll,
+}: {
+  onCompact: () => void;
+  onLandscape: (opts: CameraOpts) => void;
+  onAll: () => void;
+}) {
+  const [mealMode, setMealMode] = useState<CameraOpts["mealMode"]>("icons");
+  const [showNames, setShowNames] = useState(true);
+  return (
+    <div className="space-y-3">
+      <div>
+        <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1.5">
+          Meal display
+        </div>
+        <div className="flex gap-1">
+          {(["icons", "text", "none"] as const).map((m) => (
+            <button
+              key={m}
+              onClick={() => setMealMode(m)}
+              className={`flex-1 h-7 px-2 text-[11px] rounded border ${
+                mealMode === m
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "border-input hover:bg-accent"
+              }`}
+            >
+              {m === "icons" ? "🍗 Icons" : m === "text" ? "Text" : "None"}
+            </button>
+          ))}
+        </div>
+      </div>
+      <label className="flex items-center justify-between text-xs cursor-pointer">
+        <span>Show names on landscape</span>
+        <input
+          type="checkbox"
+          checked={showNames}
+          onChange={(e) => setShowNames(e.target.checked)}
+        />
+      </label>
+      <div className="pt-2 border-t border-border/60 space-y-1">
+        <button
+          onClick={onCompact}
+          className="w-full text-left px-2.5 py-1.5 text-xs rounded hover:bg-accent inline-flex items-center gap-2"
+        >
+          📸 This table — current shape
+        </button>
+        <button
+          onClick={() => onLandscape({ mealMode, showNames })}
+          className="w-full text-left px-2.5 py-1.5 text-xs rounded hover:bg-accent inline-flex items-center gap-2"
+        >
+          🖼️ This table — landscape (with side list)
+        </button>
+        <button
+          onClick={onAll}
+          className="w-full text-left px-2.5 py-1.5 text-xs rounded hover:bg-accent inline-flex items-center gap-2"
+        >
+          🗺️ All tables — planner map
+        </button>
+      </div>
+    </div>
+  );
+}
