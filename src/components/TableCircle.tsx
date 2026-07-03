@@ -123,6 +123,98 @@ function TableCircleInner({
     }
   }
 
+  async function downloadTableLandscape(opts: {
+    mealMode: "icons" | "text" | "none";
+    showNames: boolean;
+  }) {
+    if (!cardRef.current) return;
+    try {
+      const domtoimage = (await import("dom-to-image-more")).default;
+      // Build an off-screen landscape twin with the table on the left and a bigger name list on the right.
+      const wrapper = document.createElement("div");
+      wrapper.style.cssText =
+        "position:fixed;left:-99999px;top:0;background:var(--color-background,#fff);padding:28px;display:flex;gap:32px;align-items:flex-start;font-family:inherit;";
+      wrapper.style.width = "1400px";
+      // Left: clone of the card (svg + title only, hide guest list + toolbar)
+      const clone = cardRef.current.cloneNode(true) as HTMLElement;
+      clone.style.width = "560px";
+      clone.style.flex = "0 0 560px";
+      clone.querySelectorAll(".table-guest-list").forEach((el) => (el as HTMLElement).style.display = "none");
+      clone.querySelectorAll("[data-capture-hide]").forEach((el) => (el as HTMLElement).style.display = "none");
+      wrapper.appendChild(clone);
+      // Right: single-column name/company list, bigger font
+      const list = document.createElement("div");
+      list.style.cssText = "flex:1;display:flex;flex-direction:column;gap:8px;font-size:18px;line-height:1.35;";
+      const title = document.createElement("div");
+      title.style.cssText = "font-size:26px;font-weight:600;letter-spacing:0.05em;margin-bottom:12px;";
+      title.textContent = `TABLE ${table.label}`;
+      list.appendChild(title);
+      guests
+        .filter((g) => g.seatIndex && g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show")
+        .sort((a, b) => (a.seatIndex ?? 0) - (b.seatIndex ?? 0))
+        .forEach((g) => {
+          const row = document.createElement("div");
+          row.style.cssText = "display:flex;gap:10px;align-items:baseline;border-bottom:1px solid #e5e7eb;padding-bottom:4px;";
+          const seat = document.createElement("span");
+          seat.style.cssText = "font-family:ui-monospace,monospace;color:#6b7280;width:28px;text-align:right;font-size:16px;";
+          seat.textContent = String(g.seatIndex);
+          row.appendChild(seat);
+          const nameCol = document.createElement("div");
+          nameCol.style.cssText = "flex:1;";
+          const name = document.createElement("div");
+          name.style.fontWeight = "600";
+          name.textContent = opts.showNames ? (g.isPlaceholder ? "TBC" : g.name) : "—";
+          nameCol.appendChild(name);
+          if (g.company) {
+            const co = document.createElement("div");
+            co.style.cssText = "font-size:14px;color:#6b7280;";
+            co.textContent = g.company;
+            nameCol.appendChild(co);
+          }
+          row.appendChild(nameCol);
+          if (opts.mealMode !== "none" && g.meal && g.meal !== "None") {
+            const meal = document.createElement("span");
+            meal.style.cssText = "font-size:16px;color:#374151;";
+            meal.textContent = opts.mealMode === "icons" ? (MEAL_EMOJI[g.meal] ?? g.meal) : g.meal;
+            row.appendChild(meal);
+          }
+          list.appendChild(row);
+        });
+      wrapper.appendChild(list);
+      document.body.appendChild(wrapper);
+      const blob = await domtoimage.toBlob(wrapper, { scale: 2, bgcolor: "#ffffff" });
+      document.body.removeChild(wrapper);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `table-${table.label.replace(/\s+/g, "-").toLowerCase()}-landscape.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error("Landscape export failed", e);
+    }
+  }
+
+  async function downloadAllTables() {
+    const node = document.getElementById("planner-grid-capture");
+    if (!node) {
+      toast.error("Planner grid not found");
+      return;
+    }
+    try {
+      const domtoimage = (await import("dom-to-image-more")).default;
+      const blob = await domtoimage.toBlob(node, { scale: 2 });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `all-tables.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
   const seatMap = new Map<number, Guest>();
   guests.forEach((g) => {
     if (g.seatIndex && g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show") {
@@ -518,17 +610,18 @@ function TableCircleInner({
           const guest = seatMap.get(s);
           if (!guest || guest.isPlaceholder) return null;
           const angle = ((s - 1 + seatOffset) / table.seats) * Math.PI * 2 + Math.PI / 2;
-          const labelR = seatLabelMode === "name+firm" ? radius + 30 : radius + 24;
+          const labelR = seatLabelMode === "name+firm" ? radius + 34 : radius + 26;
           const lx = cx + Math.cos(angle) * labelR;
           const ly = cy + Math.sin(angle) * labelR;
-          const displayName = (guest.lastName || guest.name.split(" ").slice(-1)[0] || "").slice(0, 12);
+          const fullName = guest.name || [guest.firstName, guest.lastName].filter(Boolean).join(" ");
+          const displayName = fullName.length > 22 ? fullName.slice(0, 21) + "…" : fullName;
           const showFirm = seatLabelMode === "name+firm" && guest.company;
           const displayFirm = showFirm
-            ? (guest.company!.length > 14 ? guest.company!.slice(0, 13) + "…" : guest.company!)
+            ? (guest.company!.length > 18 ? guest.company!.slice(0, 17) + "…" : guest.company!)
             : "";
           return (
             <g key={`lbl-${s}`} transform={`translate(${lx}, ${ly})`} className="pointer-events-none">
-              <text textAnchor="middle" dy="3" fontSize="8" fontWeight="500" className="fill-foreground">
+              <text textAnchor="middle" dy="3" fontSize="8.5" fontWeight="500" className="fill-foreground">
                 {displayName}
               </text>
               {displayFirm && (
@@ -559,7 +652,7 @@ function TableCircleInner({
                     </span>
                     <button
                       onClick={() => unassignGuest(guest.id)}
-                      className="opacity-0 group-hover/row:opacity-100 text-destructive text-[10px] shrink-0"
+                      className="text-destructive text-[11px] shrink-0 hover:underline"
                       title="Remove TBC placeholder"
                     >
                       ×
@@ -612,24 +705,42 @@ function TableCircleInner({
       </div>
 
       {!zoomed && (
-        <div className="absolute bottom-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-          <button
-            onClick={(e) => { e.stopPropagation(); downloadTablePNG(); }}
-            className="h-7 w-7 rounded-md border border-input bg-card/90 hover:bg-accent inline-flex items-center justify-center shadow-sm"
-            title={`Download Table ${table.label} as PNG`}
-          >
-            <Camera className="h-3.5 w-3.5" />
-          </button>
+        <div
+          data-capture-hide
+          className="mt-2 pt-2 border-t border-border/40 flex gap-1 justify-end opacity-70 group-hover:opacity-100 transition-opacity"
+        >
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                onClick={(e) => e.stopPropagation()}
+                className="h-7 px-2 rounded-md border border-input bg-card hover:bg-accent inline-flex items-center gap-1 text-[11px] shadow-sm"
+                title={`Camera options — Table ${table.label}`}
+              >
+                <Camera className="h-3.5 w-3.5" /> Photo
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              className="w-72 p-3 space-y-3"
+              align="end"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <CameraOptions
+                onCompact={() => downloadTablePNG()}
+                onLandscape={(opts) => downloadTableLandscape(opts)}
+                onAll={() => downloadAllTables()}
+              />
+            </PopoverContent>
+          </Popover>
           <button
             onClick={(e) => { e.stopPropagation(); requestRotate("ccw"); }}
-            className="h-7 w-7 rounded-md border border-input bg-card/90 hover:bg-accent inline-flex items-center justify-center shadow-sm"
+            className="h-7 w-7 rounded-md border border-input bg-card hover:bg-accent inline-flex items-center justify-center shadow-sm"
             title="Rotate CCW — moves which seat faces stage"
           >
             <RotateCcw className="h-3.5 w-3.5" />
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); requestRotate("cw"); }}
-            className="h-7 w-7 rounded-md border border-input bg-card/90 hover:bg-accent inline-flex items-center justify-center shadow-sm"
+            className="h-7 w-7 rounded-md border border-input bg-card hover:bg-accent inline-flex items-center justify-center shadow-sm"
             title="Rotate CW — moves which seat faces stage"
           >
             <RotateCw className="h-3.5 w-3.5" />
@@ -689,6 +800,73 @@ function TableCircleInner({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    </div>
+  );
+}
+
+type CameraOpts = { mealMode: "icons" | "text" | "none"; showNames: boolean };
+
+function CameraOptions({
+  onCompact,
+  onLandscape,
+  onAll,
+}: {
+  onCompact: () => void;
+  onLandscape: (opts: CameraOpts) => void;
+  onAll: () => void;
+}) {
+  const [mealMode, setMealMode] = useState<CameraOpts["mealMode"]>("icons");
+  const [showNames, setShowNames] = useState(true);
+  return (
+    <div className="space-y-3">
+      <div>
+        <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1.5">
+          Meal display
+        </div>
+        <div className="flex gap-1">
+          {(["icons", "text", "none"] as const).map((m) => (
+            <button
+              key={m}
+              onClick={() => setMealMode(m)}
+              className={`flex-1 h-7 px-2 text-[11px] rounded border ${
+                mealMode === m
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "border-input hover:bg-accent"
+              }`}
+            >
+              {m === "icons" ? "🍗 Icons" : m === "text" ? "Text" : "None"}
+            </button>
+          ))}
+        </div>
+      </div>
+      <label className="flex items-center justify-between text-xs cursor-pointer">
+        <span>Show names on landscape</span>
+        <input
+          type="checkbox"
+          checked={showNames}
+          onChange={(e) => setShowNames(e.target.checked)}
+        />
+      </label>
+      <div className="pt-2 border-t border-border/60 space-y-1">
+        <button
+          onClick={onCompact}
+          className="w-full text-left px-2.5 py-1.5 text-xs rounded hover:bg-accent inline-flex items-center gap-2"
+        >
+          📸 This table — current shape
+        </button>
+        <button
+          onClick={() => onLandscape({ mealMode, showNames })}
+          className="w-full text-left px-2.5 py-1.5 text-xs rounded hover:bg-accent inline-flex items-center gap-2"
+        >
+          🖼️ This table — landscape (with side list)
+        </button>
+        <button
+          onClick={onAll}
+          className="w-full text-left px-2.5 py-1.5 text-xs rounded hover:bg-accent inline-flex items-center gap-2"
+        >
+          🗺️ All tables — planner map
+        </button>
+      </div>
     </div>
   );
 }

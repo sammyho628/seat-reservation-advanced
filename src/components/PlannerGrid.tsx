@@ -60,11 +60,17 @@ export function PlannerGrid({
   const rowSizes = parseRowPattern(rowPatternOverride ?? settings.rowPattern);
   const rows: { id: string; tables: typeof tables }[] = [];
   let cursor = 0;
-  rowSizes.forEach((count, i) => {
-    rows.push({ id: `row-${i}`, tables: tables.slice(cursor, cursor + count) });
-    cursor += count;
-  });
-  if (cursor < tables.length) rows.push({ id: "row-extra", tables: tables.slice(cursor) });
+  if (rowSizes.length === 0) {
+    rows.push({ id: "row-0", tables });
+  } else {
+    let rowIdx = 0;
+    while (cursor < tables.length) {
+      const count = rowSizes[rowIdx % rowSizes.length];
+      rows.push({ id: `row-${rowIdx}`, tables: tables.slice(cursor, cursor + count) });
+      cursor += count;
+      rowIdx += 1;
+    }
+  }
 
   function handleAssign(tableId: string, seatIndex: number) {
     if (!selectedGuestId) return;

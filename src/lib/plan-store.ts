@@ -323,6 +323,7 @@ export const usePlanStore = create<PlanState>()(
           return {
             guests: s.guests.map((g) => {
               if (g.tableId !== tableId || g.seatIndex == null) return g;
+              if (g.locked) return g; // locked guests do not rotate
               const newSeat =
                 direction === "cw"
                   ? (g.seatIndex % n) + 1
@@ -426,6 +427,10 @@ export const usePlanStore = create<PlanState>()(
         set((s) => {
           const table = s.tables.find((t) => t.id === tableId);
           if (!table) return s;
+          const assigningGuest = s.guests.find((g) => g.id === guestId);
+          if (assigningGuest?.locked && assigningGuest.tableId && assigningGuest.tableId !== tableId) {
+            return s; // locked guest cannot move to a different table
+          }
           let seat = seatIndex;
           if (!seat) {
             const taken = new Set(
@@ -439,7 +444,6 @@ export const usePlanStore = create<PlanState>()(
             }
           }
           if (!seat) return s;
-          const assigningGuest = s.guests.find((g) => g.id === guestId);
           const isAssigningReal = assigningGuest && !assigningGuest.isPlaceholder;
           return {
             guests: s.guests
@@ -453,16 +457,21 @@ export const usePlanStore = create<PlanState>()(
         }),
 
       unassignGuest: (guestId) =>
-        set((s) => ({
-          guests: s.guests.map((g) =>
-            g.id === guestId ? { ...g, tableId: undefined, seatIndex: undefined } : g,
-          ),
-        })),
+        set((s) => {
+          const g0 = s.guests.find((g) => g.id === guestId);
+          if (g0?.locked && !g0.isPlaceholder) return s; // locked cannot unassign
+          return {
+            guests: s.guests.map((g) =>
+              g.id === guestId ? { ...g, tableId: undefined, seatIndex: undefined } : g,
+            ),
+          };
+        }),
 
       swapSeats: (a, b) =>
         set((s) => {
           const ga = s.guests.find((g) => g.tableId === a.tableId && g.seatIndex === a.seatIndex);
           const gb = s.guests.find((g) => g.tableId === b.tableId && g.seatIndex === b.seatIndex);
+          if ((ga?.locked && !ga.isPlaceholder) || (gb?.locked && !gb.isPlaceholder)) return s;
           return {
             guests: s.guests.map((g) => {
               if (ga && g.id === ga.id) return { ...g, tableId: b.tableId, seatIndex: b.seatIndex };
