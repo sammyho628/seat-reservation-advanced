@@ -126,27 +126,29 @@ function TableCircleInner({
   async function downloadTableLandscape(opts: {
     mealMode: "icons" | "text" | "none";
     showNames: boolean;
+    showCompany: boolean;
+    showTitle: boolean;
   }) {
     if (!cardRef.current) return;
     try {
       const domtoimage = (await import("dom-to-image-more")).default;
-      // Build an off-screen landscape twin with the table on the left and a bigger name list on the right.
+      // Build an off-screen landscape twin — bias more space to the table, narrower name list.
       const wrapper = document.createElement("div");
       wrapper.style.cssText =
-        "position:fixed;left:-99999px;top:0;background:var(--color-background,#fff);padding:28px;display:flex;gap:32px;align-items:flex-start;font-family:inherit;";
-      wrapper.style.width = "1400px";
-      // Left: clone of the card (svg + title only, hide guest list + toolbar)
+        "position:fixed;left:-99999px;top:0;background:var(--color-background,#fff);padding:28px;display:flex;gap:28px;align-items:flex-start;font-family:inherit;";
+      wrapper.style.width = "1600px";
+      // Left: clone of the card — bigger so the table dominates
       const clone = cardRef.current.cloneNode(true) as HTMLElement;
-      clone.style.width = "560px";
-      clone.style.flex = "0 0 560px";
+      clone.style.width = "1080px";
+      clone.style.flex = "0 0 1080px";
       clone.querySelectorAll(".table-guest-list").forEach((el) => (el as HTMLElement).style.display = "none");
       clone.querySelectorAll("[data-capture-hide]").forEach((el) => (el as HTMLElement).style.display = "none");
       wrapper.appendChild(clone);
-      // Right: single-column name/company list, bigger font
+      // Right: narrow single-column name/company list
       const list = document.createElement("div");
-      list.style.cssText = "flex:1;display:flex;flex-direction:column;gap:8px;font-size:18px;line-height:1.35;";
+      list.style.cssText = "flex:0 0 400px;width:400px;display:flex;flex-direction:column;gap:6px;font-size:16px;line-height:1.3;";
       const title = document.createElement("div");
-      title.style.cssText = "font-size:26px;font-weight:600;letter-spacing:0.05em;margin-bottom:12px;";
+      title.style.cssText = "font-size:24px;font-weight:600;letter-spacing:0.05em;margin-bottom:10px;";
       title.textContent = `TABLE ${table.label}`;
       list.appendChild(title);
       guests
@@ -154,27 +156,33 @@ function TableCircleInner({
         .sort((a, b) => (a.seatIndex ?? 0) - (b.seatIndex ?? 0))
         .forEach((g) => {
           const row = document.createElement("div");
-          row.style.cssText = "display:flex;gap:10px;align-items:baseline;border-bottom:1px solid #e5e7eb;padding-bottom:4px;";
+          row.style.cssText = "display:flex;gap:8px;align-items:baseline;border-bottom:1px solid #e5e7eb;padding-bottom:4px;";
           const seat = document.createElement("span");
-          seat.style.cssText = "font-family:ui-monospace,monospace;color:#6b7280;width:28px;text-align:right;font-size:16px;";
+          seat.style.cssText = "font-family:ui-monospace,monospace;color:#6b7280;width:24px;text-align:right;font-size:14px;";
           seat.textContent = String(g.seatIndex);
           row.appendChild(seat);
           const nameCol = document.createElement("div");
-          nameCol.style.cssText = "flex:1;";
+          nameCol.style.cssText = "flex:1;min-width:0;";
           const name = document.createElement("div");
-          name.style.fontWeight = "600";
+          name.style.cssText = "font-weight:600;overflow:hidden;text-overflow:ellipsis;";
           name.textContent = opts.showNames ? (g.isPlaceholder ? "TBC" : g.name) : "—";
           nameCol.appendChild(name);
-          if (g.company) {
+          if (opts.showCompany && g.company) {
             const co = document.createElement("div");
-            co.style.cssText = "font-size:14px;color:#6b7280;";
+            co.style.cssText = "font-size:13px;color:#6b7280;overflow:hidden;text-overflow:ellipsis;";
             co.textContent = g.company;
             nameCol.appendChild(co);
+          }
+          if (opts.showTitle && g.title) {
+            const tt = document.createElement("div");
+            tt.style.cssText = "font-size:12px;color:#9ca3af;font-style:italic;overflow:hidden;text-overflow:ellipsis;";
+            tt.textContent = g.title;
+            nameCol.appendChild(tt);
           }
           row.appendChild(nameCol);
           if (opts.mealMode !== "none" && g.meal && g.meal !== "None") {
             const meal = document.createElement("span");
-            meal.style.cssText = "font-size:16px;color:#374151;";
+            meal.style.cssText = "font-size:15px;color:#374151;flex-shrink:0;";
             meal.textContent = opts.mealMode === "icons" ? (MEAL_EMOJI[g.meal] ?? g.meal) : g.meal;
             row.appendChild(meal);
           }
