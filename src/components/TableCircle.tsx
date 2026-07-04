@@ -266,11 +266,14 @@ function TableCircleInner({
   return (
     <div
       ref={cardRef}
+      data-table-id={table.id}
+      data-table-label={table.label}
       className={`relative rounded-xl border bg-card p-3 group transition-shadow ${
         highlighted ? "ring-2 ring-primary animate-pulse border-primary" : "border-table-ring"
       } ${zoomed ? "scale-100" : ""}`}
     >
-      <div className="flex items-center justify-between mb-1 px-1">
+      <div data-capture-strip="header" className="flex items-center justify-between mb-1 px-1">
+
         <div className="flex items-center gap-1 group/label flex-1 min-w-0">
           <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
             <PopoverTrigger asChild>
