@@ -812,7 +812,12 @@ function TableCircleInner({
   );
 }
 
-type CameraOpts = { mealMode: "icons" | "text" | "none"; showNames: boolean };
+type CameraOpts = {
+  mealMode: "icons" | "text" | "none";
+  showNames: boolean;
+  showCompany: boolean;
+  showTitle: boolean;
+};
 
 function CameraOptions({
   onCompact,
@@ -825,6 +830,8 @@ function CameraOptions({
 }) {
   const [mealMode, setMealMode] = useState<CameraOpts["mealMode"]>("icons");
   const [showNames, setShowNames] = useState(true);
+  const [showCompany, setShowCompany] = useState(true);
+  const [showTitle, setShowTitle] = useState(false);
   return (
     <div className="space-y-3">
       <div>
@@ -847,14 +854,20 @@ function CameraOptions({
           ))}
         </div>
       </div>
-      <label className="flex items-center justify-between text-xs cursor-pointer">
-        <span>Show names on landscape</span>
-        <input
-          type="checkbox"
-          checked={showNames}
-          onChange={(e) => setShowNames(e.target.checked)}
-        />
-      </label>
+      <div className="space-y-1.5">
+        <label className="flex items-center justify-between text-xs cursor-pointer">
+          <span>Show names</span>
+          <input type="checkbox" checked={showNames} onChange={(e) => setShowNames(e.target.checked)} />
+        </label>
+        <label className="flex items-center justify-between text-xs cursor-pointer">
+          <span>Show company</span>
+          <input type="checkbox" checked={showCompany} onChange={(e) => setShowCompany(e.target.checked)} />
+        </label>
+        <label className="flex items-center justify-between text-xs cursor-pointer">
+          <span>Show title</span>
+          <input type="checkbox" checked={showTitle} onChange={(e) => setShowTitle(e.target.checked)} />
+        </label>
+      </div>
       <div className="pt-2 border-t border-border/60 space-y-1">
         <button
           onClick={onCompact}
@@ -863,7 +876,7 @@ function CameraOptions({
           📸 This table — current shape
         </button>
         <button
-          onClick={() => onLandscape({ mealMode, showNames })}
+          onClick={() => onLandscape({ mealMode, showNames, showCompany, showTitle })}
           className="w-full text-left px-2.5 py-1.5 text-xs rounded hover:bg-accent inline-flex items-center gap-2"
         >
           🖼️ This table — landscape (with side list)
