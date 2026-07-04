@@ -406,9 +406,6 @@ function PlannerPage() {
     : null;
   const selectedSeatTableLabel = selectedSeat ? tables.find((t) => t.id === selectedSeat.tableId)?.label : undefined;
 
-  function nextSeatLabelMode() {
-    setSeatLabelMode((m) => (m === "none" ? "name" : m === "name" ? "name+firm" : "none"));
-  }
 
   return (
     <AppShell>
