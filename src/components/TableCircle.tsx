@@ -107,48 +107,67 @@ function TableCircleInner({
   const [seatReductionPending, setSeatReductionPending] = useState<{ tableId: string; newSeats: number; overflowGuests: Guest[] } | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
 
-  async function downloadTablePNG() {
-    if (!cardRef.current) return;
-    try {
-      const domtoimage = (await import("dom-to-image-more")).default;
-      const blob = await domtoimage.toBlob(cardRef.current, { scale: 2 });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `table-${table.label.replace(/\s+/g, "-").toLowerCase()}.png`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (e) {
-      console.error("Table PNG export failed", e);
+  function stripCardForCapture(node: HTMLElement, mealMode: "icons" | "text" | "none") {
+    node.querySelectorAll('[data-capture-strip="header"]').forEach((el) => (el as HTMLElement).style.display = "none");
+    node.querySelectorAll('[data-capture-strip="pax"]').forEach((el) => (el as HTMLElement).style.display = "none");
+    node.querySelectorAll('[data-capture-hide]').forEach((el) => (el as HTMLElement).style.display = "none");
+    if (mealMode === "none") {
+      node.querySelectorAll('[data-capture-strip="meal-icon"]').forEach((el) => (el as HTMLElement).style.display = "none");
     }
   }
 
-  async function downloadTableLandscape(opts: {
-    mealMode: "icons" | "text" | "none";
-    showNames: boolean;
-    showCompany: boolean;
-    showTitle: boolean;
-  }) {
+  async function captureCard(sourceCard: HTMLElement, filename: string, opts: CameraOpts) {
+    const domtoimage = (await import("dom-to-image-more")).default;
+    const wrapper = document.createElement("div");
+    wrapper.style.cssText = "position:fixed;left:-99999px;top:0;background:#ffffff;padding:24px;";
+    const clone = sourceCard.cloneNode(true) as HTMLElement;
+    clone.style.width = `${Math.max(sourceCard.offsetWidth, 480)}px`;
+    stripCardForCapture(clone, opts.mealMode);
+    wrapper.appendChild(clone);
+    document.body.appendChild(wrapper);
+    try {
+      const blob = await domtoimage.toBlob(wrapper, { scale: 2, bgcolor: "#ffffff" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      document.body.removeChild(wrapper);
+    }
+  }
+
+  async function downloadTablePNG(opts: CameraOpts) {
+    if (!cardRef.current) return;
+    try {
+      await captureCard(cardRef.current, `Table${table.label.replace(/\s+/g, "")}.png`, opts);
+    } catch (e) {
+      console.error("Table PNG export failed", e);
+      toast.error("Photo export failed");
+    }
+  }
+
+  async function downloadTableLandscape(opts: CameraOpts) {
     if (!cardRef.current) return;
     try {
       const domtoimage = (await import("dom-to-image-more")).default;
-      // Build an off-screen landscape twin — bias more space to the table, narrower name list.
       const wrapper = document.createElement("div");
       wrapper.style.cssText =
-        "position:fixed;left:-99999px;top:0;background:var(--color-background,#fff);padding:28px;display:flex;gap:28px;align-items:flex-start;font-family:inherit;";
-      wrapper.style.width = "1600px";
-      // Left: clone of the card — bigger so the table dominates
+        "position:fixed;left:-99999px;top:0;background:#ffffff;padding:28px;display:flex;gap:28px;align-items:flex-start;font-family:inherit;";
+      wrapper.style.width = "1500px";
+      // Left: cloned card with strips applied
       const clone = cardRef.current.cloneNode(true) as HTMLElement;
-      clone.style.width = "1080px";
-      clone.style.flex = "0 0 1080px";
+      clone.style.width = "1120px";
+      clone.style.flex = "0 0 1120px";
       clone.querySelectorAll(".table-guest-list").forEach((el) => (el as HTMLElement).style.display = "none");
-      clone.querySelectorAll("[data-capture-hide]").forEach((el) => (el as HTMLElement).style.display = "none");
+      stripCardForCapture(clone, opts.mealMode);
       wrapper.appendChild(clone);
-      // Right: narrow single-column name/company list
+      // Right: bigger, easier-to-read name list
       const list = document.createElement("div");
-      list.style.cssText = "flex:0 0 400px;width:400px;display:flex;flex-direction:column;gap:6px;font-size:16px;line-height:1.3;";
+      list.style.cssText = "flex:0 0 320px;width:320px;display:flex;flex-direction:column;gap:10px;font-size:20px;line-height:1.3;";
       const title = document.createElement("div");
-      title.style.cssText = "font-size:24px;font-weight:600;letter-spacing:0.05em;margin-bottom:10px;";
+      title.style.cssText = "font-size:30px;font-weight:700;letter-spacing:0.05em;margin-bottom:14px;";
       title.textContent = `TABLE ${table.label}`;
       list.appendChild(title);
       guests
@@ -156,33 +175,33 @@ function TableCircleInner({
         .sort((a, b) => (a.seatIndex ?? 0) - (b.seatIndex ?? 0))
         .forEach((g) => {
           const row = document.createElement("div");
-          row.style.cssText = "display:flex;gap:8px;align-items:baseline;border-bottom:1px solid #e5e7eb;padding-bottom:4px;";
+          row.style.cssText = "display:flex;gap:10px;align-items:baseline;border-bottom:1px solid #e5e7eb;padding-bottom:6px;";
           const seat = document.createElement("span");
-          seat.style.cssText = "font-family:ui-monospace,monospace;color:#6b7280;width:24px;text-align:right;font-size:14px;";
+          seat.style.cssText = "font-family:ui-monospace,monospace;color:#6b7280;width:30px;text-align:right;font-size:18px;";
           seat.textContent = String(g.seatIndex);
           row.appendChild(seat);
           const nameCol = document.createElement("div");
           nameCol.style.cssText = "flex:1;min-width:0;";
           const name = document.createElement("div");
-          name.style.cssText = "font-weight:600;overflow:hidden;text-overflow:ellipsis;";
+          name.style.cssText = "font-weight:600;font-size:20px;overflow:hidden;text-overflow:ellipsis;";
           name.textContent = opts.showNames ? (g.isPlaceholder ? "TBC" : g.name) : "—";
           nameCol.appendChild(name);
           if (opts.showCompany && g.company) {
             const co = document.createElement("div");
-            co.style.cssText = "font-size:13px;color:#6b7280;overflow:hidden;text-overflow:ellipsis;";
+            co.style.cssText = "font-size:16px;color:#6b7280;overflow:hidden;text-overflow:ellipsis;";
             co.textContent = g.company;
             nameCol.appendChild(co);
           }
           if (opts.showTitle && g.title) {
             const tt = document.createElement("div");
-            tt.style.cssText = "font-size:12px;color:#9ca3af;font-style:italic;overflow:hidden;text-overflow:ellipsis;";
+            tt.style.cssText = "font-size:14px;color:#9ca3af;font-style:italic;overflow:hidden;text-overflow:ellipsis;";
             tt.textContent = g.title;
             nameCol.appendChild(tt);
           }
           row.appendChild(nameCol);
           if (opts.mealMode !== "none" && g.meal && g.meal !== "None") {
             const meal = document.createElement("span");
-            meal.style.cssText = "font-size:15px;color:#374151;flex-shrink:0;";
+            meal.style.cssText = "font-size:19px;color:#374151;flex-shrink:0;";
             meal.textContent = opts.mealMode === "icons" ? (MEAL_EMOJI[g.meal] ?? g.meal) : g.meal;
             row.appendChild(meal);
           }
@@ -195,33 +214,40 @@ function TableCircleInner({
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `table-${table.label.replace(/\s+/g, "-").toLowerCase()}-landscape.png`;
+      a.download = `Table${table.label.replace(/\s+/g, "")}-landscape.png`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
       console.error("Landscape export failed", e);
+      toast.error("Landscape export failed");
     }
   }
 
-  async function downloadAllTables() {
-    const node = document.getElementById("planner-grid-capture");
-    if (!node) {
+  async function downloadAllTables(opts: CameraOpts) {
+    const grid = document.getElementById("planner-grid-capture");
+    if (!grid) {
       toast.error("Planner grid not found");
       return;
     }
-    try {
-      const domtoimage = (await import("dom-to-image-more")).default;
-      const blob = await domtoimage.toBlob(node, { scale: 2 });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `all-tables.png`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (e) {
-      console.error(e);
+    const cards = Array.from(grid.querySelectorAll<HTMLElement>("[data-table-id]"));
+    if (cards.length === 0) {
+      toast.error("No tables to export");
+      return;
     }
+    toast.info(`Exporting ${cards.length} table${cards.length !== 1 ? "s" : ""}…`);
+    for (const card of cards) {
+      const label = card.getAttribute("data-table-label") ?? "Untitled";
+      try {
+        await captureCard(card, `Table${label.replace(/\s+/g, "")}.png`, opts);
+        // small delay so browser doesn't drop parallel downloads
+        await new Promise((r) => setTimeout(r, 120));
+      } catch (e) {
+        console.error(`Export failed for table ${label}`, e);
+      }
+    }
+    toast.success(`Exported ${cards.length} table photo${cards.length !== 1 ? "s" : ""}`);
   }
+
 
   const seatMap = new Map<number, Guest>();
   guests.forEach((g) => {
