@@ -154,52 +154,53 @@ function PrintPage() {
   return (
     <div className="min-h-screen bg-background">
       <div className="no-print sticky top-0 z-30 bg-background/90 backdrop-blur border-b border-border">
-        <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
-          <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">← Back to planner</Link>
-          <div className="flex items-center gap-2">
+        <div className="max-w-5xl mx-auto px-4 h-12 flex items-center justify-between gap-2">
+          <Link to="/" className="text-xs text-muted-foreground hover:text-foreground shrink-0">← Planner</Link>
+          <div className="flex items-center gap-1 flex-wrap justify-end">
             <button
               onClick={() => setView("full")}
-              className={`h-9 px-3 rounded-md border text-sm ${view === "full" ? "bg-primary text-primary-foreground border-primary" : "border-input"}`}
+              className={`h-8 px-2 rounded-md border text-xs whitespace-nowrap ${view === "full" ? "bg-primary text-primary-foreground border-primary" : "border-input"}`}
             >
-              📄 Full view
+              📄 Full
             </button>
             <button
               onClick={() => setView("kitchen")}
-              className={`h-9 px-3 rounded-md border text-sm ${view === "kitchen" ? "bg-primary text-primary-foreground border-primary" : "border-input"}`}
+              className={`h-8 px-2 rounded-md border text-xs whitespace-nowrap ${view === "kitchen" ? "bg-primary text-primary-foreground border-primary" : "border-input"}`}
             >
-              🍽️ Kitchen sheet
+              🍽️ Kitchen
             </button>
             <button
               onClick={() => setView("companies")}
-              className={`h-9 px-3 rounded-md border text-sm ${view === "companies" ? "bg-primary text-primary-foreground border-primary" : "border-input"}`}
+              className={`h-8 px-2 rounded-md border text-xs whitespace-nowrap ${view === "companies" ? "bg-primary text-primary-foreground border-primary" : "border-input"}`}
             >
-              🏢 By company
+              🏢 Company
             </button>
             <button
               onClick={() => setView("dietary")}
-              className={`h-9 px-3 rounded-md border text-sm ${view === "dietary" ? "bg-primary text-primary-foreground border-primary" : "border-input"}`}
+              className={`h-8 px-2 rounded-md border text-xs whitespace-nowrap ${view === "dietary" ? "bg-primary text-primary-foreground border-primary" : "border-input"}`}
             >
               🥗 Dietary
             </button>
+            <span className="w-px h-5 bg-border mx-1" />
             <button
               onClick={exportMailMerge}
-              className="h-9 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent"
+              className="h-8 px-2 rounded-md border border-input text-xs inline-flex items-center gap-1 hover:bg-accent whitespace-nowrap"
               title="Export CSV for Word/Excel mail merge"
             >
-              📋 Mail merge CSV
+              📋 CSV
             </button>
             <button
               onClick={exportZip}
-              className="h-9 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent"
+              className="h-8 px-2 rounded-md border border-input text-xs inline-flex items-center gap-1 hover:bg-accent whitespace-nowrap"
               title="Download ZIP: mail-merge CSV + all guests CSV + plan backup"
             >
-              📦 Export ZIP
+              📦 ZIP
             </button>
             <button
               onClick={() => window.print()}
-              className="h-9 px-4 rounded-md bg-primary text-primary-foreground text-sm inline-flex items-center gap-1.5"
+              className="h-8 px-3 rounded-md bg-primary text-primary-foreground text-xs inline-flex items-center gap-1 whitespace-nowrap"
             >
-              <Printer className="h-4 w-4" /> Print
+              <Printer className="h-3.5 w-3.5" /> Print
             </button>
           </div>
         </div>
