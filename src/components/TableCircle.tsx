@@ -610,22 +610,22 @@ function TableCircleInner({
           const guest = seatMap.get(s);
           if (!guest || guest.isPlaceholder) return null;
           const angle = ((s - 1 + seatOffset) / table.seats) * Math.PI * 2 + Math.PI / 2;
-          const labelR = seatLabelMode === "name+firm" ? radius + 34 : radius + 26;
-          const lx = cx + Math.cos(angle) * labelR;
-          const ly = cy + Math.sin(angle) * labelR;
+          const x = cx + Math.cos(angle) * radius;
+          const y = cy + Math.sin(angle) * radius;
           const fullName = guest.name || [guest.firstName, guest.lastName].filter(Boolean).join(" ");
-          const displayName = fullName.length > 22 ? fullName.slice(0, 21) + "…" : fullName;
+          const displayName = fullName.length > 20 ? fullName.slice(0, 19) + "…" : fullName;
           const showFirm = seatLabelMode === "name+firm" && guest.company;
           const displayFirm = showFirm
             ? (guest.company!.length > 18 ? guest.company!.slice(0, 17) + "…" : guest.company!)
             : "";
+          // Always render name below the seat circle (like seat 1 format)
           return (
-            <g key={`lbl-${s}`} transform={`translate(${lx}, ${ly})`} className="pointer-events-none">
-              <text textAnchor="middle" dy="3" fontSize="8.5" fontWeight="500" className="fill-foreground">
+            <g key={`lbl-${s}`} transform={`translate(${x}, ${y + 22})`} className="pointer-events-none">
+              <text textAnchor="middle" fontSize="8.5" fontWeight="500" className="fill-foreground">
                 {displayName}
               </text>
               {displayFirm && (
-                <text textAnchor="middle" dy="14" fontSize="6.5" className="fill-muted-foreground">
+                <text textAnchor="middle" dy="10" fontSize="6.5" className="fill-muted-foreground">
                   {displayFirm}
                 </text>
               )}
