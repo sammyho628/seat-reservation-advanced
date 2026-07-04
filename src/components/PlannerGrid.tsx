@@ -58,15 +58,19 @@ export function PlannerGrid({
   const reorderTables = usePlanStore((s) => s.reorderTables);
 
   const rowSizes = parseRowPattern(rowPatternOverride ?? settings.rowPattern);
-  const rows: { id: string; tables: typeof tables }[] = [];
+  const rows: { id: string; tables: typeof tables; slots: number }[] = [];
   let cursor = 0;
   if (rowSizes.length === 0) {
-    rows.push({ id: "row-0", tables });
+    rows.push({ id: "row-0", tables, slots: tables.length });
   } else {
     let rowIdx = 0;
     while (cursor < tables.length) {
       const count = rowSizes[rowIdx % rowSizes.length];
-      rows.push({ id: `row-${rowIdx}`, tables: tables.slice(cursor, cursor + count) });
+      rows.push({
+        id: `row-${rowIdx}`,
+        tables: tables.slice(cursor, cursor + count),
+        slots: count,
+      });
       cursor += count;
       rowIdx += 1;
     }
