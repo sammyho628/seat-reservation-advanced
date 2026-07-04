@@ -768,10 +768,11 @@ function TableCircleInner({
               onClick={(e) => e.stopPropagation()}
             >
               <CameraOptions
-                onCompact={() => downloadTablePNG()}
+                onCompact={(opts) => downloadTablePNG(opts)}
                 onLandscape={(opts) => downloadTableLandscape(opts)}
-                onAll={() => downloadAllTables()}
+                onAll={(opts) => downloadAllTables(opts)}
               />
+
             </PopoverContent>
           </Popover>
           <button
