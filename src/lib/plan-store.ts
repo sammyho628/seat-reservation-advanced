@@ -320,15 +320,27 @@ export const usePlanStore = create<PlanState>()(
           const table = s.tables.find((t) => t.id === tableId);
           if (!table) return s;
           const n = table.seats;
+          // Locked seats stay put; rotate guests only through the unlocked seat positions,
+          // so no one collides with a locked seat.
+          const lockedSeats = new Set(
+            s.guests
+              .filter((g) => g.tableId === tableId && g.locked && g.seatIndex != null)
+              .map((g) => g.seatIndex as number),
+          );
+          const positions = Array.from({ length: n }, (_, i) => i + 1);
+          const unlocked = positions.filter((p) => !lockedSeats.has(p));
+          if (unlocked.length < 2) return s;
+          const order = direction === "cw" ? unlocked : [...unlocked].reverse();
+          const nextSeat = new Map<number, number>();
+          for (let i = 0; i < order.length; i++) {
+            nextSeat.set(order[i], order[(i + 1) % order.length]);
+          }
           return {
             guests: s.guests.map((g) => {
               if (g.tableId !== tableId || g.seatIndex == null) return g;
-              if (g.locked) return g; // locked guests do not rotate
-              const newSeat =
-                direction === "cw"
-                  ? (g.seatIndex % n) + 1
-                  : ((g.seatIndex - 2 + n) % n) + 1;
-              return { ...g, seatIndex: newSeat };
+              if (g.locked) return g;
+              const next = nextSeat.get(g.seatIndex);
+              return next != null ? { ...g, seatIndex: next } : g;
             }),
           };
         }),
