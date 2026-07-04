@@ -860,14 +860,15 @@ function CameraOptions({
   onLandscape,
   onAll,
 }: {
-  onCompact: () => void;
+  onCompact: (opts: CameraOpts) => void;
   onLandscape: (opts: CameraOpts) => void;
-  onAll: () => void;
+  onAll: (opts: CameraOpts) => void;
 }) {
   const [mealMode, setMealMode] = useState<CameraOpts["mealMode"]>("icons");
   const [showNames, setShowNames] = useState(true);
   const [showCompany, setShowCompany] = useState(true);
   const [showTitle, setShowTitle] = useState(false);
+  const opts: CameraOpts = { mealMode, showNames, showCompany, showTitle };
   return (
     <div className="space-y-3">
       <div>
@@ -906,24 +907,25 @@ function CameraOptions({
       </div>
       <div className="pt-2 border-t border-border/60 space-y-1">
         <button
-          onClick={onCompact}
+          onClick={() => onCompact(opts)}
           className="w-full text-left px-2.5 py-1.5 text-xs rounded hover:bg-accent inline-flex items-center gap-2"
         >
           📸 This table — current shape
         </button>
         <button
-          onClick={() => onLandscape({ mealMode, showNames, showCompany, showTitle })}
+          onClick={() => onLandscape(opts)}
           className="w-full text-left px-2.5 py-1.5 text-xs rounded hover:bg-accent inline-flex items-center gap-2"
         >
           🖼️ This table — landscape (with side list)
         </button>
         <button
-          onClick={onAll}
+          onClick={() => onAll(opts)}
           className="w-full text-left px-2.5 py-1.5 text-xs rounded hover:bg-accent inline-flex items-center gap-2"
         >
-          🗺️ All tables — planner map
+          🗺️ All tables — one file per table
         </button>
       </div>
+
     </div>
   );
 }
