@@ -781,13 +781,27 @@ function PlannerPage() {
                 <Building2 className="h-4 w-4" /> Show firms
               </button>
               <button
-                onClick={nextSeatLabelMode}
+                onClick={() =>
+                  setSeatLabelMode(seatLabelMode === "none" ? "name" : "none")
+                }
                 className={`h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 ${seatLabelMode !== "none" ? "bg-accent" : "hover:bg-accent"}`}
-                title="Cycle seat label display"
+                title="Toggle guest names under seat circles"
               >
                 <TagIcon className="h-4 w-4" />
-                {seatLabelMode === "none" ? "Labels: off" : seatLabelMode === "name" ? "Labels: name" : "Labels: name+firm"}
+                Names {seatLabelMode !== "none" ? "on" : "off"}
               </button>
+              <button
+                onClick={() =>
+                  setSeatLabelMode(seatLabelMode === "name+firm" ? "name" : "name+firm")
+                }
+                disabled={seatLabelMode === "none"}
+                className={`h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 disabled:opacity-40 disabled:pointer-events-none ${seatLabelMode === "name+firm" ? "bg-accent" : "hover:bg-accent"}`}
+                title="Show firm under name in the table plan"
+              >
+                <Building2 className="h-4 w-4" />
+                Firm {seatLabelMode === "name+firm" ? "on" : "off"}
+              </button>
+
             </div>
 
             {analyticsOpen && (
