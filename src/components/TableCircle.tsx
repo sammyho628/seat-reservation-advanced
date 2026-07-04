@@ -247,7 +247,7 @@ function TableCircleInner({
   }
 
   const isLabelMode = seatLabelMode !== "none";
-  const viewSize = isLabelMode ? 320 : 240;
+  const viewSize = isLabelMode ? 360 : 240;
   const cx = viewSize / 2;
   const cy = viewSize / 2;
   const radius = Math.min(isLabelMode ? 130 : 105, (isLabelMode ? 75 : 60) + table.seats * 4);
