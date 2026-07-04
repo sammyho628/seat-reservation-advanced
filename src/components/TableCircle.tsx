@@ -523,9 +523,10 @@ function TableCircleInner({
         <text x={cx} y={cy - 4} textAnchor="middle" className="font-display fill-foreground" fontSize="18">
           {table.label}
         </text>
-        <text x={cx} y={cy + 14} textAnchor="middle" className="font-mono fill-muted-foreground" fontSize="9">
+        <text data-capture-strip="pax" x={cx} y={cy + 14} textAnchor="middle" className="font-mono fill-muted-foreground" fontSize="9">
           {table.seats} PAX
         </text>
+
         {seats.map((s) => {
           const angle = ((s - 1 + seatOffset) / table.seats) * Math.PI * 2 + Math.PI / 2;
           const x = cx + Math.cos(angle) * radius;
