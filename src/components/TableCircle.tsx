@@ -626,9 +626,12 @@ function TableCircleInner({
           const displayFirm = showFirm
             ? (guest.company!.length > 18 ? guest.company!.slice(0, 17) + "…" : guest.company!)
             : "";
-          // Always render name below the seat circle (like seat 1 format)
+          // Push labels further below the seat circle. Nudge right-side seats
+          // (roughly 1 o'clock → 5 o'clock, i.e. right half) to the right so
+          // the name reads clear of the seat number.
+          const dx = Math.cos(angle) > 0.15 ? 18 : 0;
           return (
-            <g key={`lbl-${s}`} transform={`translate(${x}, ${y + 22})`} className="pointer-events-none">
+            <g key={`lbl-${s}`} transform={`translate(${x + dx}, ${y + 28})`} className="pointer-events-none">
               <text textAnchor="middle" fontSize="8.5" fontWeight="500" className="fill-foreground">
                 {displayName}
               </text>
@@ -640,6 +643,7 @@ function TableCircleInner({
             </g>
           );
         })}
+
       </svg>
 
       <div className={`table-guest-list mt-2 text-[11px] max-h-60 overflow-y-auto ${
