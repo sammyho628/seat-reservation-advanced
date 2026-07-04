@@ -443,6 +443,7 @@ function PlannerPage() {
                       onChange={(e) => setRowPatternDraft(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && setSettings({ rowPattern: rowPatternDraft })}
                       disabled={twoUpView}
+                      title="e.g. 4:4:4 = 3 rows of 4"
                     />
                     <button
                       onClick={() => setSettings({ rowPattern: rowPatternDraft })}
@@ -463,7 +464,6 @@ function PlannerPage() {
                       ⊟ 2-Up
                     </button>
                   </div>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">e.g. 4:4:4 = 3 rows of 4</p>
                 </div>
                 <div>
                   <Label className="text-xs">Default seats</Label>
@@ -476,6 +476,7 @@ function PlannerPage() {
                     onBlur={(e) => setSettings({ defaultSeats: parseInt(e.target.value) || 10 })}
                   />
                 </div>
+
 
                 <Dialog>
                   <DialogTrigger className="h-10 px-3 rounded-md border border-input hover:bg-accent inline-flex items-center gap-1.5 text-sm">
