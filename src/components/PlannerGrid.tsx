@@ -109,8 +109,8 @@ export function PlannerGrid({
           {rows.map((row) => (
             <div
               key={row.id}
-              className="grid gap-4"
-              style={{ gridTemplateColumns: `repeat(${row.tables.length}, minmax(0, 1fr))` }}
+              className="grid gap-4 justify-start"
+              style={{ gridTemplateColumns: `repeat(${row.slots}, minmax(0, 1fr))` }}
             >
               {row.tables.map((t) => (
                 <SortableTable key={t.id} id={t.id}>
