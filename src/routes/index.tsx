@@ -406,9 +406,6 @@ function PlannerPage() {
     : null;
   const selectedSeatTableLabel = selectedSeat ? tables.find((t) => t.id === selectedSeat.tableId)?.label : undefined;
 
-  function nextSeatLabelMode() {
-    setSeatLabelMode((m) => (m === "none" ? "name" : m === "name" ? "name+firm" : "none"));
-  }
 
   return (
     <AppShell>
@@ -443,6 +440,7 @@ function PlannerPage() {
                       onChange={(e) => setRowPatternDraft(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && setSettings({ rowPattern: rowPatternDraft })}
                       disabled={twoUpView}
+                      title="e.g. 4:4:4 = 3 rows of 4"
                     />
                     <button
                       onClick={() => setSettings({ rowPattern: rowPatternDraft })}
@@ -463,7 +461,6 @@ function PlannerPage() {
                       ⊟ 2-Up
                     </button>
                   </div>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">e.g. 4:4:4 = 3 rows of 4</p>
                 </div>
                 <div>
                   <Label className="text-xs">Default seats</Label>
@@ -476,6 +473,7 @@ function PlannerPage() {
                     onBlur={(e) => setSettings({ defaultSeats: parseInt(e.target.value) || 10 })}
                   />
                 </div>
+
 
                 <Dialog>
                   <DialogTrigger className="h-10 px-3 rounded-md border border-input hover:bg-accent inline-flex items-center gap-1.5 text-sm">
@@ -780,13 +778,27 @@ function PlannerPage() {
                 <Building2 className="h-4 w-4" /> Show firms
               </button>
               <button
-                onClick={nextSeatLabelMode}
+                onClick={() =>
+                  setSeatLabelMode(seatLabelMode === "none" ? "name" : "none")
+                }
                 className={`h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 ${seatLabelMode !== "none" ? "bg-accent" : "hover:bg-accent"}`}
-                title="Cycle seat label display"
+                title="Toggle guest names under seat circles"
               >
                 <TagIcon className="h-4 w-4" />
-                {seatLabelMode === "none" ? "Labels: off" : seatLabelMode === "name" ? "Labels: name" : "Labels: name+firm"}
+                Names {seatLabelMode !== "none" ? "on" : "off"}
               </button>
+              <button
+                onClick={() =>
+                  setSeatLabelMode(seatLabelMode === "name+firm" ? "name" : "name+firm")
+                }
+                disabled={seatLabelMode === "none"}
+                className={`h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 disabled:opacity-40 disabled:pointer-events-none ${seatLabelMode === "name+firm" ? "bg-accent" : "hover:bg-accent"}`}
+                title="Show firm under name in the table plan"
+              >
+                <Building2 className="h-4 w-4" />
+                Firm {seatLabelMode === "name+firm" ? "on" : "off"}
+              </button>
+
             </div>
 
             {analyticsOpen && (
