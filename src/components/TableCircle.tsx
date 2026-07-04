@@ -610,8 +610,9 @@ function TableCircleInner({
                 <circle r={3} cx={11} cy={-10} fill="var(--color-primary)" />
               )}
               {guest?.meal && MEAL_EMOJI[guest.meal] && (
-                <text x={-12} y={-8} fontSize="8" className="pointer-events-none">{MEAL_EMOJI[guest.meal]}</text>
+                <text data-capture-strip="meal-icon" x={-12} y={-8} fontSize="8" className="pointer-events-none">{MEAL_EMOJI[guest.meal]}</text>
               )}
+
               {guest?.dietary && (
                 <circle r={3} cx={11} cy={10} fill="var(--color-dietary-alert)" />
               )}
