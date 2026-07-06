@@ -155,6 +155,7 @@ interface PlanState {
   tables: Table[];
   guests: Guest[];
   rules: Rule[];
+  floorPlan: FloorPlan;
 
   setSettings: (patch: Partial<Settings>) => void;
   regenerateTables: () => void;
@@ -199,6 +200,25 @@ interface PlanState {
     violations: number;
     violatingGuestIds: string[];
   };
+
+  // Floor-plan actions (spatial layout, shared across devices)
+  setTablePosition: (tableId: string, x: number, y: number) => void;
+  setTableShape: (tableId: string, shape: "round" | "long") => void;
+  setTableVip: (tableId: string, vip: boolean) => void;
+  setFloorPlanBackground: (dataUrl: string | undefined) => void;
+  setFloorPlanOpacity: (opacity: number) => void;
+  addFloorMarker: (kind: MarkerKind, x: number, y: number, label?: string) => string;
+  updateFloorMarker: (id: string, patch: Partial<FloorPlanMarker>) => void;
+  removeFloorMarker: (id: string) => void;
+
+  /** Replace the entire plan (settings/tables/guests/rules/floorPlan) with a remote payload. Used by the sync layer. */
+  applyRemotePlan: (plan: {
+    settings?: Partial<Settings>;
+    tables?: Table[];
+    guests?: Guest[];
+    rules?: Rule[];
+    floorPlan?: Partial<FloorPlan>;
+  }) => void;
 
   resetAssignments: () => void;
   importPlan: (data: Partial<PlanState>) => boolean;
