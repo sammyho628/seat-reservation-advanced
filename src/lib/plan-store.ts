@@ -1111,9 +1111,12 @@ export const usePlanStore = create<PlanState>()(
 export const useTemporalStore = <T,>(selector: (state: any) => T) =>
   useStore(usePlanStore.temporal as any, selector);
 
-const STORAGE_KEY = "seating-plan-v2";
+// NOTE: The plan is loaded from a shared remote JSON file via `plan-sync.ts`
+// (which also handles offline fallback and debounced auto-save). localStorage
+// is no longer the source of truth — it holds only the last synced snapshot
+// for offline use, managed by plan-sync.
 
-function applyPrimary(hex: string) {
+export function applyPrimary(hex: string) {
   try {
     document.documentElement.style.setProperty("--primary", hex);
     const m = hex.replace("#", "");
@@ -1131,73 +1134,8 @@ function applyPrimary(hex: string) {
 }
 
 if (typeof window !== "undefined") {
-  try {
-    const v1 = window.localStorage.getItem("seating-plan-v1");
-    if (v1 && !window.localStorage.getItem(STORAGE_KEY)) {
-      const data = JSON.parse(v1);
-      if (data.guests) {
-        data.guests = data.guests.map((g: any) => {
-          const { group, ...rest } = g;
-          return { ...rest, cohort: group, rsvpStatus: g.rsvpStatus ?? "Confirmed" };
-        });
-      }
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    }
-    window.localStorage.removeItem("seating-plan-v1");
-  } catch {}
-
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const data = JSON.parse(raw) as Partial<PlanState>;
-      usePlanStore.setState({
-        settings: { ...usePlanStore.getState().settings, ...(data.settings ?? {}) },
-        tables: data.tables ?? usePlanStore.getState().tables,
-        guests: (data.guests ?? []).map((g: any) => ({
-          rsvpStatus: "Confirmed" as RsvpStatus,
-          tags: [],
-          meal: "None" as Meal,
-          firstName: g.firstName,
-          lastName: g.lastName,
-          ...g,
-        })),
-        rules: data.rules ?? [],
-      });
-      // Clear undo history so we don't undo into a previous session
-      try { (usePlanStore as any).temporal.getState().clear(); } catch {}
-    }
-  } catch {}
-
   applyPrimary(usePlanStore.getState().settings.primaryColor);
-
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  let lastSavedAt = 0;
-  const listeners = new Set<(t: number) => void>();
-  (window as any).__seatcraftOnSave = (cb: (t: number) => void) => {
-    listeners.add(cb);
-    return () => listeners.delete(cb);
-  };
-  (window as any).__seatcraftLastSaved = () => lastSavedAt;
-
-  usePlanStore.subscribe((s) => {
-    applyPrimary(s.settings.primaryColor);
-    if (timer) clearTimeout(timer);
-    timer = setTimeout(() => {
-      try {
-        window.localStorage.setItem(
-          STORAGE_KEY,
-          JSON.stringify({
-            settings: s.settings,
-            tables: s.tables,
-            guests: s.guests,
-            rules: s.rules,
-          }),
-        );
-        lastSavedAt = Date.now();
-        listeners.forEach((cb) => cb(lastSavedAt));
-      } catch {}
-    }, 150);
-  });
+  usePlanStore.subscribe((s) => applyPrimary(s.settings.primaryColor));
 }
 
 export function parseRowPattern(p: string) {
