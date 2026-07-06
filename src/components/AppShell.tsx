@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { LayoutGrid, Users, Printer, UserCheck, MoreVertical, Copy } from "lucide-react";
+import { LayoutGrid, Users, Printer, UserCheck, MoreVertical, Copy, Map } from "lucide-react";
 import { usePlanStore } from "@/lib/plan-store";
 import { useEffect, useState, type ReactNode } from "react";
 import {
@@ -17,9 +17,12 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { SyncStatus, usePlanSyncBootstrap } from "@/components/SyncStatus";
+import { STAFF_NAME_KEY } from "@/lib/plan-sync-config";
 
 const nav = [
   { to: "/", label: "Planner", icon: LayoutGrid },
+  { to: "/floor", label: "Floor", icon: Map },
   { to: "/guests", label: "Guests", icon: Users },
   { to: "/checkin", label: "Check-in", icon: UserCheck },
   { to: "/print", label: "Print", icon: Printer },
