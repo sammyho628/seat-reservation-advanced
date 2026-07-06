@@ -1095,6 +1095,7 @@ function PlannerPage() {
         lastReport={lastRunReport}
       />
 
+      <WalkInDialog open={walkInOpen} onOpenChange={setWalkInOpen} />
 
       <GuestEditSheet guestId={editingGuestId} onClose={() => setEditingGuestId(null)} />
 
