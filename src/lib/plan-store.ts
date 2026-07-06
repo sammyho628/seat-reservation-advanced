@@ -297,6 +297,15 @@ const initialSettings: Settings = {
   showFirmInList: false,
 };
 
+const initialFloorPlan: FloorPlan = {
+  backgroundImageDataUrl: undefined,
+  backgroundOpacity: 0.55,
+  markers: [],
+  tablePositions: {},
+  tableShapes: {},
+  tableVip: {},
+};
+
 export const usePlanStore = create<PlanState>()(
   temporal(
     (set, get) => ({
@@ -304,6 +313,7 @@ export const usePlanStore = create<PlanState>()(
       tables: buildTables(initialSettings.rowPattern, initialSettings.defaultSeats, [], initialSettings.namingScheme),
       guests: [],
       rules: [],
+      floorPlan: initialFloorPlan,
 
       setSettings: (patch) => {
         set((s) => {
