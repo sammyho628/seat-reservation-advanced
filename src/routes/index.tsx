@@ -684,6 +684,13 @@ function PlannerPage() {
                 </PopoverContent>
               </Popover>
               <button
+                onClick={() => setWalkInOpen(true)}
+                className="h-10 px-3 rounded-md bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium inline-flex items-center gap-1.5 shadow-sm"
+                title="Add a walk-in guest with ranked table suggestions"
+              >
+                <UserPlus className="h-4 w-4" /> Walk-in
+              </button>
+              <button
                 onClick={() => setClearSeatsOpen(true)}
                 className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent"
               >
