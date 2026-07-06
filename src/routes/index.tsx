@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { AutoAssignDrawer } from "@/components/AutoAssignDrawer";
 import { GuestEditSheet } from "@/components/GuestEditSheet";
 import { SmartChecksSheet } from "@/components/SmartChecksSheet";
+import { WalkInDialog } from "@/components/WalkInDialog";
 import { runSmartChecks } from "@/lib/smart-checks";
 import {
   Wand2, RotateCcw, Settings as SettingsIcon, Undo2, Redo2, Camera,
@@ -115,6 +116,7 @@ function PlannerPage() {
   const [importConfirmOpen, setImportConfirmOpen] = useState(false);
   const [editingGuestId, setEditingGuestId] = useState<string | null>(null);
   const [checksOpen, setChecksOpen] = useState(false);
+  const [walkInOpen, setWalkInOpen] = useState(false);
 
   async function handleOpenFile() {
     const input = document.createElement("input");
@@ -682,6 +684,13 @@ function PlannerPage() {
                 </PopoverContent>
               </Popover>
               <button
+                onClick={() => setWalkInOpen(true)}
+                className="h-10 px-3 rounded-md bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium inline-flex items-center gap-1.5 shadow-sm"
+                title="Add a walk-in guest with ranked table suggestions"
+              >
+                <UserPlus className="h-4 w-4" /> Walk-in
+              </button>
+              <button
                 onClick={() => setClearSeatsOpen(true)}
                 className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent"
               >
@@ -1086,6 +1095,7 @@ function PlannerPage() {
         lastReport={lastRunReport}
       />
 
+      <WalkInDialog open={walkInOpen} onOpenChange={setWalkInOpen} />
 
       <GuestEditSheet guestId={editingGuestId} onClose={() => setEditingGuestId(null)} />
 

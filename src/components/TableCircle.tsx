@@ -717,6 +717,14 @@ function TableCircleInner({
                     >
                       {guest.name}
                     </span>
+                    {guest.source === "walk-in" && (
+                      <span
+                        className="ml-1 text-[8px] uppercase font-semibold px-1 rounded bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200 align-middle"
+                        title={`Walk-in${guest.addedBy ? ` · added by ${guest.addedBy}` : ""}`}
+                      >
+                        W
+                      </span>
+                    )}
                     {showFirmInList && guest.company && (
                       <span className="text-muted-foreground"> · {guest.company}</span>
                     )}

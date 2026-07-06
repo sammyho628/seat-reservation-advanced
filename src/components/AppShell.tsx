@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { LayoutGrid, Users, Printer, UserCheck, MoreVertical, Copy } from "lucide-react";
+import { LayoutGrid, Users, Printer, UserCheck, MoreVertical, Copy, Map } from "lucide-react";
 import { usePlanStore } from "@/lib/plan-store";
 import { useEffect, useState, type ReactNode } from "react";
 import {
@@ -17,9 +17,12 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { SyncStatus, usePlanSyncBootstrap } from "@/components/SyncStatus";
+import { STAFF_NAME_KEY } from "@/lib/plan-sync-config";
 
 const nav = [
   { to: "/", label: "Planner", icon: LayoutGrid },
+  { to: "/floor", label: "Floor", icon: Map },
   { to: "/guests", label: "Guests", icon: Users },
   { to: "/checkin", label: "Check-in", icon: UserCheck },
   { to: "/print", label: "Print", icon: Printer },
@@ -38,17 +41,18 @@ export function AppShell({ children }: { children: ReactNode }) {
   const tbcCount = allGuests.filter((g) => g.isPlaceholder).length;
   const importPlan = usePlanStore((s) => s.importPlan);
 
-  const [savedFlash, setSavedFlash] = useState(false);
   const [dupOpen, setDupOpen] = useState(false);
   const [dupTitle, setDupTitle] = useState("");
+  const [staffOpen, setStaffOpen] = useState(false);
+  const [staffDraft, setStaffDraft] = useState("");
+
+  usePlanSyncBootstrap();
 
   useEffect(() => {
-    const off = (window as any).__seatcraftOnSave?.((_t: number) => {
-      setSavedFlash(true);
-      setTimeout(() => setSavedFlash(false), 1800);
-    });
-    return () => off?.();
-  }, []);
+    try {
+      setStaffDraft(window.localStorage.getItem(STAFF_NAME_KEY) ?? "");
+    } catch {}
+  }, [staffOpen]);
 
   function doDuplicate() {
     const s = usePlanStore.getState();
@@ -98,11 +102,8 @@ export function AppShell({ children }: { children: ReactNode }) {
             })}
           </nav>
           <div className="ml-auto flex items-center gap-3 text-xs text-muted-foreground">
-            <span
-              className={`font-mono transition-opacity duration-500 ${savedFlash ? "opacity-100 text-emerald-600" : "opacity-0"}`}
-            >
-              Saved ✓
-            </span>
+            <SyncStatus />
+            <span className="opacity-50">·</span>
             <span className="font-mono">{guestCount} guests</span>
             <span className="opacity-50">·</span>
             <span className="font-mono">
@@ -123,6 +124,9 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <MoreVertical className="h-4 w-4" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem onClick={() => setStaffOpen(true)}>
+                  <UserCheck className="h-4 w-4 mr-2" /> Set staff name (this device)
+                </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => {
                     setDupTitle(`${usePlanStore.getState().settings.eventTitle} (copy)`);
@@ -147,6 +151,35 @@ export function AppShell({ children }: { children: ReactNode }) {
           <DialogFooter>
             <button onClick={() => setDupOpen(false)} className="h-9 px-3 rounded-md border border-input text-sm">Cancel</button>
             <button onClick={doDuplicate} className="h-9 px-3 rounded-md bg-primary text-primary-foreground text-sm">Duplicate</button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={staffOpen} onOpenChange={setStaffOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Staff name for this device</DialogTitle>
+          </DialogHeader>
+          <p className="text-xs text-muted-foreground">
+            Used to tag walk-in guests you add during the event. Stored on this device only.
+          </p>
+          <Input
+            value={staffDraft}
+            onChange={(e) => setStaffDraft(e.target.value)}
+            placeholder="e.g. Amy (front desk)"
+            autoFocus
+          />
+          <DialogFooter>
+            <button onClick={() => setStaffOpen(false)} className="h-9 px-3 rounded-md border border-input text-sm">Cancel</button>
+            <button
+              onClick={() => {
+                try { window.localStorage.setItem(STAFF_NAME_KEY, staffDraft.trim()); } catch {}
+                setStaffOpen(false);
+                toast.success("Staff name saved on this device");
+              }}
+              className="h-9 px-3 rounded-md bg-primary text-primary-foreground text-sm"
+            >
+              Save
+            </button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

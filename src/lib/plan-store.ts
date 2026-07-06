@@ -34,6 +34,12 @@ export interface Guest {
   seatIndex?: number;
   locked?: boolean;
   isPlaceholder?: boolean;
+  /** "walk-in" for guests added on-site the day of the event, "rsvp" (or undefined) for pre-registered. */
+  source?: "walk-in" | "rsvp";
+  /** ISO timestamp set when the guest is added. */
+  addedAt?: string;
+  /** Staff/device name captured when the walk-in was added. */
+  addedBy?: string;
 }
 
 export interface Table {
@@ -46,6 +52,33 @@ export interface Table {
   notes?: string;
   hostTag?: string;
   seatOffset?: number;
+}
+
+export type MarkerKind = "stage" | "entrance" | "bar" | "buffet" | "dj" | "note";
+
+export interface FloorPlanMarker {
+  id: string;
+  kind: MarkerKind;
+  label?: string;
+  x: number;
+  y: number;
+}
+
+/**
+ * Spatial floor plan overlay for the tables. Kept in the plan JSON so it
+ * syncs across devices along with everything else.
+ *
+ * `tablePositions[tableId] = { x, y }` — top-left corner of the table on the
+ * canvas (in pixels within a 1600×1000 logical space). Missing tables are
+ * laid out on a grid on first render.
+ */
+export interface FloorPlan {
+  backgroundImageDataUrl?: string;
+  backgroundOpacity: number;
+  markers: FloorPlanMarker[];
+  tablePositions: Record<string, { x: number; y: number }>;
+  tableShapes: Record<string, "round" | "long">;
+  tableVip: Record<string, boolean>;
 }
 
 export type RuleType =
@@ -122,6 +155,7 @@ interface PlanState {
   tables: Table[];
   guests: Guest[];
   rules: Rule[];
+  floorPlan: FloorPlan;
 
   setSettings: (patch: Partial<Settings>) => void;
   regenerateTables: () => void;
@@ -166,6 +200,25 @@ interface PlanState {
     violations: number;
     violatingGuestIds: string[];
   };
+
+  // Floor-plan actions (spatial layout, shared across devices)
+  setTablePosition: (tableId: string, x: number, y: number) => void;
+  setTableShape: (tableId: string, shape: "round" | "long") => void;
+  setTableVip: (tableId: string, vip: boolean) => void;
+  setFloorPlanBackground: (dataUrl: string | undefined) => void;
+  setFloorPlanOpacity: (opacity: number) => void;
+  addFloorMarker: (kind: MarkerKind, x: number, y: number, label?: string) => string;
+  updateFloorMarker: (id: string, patch: Partial<FloorPlanMarker>) => void;
+  removeFloorMarker: (id: string) => void;
+
+  /** Replace the entire plan (settings/tables/guests/rules/floorPlan) with a remote payload. Used by the sync layer. */
+  applyRemotePlan: (plan: {
+    settings?: Partial<Settings>;
+    tables?: Table[];
+    guests?: Guest[];
+    rules?: Rule[];
+    floorPlan?: Partial<FloorPlan>;
+  }) => void;
 
   resetAssignments: () => void;
   importPlan: (data: Partial<PlanState>) => boolean;
@@ -244,6 +297,15 @@ const initialSettings: Settings = {
   showFirmInList: false,
 };
 
+const initialFloorPlan: FloorPlan = {
+  backgroundImageDataUrl: undefined,
+  backgroundOpacity: 0.55,
+  markers: [],
+  tablePositions: {},
+  tableShapes: {},
+  tableVip: {},
+};
+
 export const usePlanStore = create<PlanState>()(
   temporal(
     (set, get) => ({
@@ -251,6 +313,7 @@ export const usePlanStore = create<PlanState>()(
       tables: buildTables(initialSettings.rowPattern, initialSettings.defaultSeats, [], initialSettings.namingScheme),
       guests: [],
       rules: [],
+      floorPlan: initialFloorPlan,
 
       setSettings: (patch) => {
         set((s) => {
@@ -492,6 +555,69 @@ export const usePlanStore = create<PlanState>()(
             }),
           };
         }),
+
+      // ─── Floor plan (spatial layout) ────────────────────────────────
+      setTablePosition: (tableId, x, y) =>
+        set((s) => ({
+          floorPlan: {
+            ...s.floorPlan,
+            tablePositions: { ...s.floorPlan.tablePositions, [tableId]: { x, y } },
+          },
+        })),
+      setTableShape: (tableId, shape) =>
+        set((s) => ({
+          floorPlan: {
+            ...s.floorPlan,
+            tableShapes: { ...s.floorPlan.tableShapes, [tableId]: shape },
+          },
+        })),
+      setTableVip: (tableId, vip) =>
+        set((s) => {
+          const next = { ...s.floorPlan.tableVip };
+          if (vip) next[tableId] = true;
+          else delete next[tableId];
+          return { floorPlan: { ...s.floorPlan, tableVip: next } };
+        }),
+      setFloorPlanBackground: (dataUrl) =>
+        set((s) => ({ floorPlan: { ...s.floorPlan, backgroundImageDataUrl: dataUrl } })),
+      setFloorPlanOpacity: (opacity) =>
+        set((s) => ({ floorPlan: { ...s.floorPlan, backgroundOpacity: Math.max(0, Math.min(1, opacity)) } })),
+      addFloorMarker: (kind, x, y, label) => {
+        const id = uid();
+        set((s) => ({
+          floorPlan: {
+            ...s.floorPlan,
+            markers: [...s.floorPlan.markers, { id, kind, x, y, label }],
+          },
+        }));
+        return id;
+      },
+      updateFloorMarker: (id, patch) =>
+        set((s) => ({
+          floorPlan: {
+            ...s.floorPlan,
+            markers: s.floorPlan.markers.map((m) => (m.id === id ? { ...m, ...patch } : m)),
+          },
+        })),
+      removeFloorMarker: (id) =>
+        set((s) => ({
+          floorPlan: { ...s.floorPlan, markers: s.floorPlan.markers.filter((m) => m.id !== id) },
+        })),
+
+      applyRemotePlan: (plan) =>
+        set((s) => ({
+          settings: { ...s.settings, ...(plan.settings ?? {}) },
+          tables: plan.tables ?? s.tables,
+          guests: (plan.guests ?? []).map((g: any) => ({
+            rsvpStatus: "Confirmed" as RsvpStatus,
+            tags: [],
+            meal: "None" as Meal,
+            ...g,
+          })) as Guest[],
+          rules: plan.rules ?? [],
+          floorPlan: { ...initialFloorPlan, ...(plan.floorPlan ?? {}) },
+        })),
+
 
       addRule: (rule) => set((s) => ({ rules: [...s.rules, { ...rule, id: uid() }] })),
       updateRule: (id, patch) =>
@@ -942,6 +1068,7 @@ export const usePlanStore = create<PlanState>()(
             ...g,
           })),
           rules: data.rules ?? [],
+          floorPlan: { ...initialFloorPlan, ...(data.floorPlan ?? {}) },
         }));
         return true;
       },
@@ -949,12 +1076,13 @@ export const usePlanStore = create<PlanState>()(
       exportPlan: () => {
         const s = get();
         const payload = {
-          version: 2,
+          version: 3,
           exportedAt: new Date().toISOString(),
           settings: s.settings,
           tables: s.tables,
           guests: s.guests,
           rules: s.rules,
+          floorPlan: s.floorPlan,
         };
         const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
         const url = URL.createObjectURL(blob);
@@ -972,19 +1100,23 @@ export const usePlanStore = create<PlanState>()(
           tables: buildTables(initialSettings.rowPattern, initialSettings.defaultSeats, [], initialSettings.namingScheme),
           guests: [],
           rules: [],
+          floorPlan: initialFloorPlan,
         });
       },
     }),
-    { limit: 50, partialize: (s) => ({ settings: s.settings, tables: s.tables, guests: s.guests, rules: s.rules }) as any },
+    { limit: 50, partialize: (s) => ({ settings: s.settings, tables: s.tables, guests: s.guests, rules: s.rules, floorPlan: s.floorPlan }) as any },
   ),
 );
 
 export const useTemporalStore = <T,>(selector: (state: any) => T) =>
   useStore(usePlanStore.temporal as any, selector);
 
-const STORAGE_KEY = "seating-plan-v2";
+// NOTE: The plan is loaded from a shared remote JSON file via `plan-sync.ts`
+// (which also handles offline fallback and debounced auto-save). localStorage
+// is no longer the source of truth — it holds only the last synced snapshot
+// for offline use, managed by plan-sync.
 
-function applyPrimary(hex: string) {
+export function applyPrimary(hex: string) {
   try {
     document.documentElement.style.setProperty("--primary", hex);
     const m = hex.replace("#", "");
@@ -1002,73 +1134,8 @@ function applyPrimary(hex: string) {
 }
 
 if (typeof window !== "undefined") {
-  try {
-    const v1 = window.localStorage.getItem("seating-plan-v1");
-    if (v1 && !window.localStorage.getItem(STORAGE_KEY)) {
-      const data = JSON.parse(v1);
-      if (data.guests) {
-        data.guests = data.guests.map((g: any) => {
-          const { group, ...rest } = g;
-          return { ...rest, cohort: group, rsvpStatus: g.rsvpStatus ?? "Confirmed" };
-        });
-      }
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    }
-    window.localStorage.removeItem("seating-plan-v1");
-  } catch {}
-
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const data = JSON.parse(raw) as Partial<PlanState>;
-      usePlanStore.setState({
-        settings: { ...usePlanStore.getState().settings, ...(data.settings ?? {}) },
-        tables: data.tables ?? usePlanStore.getState().tables,
-        guests: (data.guests ?? []).map((g: any) => ({
-          rsvpStatus: "Confirmed" as RsvpStatus,
-          tags: [],
-          meal: "None" as Meal,
-          firstName: g.firstName,
-          lastName: g.lastName,
-          ...g,
-        })),
-        rules: data.rules ?? [],
-      });
-      // Clear undo history so we don't undo into a previous session
-      try { (usePlanStore as any).temporal.getState().clear(); } catch {}
-    }
-  } catch {}
-
   applyPrimary(usePlanStore.getState().settings.primaryColor);
-
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  let lastSavedAt = 0;
-  const listeners = new Set<(t: number) => void>();
-  (window as any).__seatcraftOnSave = (cb: (t: number) => void) => {
-    listeners.add(cb);
-    return () => listeners.delete(cb);
-  };
-  (window as any).__seatcraftLastSaved = () => lastSavedAt;
-
-  usePlanStore.subscribe((s) => {
-    applyPrimary(s.settings.primaryColor);
-    if (timer) clearTimeout(timer);
-    timer = setTimeout(() => {
-      try {
-        window.localStorage.setItem(
-          STORAGE_KEY,
-          JSON.stringify({
-            settings: s.settings,
-            tables: s.tables,
-            guests: s.guests,
-            rules: s.rules,
-          }),
-        );
-        lastSavedAt = Date.now();
-        listeners.forEach((cb) => cb(lastSavedAt));
-      } catch {}
-    }, 150);
-  });
+  usePlanStore.subscribe((s) => applyPrimary(s.settings.primaryColor));
 }
 
 export function parseRowPattern(p: string) {

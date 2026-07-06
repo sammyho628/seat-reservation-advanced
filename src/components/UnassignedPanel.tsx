@@ -313,12 +313,22 @@ export function UnassignedPanel({ selectedGuestId, onSelect, onEditGuest }: Prop
                         onClick={() => onSelect(active ? null : g.id)}
                       >
                         <div className="flex-1 min-w-0">
-                          <div
-                            className="truncate font-medium cursor-pointer hover:underline"
-                            onClick={(e) => { e.stopPropagation(); onEditGuest?.(g.id); }}
-                            title="Click to edit guest details"
-                          >
-                            {g.name}
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <div
+                              className="truncate font-medium cursor-pointer hover:underline"
+                              onClick={(e) => { e.stopPropagation(); onEditGuest?.(g.id); }}
+                              title="Click to edit guest details"
+                            >
+                              {g.name}
+                            </div>
+                            {g.source === "walk-in" && (
+                              <span
+                                className="text-[9px] uppercase font-semibold px-1 py-px rounded bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200 shrink-0"
+                                title={`Walk-in${g.addedBy ? ` · added by ${g.addedBy}` : ""}${g.addedAt ? ` · ${new Date(g.addedAt).toLocaleString()}` : ""}`}
+                              >
+                                Walk-in
+                              </span>
+                            )}
                           </div>
                           {g.company && (
                             <div className={`truncate text-[11px] ${active ? "opacity-80" : "text-muted-foreground"}`}>

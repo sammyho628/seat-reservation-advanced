@@ -13,6 +13,7 @@ import { Route as RulesRouteImport } from './routes/rules'
 import { Route as PrintRouteImport } from './routes/print'
 import { Route as ListRouteImport } from './routes/list'
 import { Route as GuestsRouteImport } from './routes/guests'
+import { Route as FloorRouteImport } from './routes/floor'
 import { Route as CheckinRouteImport } from './routes/checkin'
 import { Route as IndexRouteImport } from './routes/index'
 
@@ -36,6 +37,11 @@ const GuestsRoute = GuestsRouteImport.update({
   path: '/guests',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FloorRoute = FloorRouteImport.update({
+  id: '/floor',
+  path: '/floor',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CheckinRoute = CheckinRouteImport.update({
   id: '/checkin',
   path: '/checkin',
@@ -50,6 +56,7 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/checkin': typeof CheckinRoute
+  '/floor': typeof FloorRoute
   '/guests': typeof GuestsRoute
   '/list': typeof ListRoute
   '/print': typeof PrintRoute
@@ -58,6 +65,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/checkin': typeof CheckinRoute
+  '/floor': typeof FloorRoute
   '/guests': typeof GuestsRoute
   '/list': typeof ListRoute
   '/print': typeof PrintRoute
@@ -67,6 +75,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/checkin': typeof CheckinRoute
+  '/floor': typeof FloorRoute
   '/guests': typeof GuestsRoute
   '/list': typeof ListRoute
   '/print': typeof PrintRoute
@@ -74,15 +83,31 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/checkin' | '/guests' | '/list' | '/print' | '/rules'
+  fullPaths:
+    | '/'
+    | '/checkin'
+    | '/floor'
+    | '/guests'
+    | '/list'
+    | '/print'
+    | '/rules'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/checkin' | '/guests' | '/list' | '/print' | '/rules'
-  id: '__root__' | '/' | '/checkin' | '/guests' | '/list' | '/print' | '/rules'
+  to: '/' | '/checkin' | '/floor' | '/guests' | '/list' | '/print' | '/rules'
+  id:
+    | '__root__'
+    | '/'
+    | '/checkin'
+    | '/floor'
+    | '/guests'
+    | '/list'
+    | '/print'
+    | '/rules'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CheckinRoute: typeof CheckinRoute
+  FloorRoute: typeof FloorRoute
   GuestsRoute: typeof GuestsRoute
   ListRoute: typeof ListRoute
   PrintRoute: typeof PrintRoute
@@ -119,6 +144,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GuestsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/floor': {
+      id: '/floor'
+      path: '/floor'
+      fullPath: '/floor'
+      preLoaderRoute: typeof FloorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/checkin': {
       id: '/checkin'
       path: '/checkin'
@@ -139,6 +171,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CheckinRoute: CheckinRoute,
+  FloorRoute: FloorRoute,
   GuestsRoute: GuestsRoute,
   ListRoute: ListRoute,
   PrintRoute: PrintRoute,
@@ -147,13 +180,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
