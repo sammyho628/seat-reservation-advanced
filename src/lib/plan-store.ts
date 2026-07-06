@@ -1068,6 +1068,7 @@ export const usePlanStore = create<PlanState>()(
             ...g,
           })),
           rules: data.rules ?? [],
+          floorPlan: { ...initialFloorPlan, ...(data.floorPlan ?? {}) },
         }));
         return true;
       },
@@ -1075,12 +1076,13 @@ export const usePlanStore = create<PlanState>()(
       exportPlan: () => {
         const s = get();
         const payload = {
-          version: 2,
+          version: 3,
           exportedAt: new Date().toISOString(),
           settings: s.settings,
           tables: s.tables,
           guests: s.guests,
           rules: s.rules,
+          floorPlan: s.floorPlan,
         };
         const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
         const url = URL.createObjectURL(blob);
@@ -1098,10 +1100,11 @@ export const usePlanStore = create<PlanState>()(
           tables: buildTables(initialSettings.rowPattern, initialSettings.defaultSeats, [], initialSettings.namingScheme),
           guests: [],
           rules: [],
+          floorPlan: initialFloorPlan,
         });
       },
     }),
-    { limit: 50, partialize: (s) => ({ settings: s.settings, tables: s.tables, guests: s.guests, rules: s.rules }) as any },
+    { limit: 50, partialize: (s) => ({ settings: s.settings, tables: s.tables, guests: s.guests, rules: s.rules, floorPlan: s.floorPlan }) as any },
   ),
 );
 
