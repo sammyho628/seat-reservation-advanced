@@ -34,6 +34,12 @@ export interface Guest {
   seatIndex?: number;
   locked?: boolean;
   isPlaceholder?: boolean;
+  /** "walk-in" for guests added on-site the day of the event, "rsvp" (or undefined) for pre-registered. */
+  source?: "walk-in" | "rsvp";
+  /** ISO timestamp set when the guest is added. */
+  addedAt?: string;
+  /** Staff/device name captured when the walk-in was added. */
+  addedBy?: string;
 }
 
 export interface Table {
@@ -46,6 +52,33 @@ export interface Table {
   notes?: string;
   hostTag?: string;
   seatOffset?: number;
+}
+
+export type MarkerKind = "stage" | "entrance" | "bar" | "buffet" | "dj" | "note";
+
+export interface FloorPlanMarker {
+  id: string;
+  kind: MarkerKind;
+  label?: string;
+  x: number;
+  y: number;
+}
+
+/**
+ * Spatial floor plan overlay for the tables. Kept in the plan JSON so it
+ * syncs across devices along with everything else.
+ *
+ * `tablePositions[tableId] = { x, y }` — top-left corner of the table on the
+ * canvas (in pixels within a 1600×1000 logical space). Missing tables are
+ * laid out on a grid on first render.
+ */
+export interface FloorPlan {
+  backgroundImageDataUrl?: string;
+  backgroundOpacity: number;
+  markers: FloorPlanMarker[];
+  tablePositions: Record<string, { x: number; y: number }>;
+  tableShapes: Record<string, "round" | "long">;
+  tableVip: Record<string, boolean>;
 }
 
 export type RuleType =
