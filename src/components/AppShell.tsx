@@ -154,6 +154,35 @@ export function AppShell({ children }: { children: ReactNode }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <Dialog open={staffOpen} onOpenChange={setStaffOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Staff name for this device</DialogTitle>
+          </DialogHeader>
+          <p className="text-xs text-muted-foreground">
+            Used to tag walk-in guests you add during the event. Stored on this device only.
+          </p>
+          <Input
+            value={staffDraft}
+            onChange={(e) => setStaffDraft(e.target.value)}
+            placeholder="e.g. Amy (front desk)"
+            autoFocus
+          />
+          <DialogFooter>
+            <button onClick={() => setStaffOpen(false)} className="h-9 px-3 rounded-md border border-input text-sm">Cancel</button>
+            <button
+              onClick={() => {
+                try { window.localStorage.setItem(STAFF_NAME_KEY, staffDraft.trim()); } catch {}
+                setStaffOpen(false);
+                toast.success("Staff name saved on this device");
+              }}
+              className="h-9 px-3 rounded-md bg-primary text-primary-foreground text-sm"
+            >
+              Save
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
