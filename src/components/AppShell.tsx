@@ -102,11 +102,8 @@ export function AppShell({ children }: { children: ReactNode }) {
             })}
           </nav>
           <div className="ml-auto flex items-center gap-3 text-xs text-muted-foreground">
-            <span
-              className={`font-mono transition-opacity duration-500 ${savedFlash ? "opacity-100 text-emerald-600" : "opacity-0"}`}
-            >
-              Saved ✓
-            </span>
+            <SyncStatus />
+            <span className="opacity-50">·</span>
             <span className="font-mono">{guestCount} guests</span>
             <span className="opacity-50">·</span>
             <span className="font-mono">
