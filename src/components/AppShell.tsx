@@ -41,17 +41,18 @@ export function AppShell({ children }: { children: ReactNode }) {
   const tbcCount = allGuests.filter((g) => g.isPlaceholder).length;
   const importPlan = usePlanStore((s) => s.importPlan);
 
-  const [savedFlash, setSavedFlash] = useState(false);
   const [dupOpen, setDupOpen] = useState(false);
   const [dupTitle, setDupTitle] = useState("");
+  const [staffOpen, setStaffOpen] = useState(false);
+  const [staffDraft, setStaffDraft] = useState("");
+
+  usePlanSyncBootstrap();
 
   useEffect(() => {
-    const off = (window as any).__seatcraftOnSave?.((_t: number) => {
-      setSavedFlash(true);
-      setTimeout(() => setSavedFlash(false), 1800);
-    });
-    return () => off?.();
-  }, []);
+    try {
+      setStaffDraft(window.localStorage.getItem(STAFF_NAME_KEY) ?? "");
+    } catch {}
+  }, [staffOpen]);
 
   function doDuplicate() {
     const s = usePlanStore.getState();
