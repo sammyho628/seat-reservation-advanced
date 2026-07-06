@@ -124,6 +124,9 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <MoreVertical className="h-4 w-4" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem onClick={() => setStaffOpen(true)}>
+                  <UserCheck className="h-4 w-4 mr-2" /> Set staff name (this device)
+                </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => {
                     setDupTitle(`${usePlanStore.getState().settings.eventTitle} (copy)`);
