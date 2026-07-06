@@ -116,6 +116,7 @@ function PlannerPage() {
   const [importConfirmOpen, setImportConfirmOpen] = useState(false);
   const [editingGuestId, setEditingGuestId] = useState<string | null>(null);
   const [checksOpen, setChecksOpen] = useState(false);
+  const [walkInOpen, setWalkInOpen] = useState(false);
 
   async function handleOpenFile() {
     const input = document.createElement("input");
