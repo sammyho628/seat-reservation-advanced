@@ -21,7 +21,7 @@ import { toast } from "sonner";
 const CANVAS_W = 1600;
 const CANVAS_H = 1000;
 
-const MARKER_META: Record<MarkerKind, { label: string; icon: React.ComponentType<{ className?: string }>; color: string }> = {
+const MARKER_META: Record<MarkerKind, { label: string; icon: React.ComponentType<any>; color: string }> = {
   stage:    { label: "Stage",    icon: Speaker,    color: "#7c3aed" },
   entrance: { label: "Entrance", icon: DoorOpen,   color: "#059669" },
   bar:      { label: "Bar",      icon: Wine,       color: "#b45309" },
