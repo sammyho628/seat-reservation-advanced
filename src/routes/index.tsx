@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { AutoAssignDrawer } from "@/components/AutoAssignDrawer";
 import { GuestEditSheet } from "@/components/GuestEditSheet";
 import { SmartChecksSheet } from "@/components/SmartChecksSheet";
+import { WalkInDialog } from "@/components/WalkInDialog";
 import { runSmartChecks } from "@/lib/smart-checks";
 import {
   Wand2, RotateCcw, Settings as SettingsIcon, Undo2, Redo2, Camera,
