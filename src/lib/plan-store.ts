@@ -556,6 +556,69 @@ export const usePlanStore = create<PlanState>()(
           };
         }),
 
+      // ─── Floor plan (spatial layout) ────────────────────────────────
+      setTablePosition: (tableId, x, y) =>
+        set((s) => ({
+          floorPlan: {
+            ...s.floorPlan,
+            tablePositions: { ...s.floorPlan.tablePositions, [tableId]: { x, y } },
+          },
+        })),
+      setTableShape: (tableId, shape) =>
+        set((s) => ({
+          floorPlan: {
+            ...s.floorPlan,
+            tableShapes: { ...s.floorPlan.tableShapes, [tableId]: shape },
+          },
+        })),
+      setTableVip: (tableId, vip) =>
+        set((s) => {
+          const next = { ...s.floorPlan.tableVip };
+          if (vip) next[tableId] = true;
+          else delete next[tableId];
+          return { floorPlan: { ...s.floorPlan, tableVip: next } };
+        }),
+      setFloorPlanBackground: (dataUrl) =>
+        set((s) => ({ floorPlan: { ...s.floorPlan, backgroundImageDataUrl: dataUrl } })),
+      setFloorPlanOpacity: (opacity) =>
+        set((s) => ({ floorPlan: { ...s.floorPlan, backgroundOpacity: Math.max(0, Math.min(1, opacity)) } })),
+      addFloorMarker: (kind, x, y, label) => {
+        const id = uid();
+        set((s) => ({
+          floorPlan: {
+            ...s.floorPlan,
+            markers: [...s.floorPlan.markers, { id, kind, x, y, label }],
+          },
+        }));
+        return id;
+      },
+      updateFloorMarker: (id, patch) =>
+        set((s) => ({
+          floorPlan: {
+            ...s.floorPlan,
+            markers: s.floorPlan.markers.map((m) => (m.id === id ? { ...m, ...patch } : m)),
+          },
+        })),
+      removeFloorMarker: (id) =>
+        set((s) => ({
+          floorPlan: { ...s.floorPlan, markers: s.floorPlan.markers.filter((m) => m.id !== id) },
+        })),
+
+      applyRemotePlan: (plan) =>
+        set((s) => ({
+          settings: { ...s.settings, ...(plan.settings ?? {}) },
+          tables: plan.tables ?? s.tables,
+          guests: (plan.guests ?? []).map((g: any) => ({
+            rsvpStatus: "Confirmed" as RsvpStatus,
+            tags: [],
+            meal: "None" as Meal,
+            ...g,
+          })) as Guest[],
+          rules: plan.rules ?? [],
+          floorPlan: { ...initialFloorPlan, ...(plan.floorPlan ?? {}) },
+        })),
+
+
       addRule: (rule) => set((s) => ({ rules: [...s.rules, { ...rule, id: uid() }] })),
       updateRule: (id, patch) =>
         set((s) => ({ rules: s.rules.map((r) => (r.id === id ? { ...r, ...patch } : r)) })),
