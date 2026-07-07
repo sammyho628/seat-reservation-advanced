@@ -290,22 +290,30 @@ function PrintPage() {
         </section>
 
         {view === "companies" && (
-          <section>
-            <h2 className="font-display text-3xl mb-6">Guest list by company</h2>
+          <section className="companies-print">
+            <h2 className="font-display text-3xl mb-6 no-print">Guest list by company</h2>
             {byCompany.map(([company, list]) => (
-              <div key={company} className="mb-8">
-                <h3 className="font-display text-xl mb-2 pb-1" style={{ borderBottom: `2px solid ${settings.primaryColor}` }}>
-                  {company}
-                  <span className="text-sm font-sans font-normal text-muted-foreground ml-2">
-                    {list.length} guest{list.length !== 1 ? "s" : ""}
-                    {" · "}
-                    {list.filter((g) => g.tableId).length} seated
-                    {list.some((g) => !g.tableId) ? ` · ${list.filter((g) => !g.tableId).length} unassigned` : ""}
-                  </span>
-                </h3>
+              <div key={company} className="mb-8 company-block">
                 <table className="w-full text-sm border border-border">
-                  <thead className="bg-muted text-xs uppercase tracking-wider text-muted-foreground">
+                  <thead>
                     <tr>
+                      <th
+                        colSpan={7}
+                        className="text-left p-0 pb-1"
+                        style={{ borderBottom: `2px solid ${settings.primaryColor}` }}
+                      >
+                        <div className="font-display text-xl pt-2">
+                          {company}
+                          <span className="text-sm font-sans font-normal text-muted-foreground ml-2">
+                            {list.length} guest{list.length !== 1 ? "s" : ""}
+                            {" · "}
+                            {list.filter((g) => g.tableId).length} seated
+                            {list.some((g) => !g.tableId) ? ` · ${list.filter((g) => !g.tableId).length} unassigned` : ""}
+                          </span>
+                        </div>
+                      </th>
+                    </tr>
+                    <tr className="bg-muted text-xs uppercase tracking-wider text-muted-foreground">
                       <th className="text-left p-2">Name</th>
                       <th className="text-left p-2">Title</th>
                       <th className="text-left p-2">Table</th>

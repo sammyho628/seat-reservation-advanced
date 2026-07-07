@@ -161,6 +161,21 @@
     flex-direction: column;
     justify-content: space-between;
   }
+  /* Company list: repeat the company header on every continuation page. */
+  .companies-print table { page-break-inside: auto; }
+  .companies-print thead { display: table-header-group; }
+  .companies-print tr, .companies-print td, .companies-print th { page-break-inside: avoid; }
+  .company-block { break-inside: auto; page-break-inside: auto; }
+}
+
+@page {
+  margin: 15mm 12mm 18mm 12mm;
+  @bottom-right {
+    content: "Page " counter(page) " of " counter(pages);
+    font-family: system-ui, sans-serif;
+    font-size: 9pt;
+    color: #666;
+  }
 }
 
 .floor-plan-mode .table-guest-list {
