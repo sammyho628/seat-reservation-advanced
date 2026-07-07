@@ -67,7 +67,11 @@ export function TableCircle(props: Props) {
             <DialogTitle>Table {props.table.label}</DialogTitle>
           </DialogHeader>
           <div className="mt-2">
-            <TableCircleInner {...props} zoomed seatLabelMode="name" />
+            <TableCircleInner
+              {...props}
+              zoomed
+              seatLabelMode={props.seatLabelMode === "name+firm" ? "name+firm" : "name"}
+            />
           </div>
         </DialogContent>
       </Dialog>
