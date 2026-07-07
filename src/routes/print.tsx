@@ -309,7 +309,6 @@ function PrintPage() {
                             {" · "}
                             {list.filter((g) => g.tableId).length} seated
                             {list.some((g) => !g.tableId) ? ` · ${list.filter((g) => !g.tableId).length} unassigned` : ""}
-                            <span className="print-continued"> (continued)</span>
                           </span>
                         </div>
                       </th>
