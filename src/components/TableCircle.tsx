@@ -660,25 +660,46 @@ function TableCircleInner({
           const x = cx + Math.cos(angle) * radius;
           const y = cy + Math.sin(angle) * radius;
           const fullName = guest.name || [guest.firstName, guest.lastName].filter(Boolean).join(" ");
-          const displayName = fullName.length > 20 ? fullName.slice(0, 19) + "…" : fullName;
+          const displayName = fullName.length > 22 ? fullName.slice(0, 21) + "…" : fullName;
           const showFirm = seatLabelMode === "name+firm" && guest.company;
-          const displayFirm = showFirm
-            ? (guest.company!.length > 18 ? guest.company!.slice(0, 17) + "…" : guest.company!)
-            : "";
-          // Push labels further below the seat circle. Nudge right-side seats
-          // (roughly 1 o'clock → 5 o'clock, i.e. right half) to the right so
-          // the name reads clear of the seat number.
-          const dx = Math.cos(angle) > 0.15 ? 18 : 0;
+          // Wrap the company name onto a second line at ~18 chars rather than
+          // truncating with an ellipsis. Prefer a word boundary near the cap.
+          const CAP = 18;
+          let firmLines: string[] = [];
+          if (showFirm) {
+            const co = guest.company!;
+            if (co.length <= CAP) {
+              firmLines = [co];
+            } else {
+              const slice = co.slice(0, CAP + 4);
+              const cutIdx = slice.lastIndexOf(" ");
+              const cut = cutIdx >= 10 ? cutIdx : CAP;
+              firmLines = [co.slice(0, cut).trim(), co.slice(cut).trim()];
+              if (firmLines[1].length > CAP) firmLines[1] = firmLines[1].slice(0, CAP - 1) + "…";
+            }
+          }
+          // Nudge right-side seats to the right and left-side seats to the
+          // left so labels read clear of the seat circle. Center seats stay.
+          const cosA = Math.cos(angle);
+          const dx = cosA > 0.15 ? 18 : cosA < -0.15 ? -18 : 0;
+          const nameSize = 8.5 + labelFontScale;
+          const firmSize = 6.5 + labelFontScale;
           return (
             <g key={`lbl-${s}`} transform={`translate(${x + dx}, ${y + 28})`} className="pointer-events-none">
-              <text textAnchor="middle" fontSize="8.5" fontWeight="500" className="fill-foreground">
+              <text textAnchor="middle" fontSize={nameSize} fontWeight="500" className="fill-foreground">
                 {displayName}
               </text>
-              {displayFirm && (
-                <text textAnchor="middle" dy="10" fontSize="6.5" className="fill-muted-foreground">
-                  {displayFirm}
+              {firmLines.map((line, i) => (
+                <text
+                  key={i}
+                  textAnchor="middle"
+                  dy={10 + i * (firmSize + 2)}
+                  fontSize={firmSize}
+                  className="fill-muted-foreground"
+                >
+                  {line}
                 </text>
-              )}
+              ))}
             </g>
           );
         })}
