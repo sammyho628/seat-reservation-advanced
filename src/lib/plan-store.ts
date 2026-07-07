@@ -120,6 +120,7 @@ export interface Settings {
   showStage: boolean;
   namingScheme: NamingScheme;
   showFirmInList: boolean;
+  labelFontScale?: number;
   eventDate?: string;
   eventVenue?: string;
   eventTime?: string;
