@@ -284,7 +284,10 @@ function TableCircleInner({
   const viewSize = isLabelMode ? 360 : 240;
   const cx = viewSize / 2;
   const cy = viewSize / 2;
-  const radius = Math.min(isLabelMode ? 145 : 118, (isLabelMode ? 92 : 75) + table.seats * 4);
+  // Cap radius so the seat circles (r=14) plus a small margin stay inside
+  // the SVG viewBox. Without this, non-label mode with high seat counts
+  // pushes circles outside the card boundary.
+  const radius = Math.min(isLabelMode ? 145 : 100, (isLabelMode ? 92 : 70) + table.seats * 4);
   const seatOffset = table.seatOffset ?? 0;
 
   const seats = Array.from({ length: table.seats }, (_, i) => i + 1);
