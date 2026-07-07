@@ -103,6 +103,7 @@ function TableCircleInner({
   const removeTable = usePlanStore((s) => s.removeTable);
   const checkSeatReduction = usePlanStore((s) => s.checkSeatReduction);
   const reduceTableSeats = usePlanStore((s) => s.reduceTableSeats);
+  const labelFontScale = usePlanStore((s) => s.settings.labelFontScale ?? 0);
 
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [editingSeats, setEditingSeats] = useState(false);
