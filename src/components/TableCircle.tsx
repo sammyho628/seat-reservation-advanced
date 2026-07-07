@@ -284,7 +284,7 @@ function TableCircleInner({
   const viewSize = isLabelMode ? 360 : 240;
   const cx = viewSize / 2;
   const cy = viewSize / 2;
-  const radius = Math.min(isLabelMode ? 130 : 105, (isLabelMode ? 75 : 60) + table.seats * 4);
+  const radius = Math.min(isLabelMode ? 145 : 118, (isLabelMode ? 92 : 75) + table.seats * 4);
   const seatOffset = table.seatOffset ?? 0;
 
   const seats = Array.from({ length: table.seats }, (_, i) => i + 1);
