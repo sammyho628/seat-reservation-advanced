@@ -296,6 +296,7 @@ const initialSettings: Settings = {
   showStage: true,
   namingScheme: "alpha",
   showFirmInList: false,
+  labelFontScale: 0,
 };
 
 const initialFloorPlan: FloorPlan = {
