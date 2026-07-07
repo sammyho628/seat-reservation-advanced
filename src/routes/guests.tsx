@@ -351,9 +351,22 @@ function GuestsPage() {
         <div className="flex items-end justify-between mb-6 pb-6 border-b border-border/60 flex-wrap gap-4">
           <div>
             <h1 className="font-display text-4xl">Guests</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              {guests.length} total · {guests.filter((g) => g.tableId).length} seated · {guests.filter((g) => !g.tableId && g.rsvpStatus !== "Withdrawn").length} unassigned
-            </p>
+            {(() => {
+              const active = guests.filter((g) => g.rsvpStatus !== "Withdrawn");
+              const seated = active.filter((g) => g.tableId && g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show").length;
+              const unassigned = active.filter((g) => !g.tableId && g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show").length;
+              const declined = guests.filter((g) => g.rsvpStatus === "Declined").length;
+              const noShow = guests.filter((g) => g.rsvpStatus === "No-show").length;
+              const withdrawn = guests.filter((g) => g.rsvpStatus === "Withdrawn").length;
+              return (
+                <p className="text-sm text-muted-foreground mt-1">
+                  {guests.length} total · <span className="text-foreground font-medium">{seated} seated</span> · <span className={unassigned > 0 ? "text-amber-600 font-medium" : ""}>{unassigned} unassigned</span>
+                  {declined > 0 && <> · {declined} declined</>}
+                  {noShow > 0 && <> · {noShow} no-show</>}
+                  {withdrawn > 0 && <> · {withdrawn} withdrawn</>}
+                </p>
+              );
+            })()}
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             {tab === "edit" && (

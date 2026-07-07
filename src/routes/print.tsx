@@ -293,7 +293,7 @@ function PrintPage() {
           <section>
             <h2 className="font-display text-3xl mb-6">Guest list by company</h2>
             {byCompany.map(([company, list]) => (
-              <div key={company} className="mb-8 print-page">
+              <div key={company} className="mb-8">
                 <h3 className="font-display text-xl mb-2 pb-1" style={{ borderBottom: `2px solid ${settings.primaryColor}` }}>
                   {company}
                   <span className="text-sm font-sans font-normal text-muted-foreground ml-2">
