@@ -807,6 +807,24 @@ function PlannerPage() {
                 <Building2 className="h-4 w-4" />
                 Firm {seatLabelMode === "name+firm" ? "on" : "off"}
               </button>
+              <div
+                className="h-10 px-3 rounded-md border border-input text-xs inline-flex items-center gap-2"
+                title="Adjust name & company font size across every table"
+              >
+                <span className="text-muted-foreground uppercase tracking-wider">Label size</span>
+                <input
+                  type="range"
+                  min={-3}
+                  max={3}
+                  step={1}
+                  value={settings.labelFontScale ?? 0}
+                  onChange={(e) => setSettings({ labelFontScale: parseInt(e.target.value) })}
+                  className="w-24"
+                />
+                <span className="font-mono w-6 text-right tabular-nums">
+                  {(settings.labelFontScale ?? 0) > 0 ? "+" : ""}{settings.labelFontScale ?? 0}
+                </span>
+              </div>
 
             </div>
 

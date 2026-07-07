@@ -120,6 +120,7 @@ export interface Settings {
   showStage: boolean;
   namingScheme: NamingScheme;
   showFirmInList: boolean;
+  labelFontScale?: number;
   eventDate?: string;
   eventVenue?: string;
   eventTime?: string;
@@ -295,6 +296,7 @@ const initialSettings: Settings = {
   showStage: true,
   namingScheme: "alpha",
   showFirmInList: false,
+  labelFontScale: 0,
 };
 
 const initialFloorPlan: FloorPlan = {
