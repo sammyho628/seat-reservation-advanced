@@ -318,16 +318,7 @@ export const usePlanStore = create<PlanState>()(
       floorPlan: initialFloorPlan,
 
       setSettings: (patch) => {
-        set((s) => {
-          const newSettings = { ...s.settings, ...patch };
-          const needsRebuild = patch.rowPattern !== undefined || patch.defaultSeats !== undefined;
-          return {
-            settings: newSettings,
-            ...(needsRebuild
-              ? { tables: buildTables(newSettings.rowPattern, newSettings.defaultSeats, s.tables, newSettings.namingScheme) }
-              : {}),
-          };
-        });
+        set((s) => ({ settings: { ...s.settings, ...patch } }));
       },
 
       regenerateTables: () =>
