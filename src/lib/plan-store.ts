@@ -414,9 +414,7 @@ export const usePlanStore = create<PlanState>()(
 
       removeTable: (tableId) =>
         set((s) => {
-          const occupied = s.guests.some(
-            (g) => g.tableId === tableId && g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show",
-          );
+          const occupied = s.guests.some((g) => g.tableId === tableId && !g.isPlaceholder);
           if (occupied) return s;
           return {
             tables: s.tables.filter((t) => t.id !== tableId),
