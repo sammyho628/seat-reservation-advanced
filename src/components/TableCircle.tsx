@@ -533,13 +533,14 @@ function TableCircleInner({
           {!zoomed && (
             <button
               onClick={() => {
-                const assignedCount = guests.filter(
-                  (g) => g.tableId === table.id && g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show",
-                ).length;
-                if (assignedCount > 0) {
-                  toast.error(`Table ${table.label} has ${assignedCount} assigned guest(s) — unassign them first`);
+                const assigned = guests.filter((g) => g.tableId === table.id && !g.isPlaceholder);
+                if (assigned.length > 0) {
+                  toast.error(
+                    `Table ${table.label} still has ${assigned.length} guest(s) assigned — unassign them first`,
+                  );
                   return;
                 }
+                if (!confirm(`Remove Table ${table.label}?`)) return;
                 removeTable(table.id);
                 toast.success(`Table ${table.label} removed`);
               }}
