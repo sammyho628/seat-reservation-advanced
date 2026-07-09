@@ -103,6 +103,8 @@ function PlannerPage() {
     [guests, tables, rules]
   );
   const addTable = usePlanStore((s) => s.addTable);
+  const removeTable = usePlanStore((s) => s.removeTable);
+  const unassignGuest = usePlanStore((s) => s.unassignGuest);
   const addGuests = usePlanStore((s) => s.addGuests);
   const exportPlan = usePlanStore((s) => s.exportPlan);
   const importPlan = usePlanStore((s) => s.importPlan);
@@ -167,6 +169,31 @@ function PlannerPage() {
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => setRowPatternDraft(settings.rowPattern), [settings.rowPattern]);
+
+  function applyRowPattern(pattern: string) {
+    const rows = pattern.split(":").map((s) => parseInt(s.trim(), 10)).filter((n) => Number.isFinite(n) && n > 0);
+    const newTotal = rows.reduce((a, b) => a + b, 0);
+    const currentTables = usePlanStore.getState().tables;
+    const currentGuests = usePlanStore.getState().guests;
+
+    if (newTotal > 0 && newTotal < currentTables.length) {
+      const removed = currentTables.slice(newTotal);
+      const removedIds = new Set(removed.map((t) => t.id));
+      const affectedGuests = currentGuests.filter((g) => g.tableId && removedIds.has(g.tableId));
+      const removedLabels = removed.map((t) => t.label).join(", ");
+      const msg = affectedGuests.length > 0
+        ? `This will remove ${removed.length} table(s) [${removedLabels}] and move ${affectedGuests.length} guest(s) back to Unassigned.\n\nContinue?`
+        : `This will remove ${removed.length} empty table(s) [${removedLabels}].\n\nContinue?`;
+      if (!confirm(msg)) return;
+      affectedGuests.forEach((g) => unassignGuest(g.id));
+      removed.forEach((t) => removeTable(t.id));
+    } else if (newTotal > currentTables.length) {
+      const toAdd = newTotal - currentTables.length;
+      for (let i = 0; i < toAdd; i++) addTable();
+    }
+
+    setSettings({ rowPattern: pattern });
+  }
 
   const effectiveRowPattern = twoUpView ? "2" : settings.rowPattern;
 
@@ -440,12 +467,12 @@ function PlannerPage() {
                       className={`w-28 font-mono ${twoUpView ? "opacity-50 pointer-events-none" : ""}`}
                       value={rowPatternDraft}
                       onChange={(e) => setRowPatternDraft(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && setSettings({ rowPattern: rowPatternDraft })}
+                      onKeyDown={(e) => e.key === "Enter" && applyRowPattern(rowPatternDraft)}
                       disabled={twoUpView}
                       title="e.g. 4:4:4 = 3 rows of 4"
                     />
                     <button
-                      onClick={() => setSettings({ rowPattern: rowPatternDraft })}
+                      onClick={() => applyRowPattern(rowPatternDraft)}
                       disabled={twoUpView}
                       className={`h-10 px-2.5 rounded-md border border-input hover:bg-accent text-sm font-medium ${twoUpView ? "opacity-50 pointer-events-none" : ""}`}
                     >
