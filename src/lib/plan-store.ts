@@ -318,16 +318,7 @@ export const usePlanStore = create<PlanState>()(
       floorPlan: initialFloorPlan,
 
       setSettings: (patch) => {
-        set((s) => {
-          const newSettings = { ...s.settings, ...patch };
-          const needsRebuild = patch.rowPattern !== undefined || patch.defaultSeats !== undefined;
-          return {
-            settings: newSettings,
-            ...(needsRebuild
-              ? { tables: buildTables(newSettings.rowPattern, newSettings.defaultSeats, s.tables, newSettings.namingScheme) }
-              : {}),
-          };
-        });
+        set((s) => ({ settings: { ...s.settings, ...patch } }));
       },
 
       regenerateTables: () =>
@@ -423,9 +414,7 @@ export const usePlanStore = create<PlanState>()(
 
       removeTable: (tableId) =>
         set((s) => {
-          const occupied = s.guests.some(
-            (g) => g.tableId === tableId && g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show",
-          );
+          const occupied = s.guests.some((g) => g.tableId === tableId && !g.isPlaceholder);
           if (occupied) return s;
           return {
             tables: s.tables.filter((t) => t.id !== tableId),
