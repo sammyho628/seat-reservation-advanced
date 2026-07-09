@@ -467,12 +467,12 @@ function PlannerPage() {
                       className={`w-28 font-mono ${twoUpView ? "opacity-50 pointer-events-none" : ""}`}
                       value={rowPatternDraft}
                       onChange={(e) => setRowPatternDraft(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && setSettings({ rowPattern: rowPatternDraft })}
+                      onKeyDown={(e) => e.key === "Enter" && applyRowPattern(rowPatternDraft)}
                       disabled={twoUpView}
                       title="e.g. 4:4:4 = 3 rows of 4"
                     />
                     <button
-                      onClick={() => setSettings({ rowPattern: rowPatternDraft })}
+                      onClick={() => applyRowPattern(rowPatternDraft)}
                       disabled={twoUpView}
                       className={`h-10 px-2.5 rounded-md border border-input hover:bg-accent text-sm font-medium ${twoUpView ? "opacity-50 pointer-events-none" : ""}`}
                     >
