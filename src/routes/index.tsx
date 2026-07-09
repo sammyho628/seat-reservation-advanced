@@ -639,10 +639,11 @@ function PlannerPage() {
 
                 <button
                   onClick={openAutoSeat}
-                  className="h-10 px-4 rounded-md bg-primary text-primary-foreground text-sm inline-flex items-center gap-1.5 hover:opacity-90"
+                  className="h-10 px-4 rounded-md bg-section text-section-foreground text-sm font-medium inline-flex items-center gap-1.5 hover:opacity-90 shadow-sm"
                 >
                   <Wand2 className="h-4 w-4" /> Auto-Assign
                 </button>
+
               </div>
             </div>
 
@@ -667,62 +668,71 @@ function PlannerPage() {
             </AlertDialog>
 
 
-            {/* Row 2 — secondary actions + search + view controls */}
+            {/* Row 2 — grouped: create · destructive · utility · view */}
             <div className="flex items-center gap-3 mb-4 flex-wrap">
-              <button
-                onClick={() => addTable()}
-                className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent"
-                title="Add a table"
-              >
-                <Plus className="h-4 w-4" /> Table
-              </button>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <button
-                    className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent"
-                    title="Add guests"
-                  >
-                    <UserPlus className="h-4 w-4" /> Guest <ChevronDown className="h-3 w-3 opacity-60" />
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent align="start" className="w-52 p-1">
-                  <a
-                    href="/guests"
-                    className="w-full text-left px-3 py-2 text-sm rounded hover:bg-accent inline-flex items-center gap-2"
-                  >
-                    <Upload className="h-4 w-4 text-muted-foreground" /> Import CSV / Excel
-                  </a>
-                  <button
-                    onClick={() => {
-                      const existingCount = guests.filter((g) => g.name.startsWith("New guest")).length;
-                      const newName = existingCount === 0 ? "New guest" : `New guest ${existingCount + 1}`;
-                      addGuests([{ name: newName, meal: "None", tags: [], rsvpStatus: "Confirmed" }]);
-                      setTimeout(() => {
-                        const allGuests = usePlanStore.getState().guests;
-                        const newGuest = [...allGuests].reverse().find((g) => g.name === newName);
-                        if (newGuest) setEditingGuestId(newGuest.id);
-                      }, 0);
-                      toast.success(`${newName} added — fill in the details`);
-                    }}
-                    className="w-full text-left px-3 py-2 text-sm rounded hover:bg-accent inline-flex items-center gap-2"
-                  >
-                    <UserPlus className="h-4 w-4 text-muted-foreground" /> Add one blank guest
-                  </button>
-                </PopoverContent>
-              </Popover>
-              <button
-                onClick={() => setWalkInOpen(true)}
-                className="h-10 px-3 rounded-md bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium inline-flex items-center gap-1.5 shadow-sm"
-                title="Add a walk-in guest with ranked table suggestions"
-              >
-                <UserPlus className="h-4 w-4" /> Walk-in
-              </button>
+              {/* Create group */}
+              <div className="inline-flex items-center gap-1.5 rounded-lg border border-success/30 bg-success/5 p-1">
+                <button
+                  onClick={() => addTable()}
+                  className="h-8 px-2.5 rounded-md text-sm inline-flex items-center gap-1.5 text-success hover:bg-success/10"
+                  title="Add a table"
+                >
+                  <Plus className="h-4 w-4" /> Table
+                </button>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button
+                      className="h-8 px-2.5 rounded-md text-sm inline-flex items-center gap-1.5 text-success hover:bg-success/10"
+                      title="Add guests"
+                    >
+                      <UserPlus className="h-4 w-4" /> Guest <ChevronDown className="h-3 w-3 opacity-60" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent align="start" className="w-52 p-1">
+                    <a
+                      href="/guests"
+                      className="w-full text-left px-3 py-2 text-sm rounded hover:bg-accent inline-flex items-center gap-2"
+                    >
+                      <Upload className="h-4 w-4 text-muted-foreground" /> Import CSV / Excel
+                    </a>
+                    <button
+                      onClick={() => {
+                        const existingCount = guests.filter((g) => g.name.startsWith("New guest")).length;
+                        const newName = existingCount === 0 ? "New guest" : `New guest ${existingCount + 1}`;
+                        addGuests([{ name: newName, meal: "None", tags: [], rsvpStatus: "Confirmed" }]);
+                        setTimeout(() => {
+                          const allGuests = usePlanStore.getState().guests;
+                          const newGuest = [...allGuests].reverse().find((g) => g.name === newName);
+                          if (newGuest) setEditingGuestId(newGuest.id);
+                        }, 0);
+                        toast.success(`${newName} added — fill in the details`);
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm rounded hover:bg-accent inline-flex items-center gap-2"
+                    >
+                      <UserPlus className="h-4 w-4 text-muted-foreground" /> Add one blank guest
+                    </button>
+                  </PopoverContent>
+                </Popover>
+                <button
+                  onClick={() => setWalkInOpen(true)}
+                  className="h-8 px-2.5 rounded-md bg-warning text-warning-foreground text-sm font-medium inline-flex items-center gap-1.5 shadow-sm hover:opacity-90"
+                  title="Add a walk-in guest with ranked table suggestions"
+                >
+                  <UserPlus className="h-4 w-4" /> Walk-in
+                </button>
+              </div>
+
+              <div className="h-8 w-px bg-border" />
+
+              {/* Destructive / disruptive */}
               <button
                 onClick={() => setClearSeatsOpen(true)}
-                className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent"
+                className="h-10 px-3 rounded-md border border-destructive/30 text-destructive text-sm inline-flex items-center gap-1.5 hover:bg-destructive/10"
               >
                 <RotateCcw className="h-4 w-4" /> Clear seats
               </button>
+
+              {/* Utility group */}
               <Popover>
                 <PopoverTrigger asChild>
                   <button className="h-10 px-3 rounded-md border border-input text-sm inline-flex items-center gap-1.5 hover:bg-accent">
@@ -749,7 +759,7 @@ function PlannerPage() {
                 onClick={() => setChecksOpen(true)}
                 className={`h-10 px-3 rounded-md border text-sm inline-flex items-center gap-1.5 relative ${
                   checkWarningCount > 0
-                    ? "border-amber-400 text-amber-700 bg-amber-50 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-300 dark:bg-amber-950/30"
+                    ? "border-warning/60 text-warning-foreground bg-warning/20 hover:bg-warning/30"
                     : "border-input hover:bg-accent"
                 }`}
               >
@@ -762,6 +772,8 @@ function PlannerPage() {
               </button>
 
               <div className="h-8 w-px bg-border mx-1" />
+
+
 
 
               <div className="relative flex-1 max-w-md min-w-[240px]">
