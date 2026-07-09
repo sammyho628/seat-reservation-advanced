@@ -103,6 +103,8 @@ function PlannerPage() {
     [guests, tables, rules]
   );
   const addTable = usePlanStore((s) => s.addTable);
+  const removeTable = usePlanStore((s) => s.removeTable);
+  const unassignGuest = usePlanStore((s) => s.unassignGuest);
   const addGuests = usePlanStore((s) => s.addGuests);
   const exportPlan = usePlanStore((s) => s.exportPlan);
   const importPlan = usePlanStore((s) => s.importPlan);
