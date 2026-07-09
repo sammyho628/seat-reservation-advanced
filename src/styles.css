@@ -105,7 +105,54 @@
   --rsvp-waitlist: oklch(0.6 0.02 70);
   --dietary-alert: oklch(0.72 0.18 75);
   --violation: oklch(0.55 0.22 25);
+
+  /* Intent tokens — used across buttons and chips */
+  --success: oklch(0.58 0.14 155);
+  --success-foreground: oklch(0.985 0.005 80);
+  --warning: oklch(0.72 0.16 70);
+  --warning-foreground: oklch(0.22 0.04 60);
+  --info: oklch(0.58 0.14 240);
+  --info-foreground: oklch(0.985 0.005 80);
+
+  /* Section identity — overridden per route via [data-section] */
+  --section: oklch(0.45 0.05 60);
+  --section-foreground: oklch(0.985 0.005 80);
+  --section-tint: oklch(0.96 0.02 70);
 }
+
+/* Route-scoped section palettes. Applied to <html data-section="..."> */
+[data-section="planner"] {
+  --section: oklch(0.42 0.14 265);       /* indigo */
+  --section-foreground: oklch(0.985 0.005 80);
+  --section-tint: oklch(0.96 0.03 265);
+}
+[data-section="floor"] {
+  --section: oklch(0.5 0.13 190);        /* teal */
+  --section-foreground: oklch(0.985 0.005 80);
+  --section-tint: oklch(0.96 0.03 190);
+}
+[data-section="guests"] {
+  --section: oklch(0.5 0.15 155);        /* emerald */
+  --section-foreground: oklch(0.985 0.005 80);
+  --section-tint: oklch(0.96 0.03 155);
+}
+[data-section="checkin"] {
+  --section: oklch(0.55 0.19 30);        /* warm coral */
+  --section-foreground: oklch(0.985 0.005 80);
+  --section-tint: oklch(0.96 0.03 30);
+}
+[data-section="print"] {
+  --section: oklch(0.35 0.03 60);        /* graphite */
+  --section-foreground: oklch(0.985 0.005 80);
+  --section-tint: oklch(0.95 0.008 70);
+}
+
+.dark[data-section="planner"]  { --section-tint: oklch(0.24 0.05 265); }
+.dark[data-section="floor"]    { --section-tint: oklch(0.24 0.05 190); }
+.dark[data-section="guests"]   { --section-tint: oklch(0.24 0.05 155); }
+.dark[data-section="checkin"]  { --section-tint: oklch(0.26 0.06 30);  }
+.dark[data-section="print"]    { --section-tint: oklch(0.22 0.01 60);  }
+
 
 .dark {
   --background: oklch(0.15 0.01 60);
