@@ -21,12 +21,21 @@ import { SyncStatus, usePlanSyncBootstrap } from "@/components/SyncStatus";
 import { STAFF_NAME_KEY } from "@/lib/plan-sync-config";
 
 const nav = [
-  { to: "/", label: "Planner", icon: LayoutGrid },
-  { to: "/floor", label: "Floor", icon: Map },
-  { to: "/guests", label: "Guests", icon: Users },
-  { to: "/checkin", label: "Check-in", icon: UserCheck },
-  { to: "/print", label: "Print", icon: Printer },
+  { to: "/", label: "Planner", icon: LayoutGrid, section: "planner" },
+  { to: "/floor", label: "Floor", icon: Map, section: "floor" },
+  { to: "/guests", label: "Guests", icon: Users, section: "guests" },
+  { to: "/checkin", label: "Check-in", icon: UserCheck, section: "checkin" },
+  { to: "/print", label: "Print", icon: Printer, section: "print" },
 ] as const;
+
+function sectionForPath(pathname: string): string {
+  if (pathname.startsWith("/floor")) return "floor";
+  if (pathname.startsWith("/guests") || pathname.startsWith("/list")) return "guests";
+  if (pathname.startsWith("/checkin")) return "checkin";
+  if (pathname.startsWith("/print")) return "print";
+  return "planner";
+}
+
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
