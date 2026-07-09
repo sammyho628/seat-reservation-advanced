@@ -82,7 +82,8 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
-      <header className="no-print border-b border-border/70 bg-background/80 backdrop-blur sticky top-0 z-30">
+      <header className="no-print border-b border-section/40 sticky top-0 z-30 backdrop-blur bg-section-tint/85">
+        <div className="absolute inset-x-0 top-0 h-[3px] bg-section" aria-hidden />
         <div className="max-w-[1600px] mx-auto px-6 h-16 flex items-center gap-8">
           <Link to="/" className="flex items-center gap-2">
             {logoDataUrl && <img src={logoDataUrl} alt="" className="h-8 w-auto rounded" />}
@@ -106,10 +107,11 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <Link
                   key={item.to}
                   to={item.to}
+                  data-section={item.section}
                   className={`px-3 py-2 text-sm rounded-md flex items-center gap-2 transition-colors ${
                     active
-                      ? "bg-primary text-primary-foreground"
-                      : "text-foreground/70 hover:bg-accent hover:text-foreground"
+                      ? "bg-section text-section-foreground shadow-sm"
+                      : "text-foreground/70 hover:bg-background/60 hover:text-foreground"
                   }`}
                 >
                   <Icon className="h-4 w-4" />
@@ -118,6 +120,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               );
             })}
           </nav>
+
           <div className="ml-auto flex items-center gap-3 text-xs text-muted-foreground">
             <SyncStatus />
             <span className="opacity-50">·</span>
