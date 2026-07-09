@@ -57,11 +57,19 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   usePlanSyncBootstrap();
 
+  const currentSection = sectionForPath(pathname);
+  useEffect(() => {
+    const root = document.documentElement;
+    root.setAttribute("data-section", currentSection);
+    return () => { root.removeAttribute("data-section"); };
+  }, [currentSection]);
+
   useEffect(() => {
     try {
       setStaffDraft(window.localStorage.getItem(STAFF_NAME_KEY) ?? "");
     } catch {}
   }, [staffOpen]);
+
 
   function doDuplicate() {
     const s = usePlanStore.getState();
