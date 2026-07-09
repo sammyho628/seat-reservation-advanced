@@ -48,6 +48,16 @@
   --color-rsvp-waitlist: var(--rsvp-waitlist);
   --color-dietary-alert: var(--dietary-alert);
   --color-violation: var(--violation);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-section: var(--section);
+  --color-section-foreground: var(--section-foreground);
+  --color-section-tint: var(--section-tint);
+
 }
 
 :root {
