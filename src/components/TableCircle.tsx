@@ -110,6 +110,7 @@ function TableCircleInner({
   const [rotateOpen, setRotateOpen] = useState(false);
   const [rotateDir, setRotateDir] = useState<"cw" | "ccw">("cw");
   const [seatReductionPending, setSeatReductionPending] = useState<{ tableId: string; newSeats: number; overflowGuests: Guest[] } | null>(null);
+  const [forceDeleteOpen, setForceDeleteOpen] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
   function stripCardForCapture(node: HTMLElement, mealMode: "icons" | "text" | "none") {
