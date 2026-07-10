@@ -679,6 +679,21 @@ function PlannerPage() {
                 >
                   <Plus className="h-4 w-4" /> Table
                 </button>
+                <button
+                  onClick={() => {
+                    const ts = usePlanStore.getState().tables;
+                    if (ts.length === 0) {
+                      toast.error("No tables to expand");
+                      return;
+                    }
+                    ts.forEach((t) => updateTable(t.id, { seats: Math.min(24, t.seats + 1) }));
+                    toast.success(`+1 seat added to ${ts.length} table${ts.length !== 1 ? "s" : ""}`);
+                  }}
+                  className="h-8 px-2.5 rounded-md text-sm inline-flex items-center gap-1.5 text-success hover:bg-success/10"
+                  title="Add one seat to every table"
+                >
+                  <Plus className="h-4 w-4" /> Seat all
+                </button>
                 <Popover>
                   <PopoverTrigger asChild>
                     <button
