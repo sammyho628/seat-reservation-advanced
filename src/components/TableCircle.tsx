@@ -960,11 +960,11 @@ type CameraOpts = {
 function CameraOptions({
   onCompact,
   onLandscape,
-  onAll,
+  onAllZip,
 }: {
   onCompact: (opts: CameraOpts) => void;
   onLandscape: (opts: CameraOpts) => void;
-  onAll: (opts: CameraOpts) => void;
+  onAllZip: (mode: "compact" | "landscape", opts: CameraOpts) => void;
 }) {
   const [mealMode, setMealMode] = useState<CameraOpts["mealMode"]>("icons");
   const [showNames, setShowNames] = useState(true);
@@ -1008,25 +1008,40 @@ function CameraOptions({
         </label>
       </div>
       <div className="pt-2 border-t border-border/60 space-y-1">
+        <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold px-1">
+          This table
+        </div>
         <button
           onClick={() => onCompact(opts)}
           className="w-full text-left px-2.5 py-1.5 text-xs rounded hover:bg-accent inline-flex items-center gap-2"
         >
-          📸 This table — current shape
+          📸 Current shape
         </button>
         <button
           onClick={() => onLandscape(opts)}
           className="w-full text-left px-2.5 py-1.5 text-xs rounded hover:bg-accent inline-flex items-center gap-2"
         >
-          🖼️ This table — landscape (with side list)
-        </button>
-        <button
-          onClick={() => onAll(opts)}
-          className="w-full text-left px-2.5 py-1.5 text-xs rounded hover:bg-accent inline-flex items-center gap-2"
-        >
-          🗺️ All tables — one file per table
+          🖼️ Landscape (with side list)
         </button>
       </div>
+      <div className="pt-2 border-t border-border/60 space-y-1">
+        <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold px-1">
+          All tables (ZIP)
+        </div>
+        <button
+          onClick={() => onAllZip("compact", opts)}
+          className="w-full text-left px-2.5 py-1.5 text-xs rounded hover:bg-accent inline-flex items-center gap-2"
+        >
+          🗜️ All — current shape (.zip)
+        </button>
+        <button
+          onClick={() => onAllZip("landscape", opts)}
+          className="w-full text-left px-2.5 py-1.5 text-xs rounded hover:bg-accent inline-flex items-center gap-2"
+        >
+          🗜️ All — landscape (.zip)
+        </button>
+      </div>
+
 
     </div>
   );
