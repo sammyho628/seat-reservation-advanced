@@ -871,8 +871,9 @@ function TableCircleInner({
               <CameraOptions
                 onCompact={(opts) => downloadTablePNG(opts)}
                 onLandscape={(opts) => downloadTableLandscape(opts)}
-                onAll={(opts) => downloadAllTables(opts)}
+                onAllZip={(mode, opts) => downloadAllTablesZip(mode, opts)}
               />
+
 
             </PopoverContent>
           </Popover>
