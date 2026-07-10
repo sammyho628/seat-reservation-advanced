@@ -226,78 +226,26 @@ function TableCircleInner({
     if (!cardRef.current) return;
     try {
       const domtoimage = (await import("dom-to-image-more")).default;
-      const wrapper = document.createElement("div");
-      wrapper.style.cssText =
-        "position:fixed;left:-99999px;top:0;background:#ffffff;padding:28px;display:flex;gap:28px;align-items:flex-start;font-family:inherit;";
-      wrapper.style.width = "1500px";
-      // Left: cloned card with strips applied
-      const clone = cardRef.current.cloneNode(true) as HTMLElement;
-      clone.style.width = "1120px";
-      clone.style.flex = "0 0 1120px";
-      clone.querySelectorAll(".table-guest-list").forEach((el) => (el as HTMLElement).style.display = "none");
-      stripCardForCapture(clone, opts.mealMode);
-      wrapper.appendChild(clone);
-      // Right: bigger, easier-to-read name list
-      const list = document.createElement("div");
-      list.style.cssText = "flex:0 0 320px;width:320px;display:flex;flex-direction:column;gap:10px;font-size:20px;line-height:1.3;";
-      const title = document.createElement("div");
-      title.style.cssText = "font-size:30px;font-weight:700;letter-spacing:0.05em;margin-bottom:14px;";
-      title.textContent = `TABLE ${table.label}`;
-      list.appendChild(title);
-      guests
-        .filter((g) => g.seatIndex && g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show")
-        .sort((a, b) => (a.seatIndex ?? 0) - (b.seatIndex ?? 0))
-        .forEach((g) => {
-          const row = document.createElement("div");
-          row.style.cssText = "display:flex;gap:10px;align-items:baseline;border-bottom:1px solid #e5e7eb;padding-bottom:6px;";
-          const seat = document.createElement("span");
-          seat.style.cssText = "font-family:ui-monospace,monospace;color:#6b7280;width:30px;text-align:right;font-size:18px;";
-          seat.textContent = String(g.seatIndex);
-          row.appendChild(seat);
-          const nameCol = document.createElement("div");
-          nameCol.style.cssText = "flex:1;min-width:0;";
-          const name = document.createElement("div");
-          name.style.cssText = "font-weight:600;font-size:20px;overflow:hidden;text-overflow:ellipsis;";
-          name.textContent = opts.showNames ? (g.isPlaceholder ? "TBC" : g.name) : "—";
-          nameCol.appendChild(name);
-          if (opts.showCompany && g.company) {
-            const co = document.createElement("div");
-            co.style.cssText = "font-size:16px;color:#6b7280;overflow:hidden;text-overflow:ellipsis;";
-            co.textContent = g.company;
-            nameCol.appendChild(co);
-          }
-          if (opts.showTitle && g.title) {
-            const tt = document.createElement("div");
-            tt.style.cssText = "font-size:14px;color:#9ca3af;font-style:italic;overflow:hidden;text-overflow:ellipsis;";
-            tt.textContent = g.title;
-            nameCol.appendChild(tt);
-          }
-          row.appendChild(nameCol);
-          if (opts.mealMode !== "none" && g.meal && g.meal !== "None") {
-            const meal = document.createElement("span");
-            meal.style.cssText = "font-size:19px;color:#374151;flex-shrink:0;";
-            meal.textContent = opts.mealMode === "icons" ? (MEAL_EMOJI[g.meal] ?? g.meal) : g.meal;
-            row.appendChild(meal);
-          }
-          list.appendChild(row);
-        });
-      wrapper.appendChild(list);
+      const wrapper = buildLandscapeWrapper(cardRef.current, table.label, guests, opts);
       document.body.appendChild(wrapper);
-      const blob = await domtoimage.toBlob(wrapper, { scale: 2, bgcolor: "#ffffff" });
-      document.body.removeChild(wrapper);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `Table${table.label.replace(/\s+/g, "")}-landscape.png`;
-      a.click();
-      URL.revokeObjectURL(url);
+      try {
+        const blob = await domtoimage.toBlob(wrapper, { scale: 2, bgcolor: "#ffffff" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `Table${table.label.replace(/\s+/g, "")}-landscape.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+      } finally {
+        document.body.removeChild(wrapper);
+      }
     } catch (e) {
       console.error("Landscape export failed", e);
       toast.error("Landscape export failed");
     }
   }
 
-  async function downloadAllTables(opts: CameraOpts) {
+  async function downloadAllTablesZip(mode: "compact" | "landscape", opts: CameraOpts) {
     const grid = document.getElementById("planner-grid-capture");
     if (!grid) {
       toast.error("Planner grid not found");
@@ -308,19 +256,65 @@ function TableCircleInner({
       toast.error("No tables to export");
       return;
     }
-    toast.info(`Exporting ${cards.length} table${cards.length !== 1 ? "s" : ""}…`);
-    for (const card of cards) {
-      const label = card.getAttribute("data-table-label") ?? "Untitled";
-      try {
-        await captureCard(card, `Table${label.replace(/\s+/g, "")}.png`, opts);
-        // small delay so browser doesn't drop parallel downloads
-        await new Promise((r) => setTimeout(r, 120));
-      } catch (e) {
-        console.error(`Export failed for table ${label}`, e);
+    toast.info(`Building ZIP with ${cards.length} table${cards.length !== 1 ? "s" : ""}…`);
+    try {
+      const [{ default: JSZip }, domMod] = await Promise.all([
+        import("jszip"),
+        import("dom-to-image-more"),
+      ]);
+      const domtoimage = domMod.default;
+      const zip = new JSZip();
+      const allGuests = usePlanStore.getState().guests;
+      for (const card of cards) {
+        const label = card.getAttribute("data-table-label") ?? "Untitled";
+        const tableId = card.getAttribute("data-table-id") ?? "";
+        const safe = label.replace(/\s+/g, "");
+        try {
+          let blob: Blob;
+          if (mode === "landscape") {
+            const tableGuests = allGuests.filter((g) => g.tableId === tableId);
+            const wrapper = buildLandscapeWrapper(card, label, tableGuests, opts);
+            document.body.appendChild(wrapper);
+            try {
+              blob = await domtoimage.toBlob(wrapper, { scale: 2, bgcolor: "#ffffff" });
+            } finally {
+              document.body.removeChild(wrapper);
+            }
+            zip.file(`Table${safe}-landscape.png`, blob);
+          } else {
+            const wrapper = document.createElement("div");
+            wrapper.style.cssText = "position:fixed;left:-99999px;top:0;background:#ffffff;padding:24px;";
+            const clone = card.cloneNode(true) as HTMLElement;
+            clone.style.width = `${Math.max(card.offsetWidth, 480)}px`;
+            stripCardForCapture(clone, opts.mealMode);
+            wrapper.appendChild(clone);
+            document.body.appendChild(wrapper);
+            try {
+              blob = await domtoimage.toBlob(wrapper, { scale: 2, bgcolor: "#ffffff" });
+            } finally {
+              document.body.removeChild(wrapper);
+            }
+            zip.file(`Table${safe}.png`, blob);
+          }
+        } catch (e) {
+          console.error(`Export failed for table ${label}`, e);
+        }
       }
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `all-tables-${mode}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(`Exported ZIP with ${cards.length} table${cards.length !== 1 ? "s" : ""}`);
+    } catch (e) {
+      console.error("ZIP export failed", e);
+      toast.error("ZIP export failed");
     }
-    toast.success(`Exported ${cards.length} table photo${cards.length !== 1 ? "s" : ""}`);
   }
+
+
 
 
   const seatMap = new Map<number, Guest>();
