@@ -598,9 +598,7 @@ function TableCircleInner({
               onClick={() => {
                 const assigned = guests.filter((g) => g.tableId === table.id && !g.isPlaceholder);
                 if (assigned.length > 0) {
-                  toast.error(
-                    `Table ${table.label} still has ${assigned.length} guest(s) assigned — unassign them first`,
-                  );
+                  setForceDeleteOpen(true);
                   return;
                 }
                 if (!confirm(`Remove Table ${table.label}?`)) return;
