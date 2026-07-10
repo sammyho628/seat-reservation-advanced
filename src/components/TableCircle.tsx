@@ -945,7 +945,45 @@ function TableCircleInner({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog open={forceDeleteOpen} onOpenChange={setForceDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Table {table.label}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {(() => {
+                const assigned = guests.filter((g) => g.tableId === table.id && !g.isPlaceholder);
+                return (
+                  <>
+                    This table has <strong>{assigned.length}</strong> guest(s) assigned:{" "}
+                    <strong>{assigned.slice(0, 6).map((g) => g.name).join(", ")}</strong>
+                    {assigned.length > 6 ? ` and ${assigned.length - 6} more` : ""}.
+                    <br />
+                    Continuing will move them all to Unassigned and remove the table.
+                  </>
+                );
+              })()}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/90"
+              onClick={() => {
+                const assigned = guests.filter((g) => g.tableId === table.id && !g.isPlaceholder);
+                assigned.forEach((g) => updateGuest(g.id, { tableId: undefined, seatIndex: undefined }));
+                removeTable(table.id);
+                setForceDeleteOpen(false);
+                toast.success(`Table ${table.label} removed, ${assigned.length} guest(s) unassigned`);
+              }}
+            >
+              Unassign & delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
+
   );
 }
 
