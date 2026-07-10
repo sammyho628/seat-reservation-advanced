@@ -119,6 +119,75 @@ function TableCircleInner({
     if (mealMode === "none") {
       node.querySelectorAll('[data-capture-strip="meal-icon"]').forEach((el) => (el as HTMLElement).style.display = "none");
     }
+    // Expand the guest list so scrollbars & clipping don't appear in the capture
+    node.querySelectorAll<HTMLElement>('.table-guest-list').forEach((el) => {
+      el.style.maxHeight = "none";
+      el.style.overflow = "visible";
+      el.style.height = "auto";
+    });
+  }
+
+  function buildLandscapeWrapper(
+    sourceCard: HTMLElement,
+    tableLabel: string,
+    tableGuests: Guest[],
+    opts: CameraOpts,
+  ): HTMLElement {
+    const wrapper = document.createElement("div");
+    wrapper.style.cssText =
+      "position:fixed;left:-99999px;top:0;background:#ffffff;padding:28px;display:flex;gap:28px;align-items:flex-start;font-family:inherit;";
+    wrapper.style.width = "1500px";
+    const clone = sourceCard.cloneNode(true) as HTMLElement;
+    clone.style.width = "1120px";
+    clone.style.flex = "0 0 1120px";
+    clone.querySelectorAll(".table-guest-list").forEach((el) => (el as HTMLElement).style.display = "none");
+    stripCardForCapture(clone, opts.mealMode);
+    wrapper.appendChild(clone);
+    const list = document.createElement("div");
+    list.style.cssText = "flex:0 0 320px;width:320px;display:flex;flex-direction:column;gap:10px;font-size:20px;line-height:1.3;";
+    const title = document.createElement("div");
+    title.style.cssText = "font-size:30px;font-weight:700;letter-spacing:0.05em;margin-bottom:14px;";
+    title.textContent = `TABLE ${tableLabel}`;
+    list.appendChild(title);
+    tableGuests
+      .filter((g) => g.seatIndex && g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show")
+      .sort((a, b) => (a.seatIndex ?? 0) - (b.seatIndex ?? 0))
+      .forEach((g) => {
+        const row = document.createElement("div");
+        row.style.cssText = "display:flex;gap:10px;align-items:baseline;border-bottom:1px solid #e5e7eb;padding-bottom:6px;";
+        const seat = document.createElement("span");
+        seat.style.cssText = "font-family:ui-monospace,monospace;color:#6b7280;width:30px;text-align:right;font-size:18px;";
+        seat.textContent = String(g.seatIndex);
+        row.appendChild(seat);
+        const nameCol = document.createElement("div");
+        nameCol.style.cssText = "flex:1;min-width:0;";
+        const name = document.createElement("div");
+        name.style.cssText = "font-weight:600;font-size:20px;overflow:hidden;text-overflow:ellipsis;";
+        name.textContent = opts.showNames ? (g.isPlaceholder ? "TBC" : g.name) : "—";
+        nameCol.appendChild(name);
+        if (opts.showCompany && g.company) {
+          const co = document.createElement("div");
+          co.style.cssText = "font-size:16px;color:#6b7280;overflow:hidden;text-overflow:ellipsis;";
+          co.textContent = g.company;
+          nameCol.appendChild(co);
+        }
+        if (opts.showTitle && g.title) {
+          const tt = document.createElement("div");
+          tt.style.cssText = "font-size:14px;color:#9ca3af;font-style:italic;overflow:hidden;text-overflow:ellipsis;";
+          tt.textContent = g.title;
+          nameCol.appendChild(tt);
+        }
+        row.appendChild(nameCol);
+        if (opts.mealMode !== "none" && g.meal && g.meal !== "None") {
+          const meal = document.createElement("span");
+          meal.style.cssText = "font-size:19px;color:#374151;flex-shrink:0;";
+          meal.textContent = opts.mealMode === "icons" ? (MEAL_EMOJI[g.meal] ?? g.meal) : g.meal;
+          row.appendChild(meal);
+        }
+        list.appendChild(row);
+      });
+    wrapper.appendChild(list);
+    return wrapper;
   }
 
   async function captureCard(sourceCard: HTMLElement, filename: string, opts: CameraOpts) {
