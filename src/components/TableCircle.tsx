@@ -110,6 +110,7 @@ function TableCircleInner({
   const [rotateOpen, setRotateOpen] = useState(false);
   const [rotateDir, setRotateDir] = useState<"cw" | "ccw">("cw");
   const [seatReductionPending, setSeatReductionPending] = useState<{ tableId: string; newSeats: number; overflowGuests: Guest[] } | null>(null);
+  const [forceDeleteOpen, setForceDeleteOpen] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
   function stripCardForCapture(node: HTMLElement, mealMode: "icons" | "text" | "none") {
@@ -119,6 +120,75 @@ function TableCircleInner({
     if (mealMode === "none") {
       node.querySelectorAll('[data-capture-strip="meal-icon"]').forEach((el) => (el as HTMLElement).style.display = "none");
     }
+    // Expand the guest list so scrollbars & clipping don't appear in the capture
+    node.querySelectorAll<HTMLElement>('.table-guest-list').forEach((el) => {
+      el.style.maxHeight = "none";
+      el.style.overflow = "visible";
+      el.style.height = "auto";
+    });
+  }
+
+  function buildLandscapeWrapper(
+    sourceCard: HTMLElement,
+    tableLabel: string,
+    tableGuests: Guest[],
+    opts: CameraOpts,
+  ): HTMLElement {
+    const wrapper = document.createElement("div");
+    wrapper.style.cssText =
+      "position:fixed;left:-99999px;top:0;background:#ffffff;padding:28px;display:flex;gap:28px;align-items:flex-start;font-family:inherit;";
+    wrapper.style.width = "1500px";
+    const clone = sourceCard.cloneNode(true) as HTMLElement;
+    clone.style.width = "1120px";
+    clone.style.flex = "0 0 1120px";
+    clone.querySelectorAll(".table-guest-list").forEach((el) => (el as HTMLElement).style.display = "none");
+    stripCardForCapture(clone, opts.mealMode);
+    wrapper.appendChild(clone);
+    const list = document.createElement("div");
+    list.style.cssText = "flex:0 0 320px;width:320px;display:flex;flex-direction:column;gap:10px;font-size:20px;line-height:1.3;";
+    const title = document.createElement("div");
+    title.style.cssText = "font-size:30px;font-weight:700;letter-spacing:0.05em;margin-bottom:14px;";
+    title.textContent = `TABLE ${tableLabel}`;
+    list.appendChild(title);
+    tableGuests
+      .filter((g) => g.seatIndex && g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show")
+      .sort((a, b) => (a.seatIndex ?? 0) - (b.seatIndex ?? 0))
+      .forEach((g) => {
+        const row = document.createElement("div");
+        row.style.cssText = "display:flex;gap:10px;align-items:baseline;border-bottom:1px solid #e5e7eb;padding-bottom:6px;";
+        const seat = document.createElement("span");
+        seat.style.cssText = "font-family:ui-monospace,monospace;color:#6b7280;width:30px;text-align:right;font-size:18px;";
+        seat.textContent = String(g.seatIndex);
+        row.appendChild(seat);
+        const nameCol = document.createElement("div");
+        nameCol.style.cssText = "flex:1;min-width:0;";
+        const name = document.createElement("div");
+        name.style.cssText = "font-weight:600;font-size:20px;overflow:hidden;text-overflow:ellipsis;";
+        name.textContent = opts.showNames ? (g.isPlaceholder ? "TBC" : g.name) : "—";
+        nameCol.appendChild(name);
+        if (opts.showCompany && g.company) {
+          const co = document.createElement("div");
+          co.style.cssText = "font-size:16px;color:#6b7280;overflow:hidden;text-overflow:ellipsis;";
+          co.textContent = g.company;
+          nameCol.appendChild(co);
+        }
+        if (opts.showTitle && g.title) {
+          const tt = document.createElement("div");
+          tt.style.cssText = "font-size:14px;color:#9ca3af;font-style:italic;overflow:hidden;text-overflow:ellipsis;";
+          tt.textContent = g.title;
+          nameCol.appendChild(tt);
+        }
+        row.appendChild(nameCol);
+        if (opts.mealMode !== "none" && g.meal && g.meal !== "None") {
+          const meal = document.createElement("span");
+          meal.style.cssText = "font-size:19px;color:#374151;flex-shrink:0;";
+          meal.textContent = opts.mealMode === "icons" ? (MEAL_EMOJI[g.meal] ?? g.meal) : g.meal;
+          row.appendChild(meal);
+        }
+        list.appendChild(row);
+      });
+    wrapper.appendChild(list);
+    return wrapper;
   }
 
   async function captureCard(sourceCard: HTMLElement, filename: string, opts: CameraOpts) {
@@ -157,78 +227,26 @@ function TableCircleInner({
     if (!cardRef.current) return;
     try {
       const domtoimage = (await import("dom-to-image-more")).default;
-      const wrapper = document.createElement("div");
-      wrapper.style.cssText =
-        "position:fixed;left:-99999px;top:0;background:#ffffff;padding:28px;display:flex;gap:28px;align-items:flex-start;font-family:inherit;";
-      wrapper.style.width = "1500px";
-      // Left: cloned card with strips applied
-      const clone = cardRef.current.cloneNode(true) as HTMLElement;
-      clone.style.width = "1120px";
-      clone.style.flex = "0 0 1120px";
-      clone.querySelectorAll(".table-guest-list").forEach((el) => (el as HTMLElement).style.display = "none");
-      stripCardForCapture(clone, opts.mealMode);
-      wrapper.appendChild(clone);
-      // Right: bigger, easier-to-read name list
-      const list = document.createElement("div");
-      list.style.cssText = "flex:0 0 320px;width:320px;display:flex;flex-direction:column;gap:10px;font-size:20px;line-height:1.3;";
-      const title = document.createElement("div");
-      title.style.cssText = "font-size:30px;font-weight:700;letter-spacing:0.05em;margin-bottom:14px;";
-      title.textContent = `TABLE ${table.label}`;
-      list.appendChild(title);
-      guests
-        .filter((g) => g.seatIndex && g.rsvpStatus !== "Declined" && g.rsvpStatus !== "No-show")
-        .sort((a, b) => (a.seatIndex ?? 0) - (b.seatIndex ?? 0))
-        .forEach((g) => {
-          const row = document.createElement("div");
-          row.style.cssText = "display:flex;gap:10px;align-items:baseline;border-bottom:1px solid #e5e7eb;padding-bottom:6px;";
-          const seat = document.createElement("span");
-          seat.style.cssText = "font-family:ui-monospace,monospace;color:#6b7280;width:30px;text-align:right;font-size:18px;";
-          seat.textContent = String(g.seatIndex);
-          row.appendChild(seat);
-          const nameCol = document.createElement("div");
-          nameCol.style.cssText = "flex:1;min-width:0;";
-          const name = document.createElement("div");
-          name.style.cssText = "font-weight:600;font-size:20px;overflow:hidden;text-overflow:ellipsis;";
-          name.textContent = opts.showNames ? (g.isPlaceholder ? "TBC" : g.name) : "—";
-          nameCol.appendChild(name);
-          if (opts.showCompany && g.company) {
-            const co = document.createElement("div");
-            co.style.cssText = "font-size:16px;color:#6b7280;overflow:hidden;text-overflow:ellipsis;";
-            co.textContent = g.company;
-            nameCol.appendChild(co);
-          }
-          if (opts.showTitle && g.title) {
-            const tt = document.createElement("div");
-            tt.style.cssText = "font-size:14px;color:#9ca3af;font-style:italic;overflow:hidden;text-overflow:ellipsis;";
-            tt.textContent = g.title;
-            nameCol.appendChild(tt);
-          }
-          row.appendChild(nameCol);
-          if (opts.mealMode !== "none" && g.meal && g.meal !== "None") {
-            const meal = document.createElement("span");
-            meal.style.cssText = "font-size:19px;color:#374151;flex-shrink:0;";
-            meal.textContent = opts.mealMode === "icons" ? (MEAL_EMOJI[g.meal] ?? g.meal) : g.meal;
-            row.appendChild(meal);
-          }
-          list.appendChild(row);
-        });
-      wrapper.appendChild(list);
+      const wrapper = buildLandscapeWrapper(cardRef.current, table.label, guests, opts);
       document.body.appendChild(wrapper);
-      const blob = await domtoimage.toBlob(wrapper, { scale: 2, bgcolor: "#ffffff" });
-      document.body.removeChild(wrapper);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `Table${table.label.replace(/\s+/g, "")}-landscape.png`;
-      a.click();
-      URL.revokeObjectURL(url);
+      try {
+        const blob = await domtoimage.toBlob(wrapper, { scale: 2, bgcolor: "#ffffff" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `Table${table.label.replace(/\s+/g, "")}-landscape.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+      } finally {
+        document.body.removeChild(wrapper);
+      }
     } catch (e) {
       console.error("Landscape export failed", e);
       toast.error("Landscape export failed");
     }
   }
 
-  async function downloadAllTables(opts: CameraOpts) {
+  async function downloadAllTablesZip(mode: "compact" | "landscape", opts: CameraOpts) {
     const grid = document.getElementById("planner-grid-capture");
     if (!grid) {
       toast.error("Planner grid not found");
@@ -239,19 +257,65 @@ function TableCircleInner({
       toast.error("No tables to export");
       return;
     }
-    toast.info(`Exporting ${cards.length} table${cards.length !== 1 ? "s" : ""}…`);
-    for (const card of cards) {
-      const label = card.getAttribute("data-table-label") ?? "Untitled";
-      try {
-        await captureCard(card, `Table${label.replace(/\s+/g, "")}.png`, opts);
-        // small delay so browser doesn't drop parallel downloads
-        await new Promise((r) => setTimeout(r, 120));
-      } catch (e) {
-        console.error(`Export failed for table ${label}`, e);
+    toast.info(`Building ZIP with ${cards.length} table${cards.length !== 1 ? "s" : ""}…`);
+    try {
+      const [{ default: JSZip }, domMod] = await Promise.all([
+        import("jszip"),
+        import("dom-to-image-more"),
+      ]);
+      const domtoimage = domMod.default;
+      const zip = new JSZip();
+      const allGuests = usePlanStore.getState().guests;
+      for (const card of cards) {
+        const label = card.getAttribute("data-table-label") ?? "Untitled";
+        const tableId = card.getAttribute("data-table-id") ?? "";
+        const safe = label.replace(/\s+/g, "");
+        try {
+          let blob: Blob;
+          if (mode === "landscape") {
+            const tableGuests = allGuests.filter((g) => g.tableId === tableId);
+            const wrapper = buildLandscapeWrapper(card, label, tableGuests, opts);
+            document.body.appendChild(wrapper);
+            try {
+              blob = await domtoimage.toBlob(wrapper, { scale: 2, bgcolor: "#ffffff" });
+            } finally {
+              document.body.removeChild(wrapper);
+            }
+            zip.file(`Table${safe}-landscape.png`, blob);
+          } else {
+            const wrapper = document.createElement("div");
+            wrapper.style.cssText = "position:fixed;left:-99999px;top:0;background:#ffffff;padding:24px;";
+            const clone = card.cloneNode(true) as HTMLElement;
+            clone.style.width = `${Math.max(card.offsetWidth, 480)}px`;
+            stripCardForCapture(clone, opts.mealMode);
+            wrapper.appendChild(clone);
+            document.body.appendChild(wrapper);
+            try {
+              blob = await domtoimage.toBlob(wrapper, { scale: 2, bgcolor: "#ffffff" });
+            } finally {
+              document.body.removeChild(wrapper);
+            }
+            zip.file(`Table${safe}.png`, blob);
+          }
+        } catch (e) {
+          console.error(`Export failed for table ${label}`, e);
+        }
       }
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `all-tables-${mode}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(`Exported ZIP with ${cards.length} table${cards.length !== 1 ? "s" : ""}`);
+    } catch (e) {
+      console.error("ZIP export failed", e);
+      toast.error("ZIP export failed");
     }
-    toast.success(`Exported ${cards.length} table photo${cards.length !== 1 ? "s" : ""}`);
   }
+
+
 
 
   const seatMap = new Map<number, Guest>();
@@ -535,9 +599,7 @@ function TableCircleInner({
               onClick={() => {
                 const assigned = guests.filter((g) => g.tableId === table.id && !g.isPlaceholder);
                 if (assigned.length > 0) {
-                  toast.error(
-                    `Table ${table.label} still has ${assigned.length} guest(s) assigned — unassign them first`,
-                  );
+                  setForceDeleteOpen(true);
                   return;
                 }
                 if (!confirm(`Remove Table ${table.label}?`)) return;
@@ -808,8 +870,9 @@ function TableCircleInner({
               <CameraOptions
                 onCompact={(opts) => downloadTablePNG(opts)}
                 onLandscape={(opts) => downloadTableLandscape(opts)}
-                onAll={(opts) => downloadAllTables(opts)}
+                onAllZip={(mode, opts) => downloadAllTablesZip(mode, opts)}
               />
+
 
             </PopoverContent>
           </Popover>
@@ -882,7 +945,45 @@ function TableCircleInner({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog open={forceDeleteOpen} onOpenChange={setForceDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Table {table.label}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {(() => {
+                const assigned = guests.filter((g) => g.tableId === table.id && !g.isPlaceholder);
+                return (
+                  <>
+                    This table has <strong>{assigned.length}</strong> guest(s) assigned:{" "}
+                    <strong>{assigned.slice(0, 6).map((g) => g.name).join(", ")}</strong>
+                    {assigned.length > 6 ? ` and ${assigned.length - 6} more` : ""}.
+                    <br />
+                    Continuing will move them all to Unassigned and remove the table.
+                  </>
+                );
+              })()}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/90"
+              onClick={() => {
+                const assigned = guests.filter((g) => g.tableId === table.id && !g.isPlaceholder);
+                assigned.forEach((g) => updateGuest(g.id, { tableId: undefined, seatIndex: undefined }));
+                removeTable(table.id);
+                setForceDeleteOpen(false);
+                toast.success(`Table ${table.label} removed, ${assigned.length} guest(s) unassigned`);
+              }}
+            >
+              Unassign & delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
+
   );
 }
 
@@ -896,11 +997,11 @@ type CameraOpts = {
 function CameraOptions({
   onCompact,
   onLandscape,
-  onAll,
+  onAllZip,
 }: {
   onCompact: (opts: CameraOpts) => void;
   onLandscape: (opts: CameraOpts) => void;
-  onAll: (opts: CameraOpts) => void;
+  onAllZip: (mode: "compact" | "landscape", opts: CameraOpts) => void;
 }) {
   const [mealMode, setMealMode] = useState<CameraOpts["mealMode"]>("icons");
   const [showNames, setShowNames] = useState(true);
@@ -944,25 +1045,40 @@ function CameraOptions({
         </label>
       </div>
       <div className="pt-2 border-t border-border/60 space-y-1">
+        <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold px-1">
+          This table
+        </div>
         <button
           onClick={() => onCompact(opts)}
           className="w-full text-left px-2.5 py-1.5 text-xs rounded hover:bg-accent inline-flex items-center gap-2"
         >
-          📸 This table — current shape
+          📸 Current shape
         </button>
         <button
           onClick={() => onLandscape(opts)}
           className="w-full text-left px-2.5 py-1.5 text-xs rounded hover:bg-accent inline-flex items-center gap-2"
         >
-          🖼️ This table — landscape (with side list)
-        </button>
-        <button
-          onClick={() => onAll(opts)}
-          className="w-full text-left px-2.5 py-1.5 text-xs rounded hover:bg-accent inline-flex items-center gap-2"
-        >
-          🗺️ All tables — one file per table
+          🖼️ Landscape (with side list)
         </button>
       </div>
+      <div className="pt-2 border-t border-border/60 space-y-1">
+        <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold px-1">
+          All tables (ZIP)
+        </div>
+        <button
+          onClick={() => onAllZip("compact", opts)}
+          className="w-full text-left px-2.5 py-1.5 text-xs rounded hover:bg-accent inline-flex items-center gap-2"
+        >
+          🗜️ All — current shape (.zip)
+        </button>
+        <button
+          onClick={() => onAllZip("landscape", opts)}
+          className="w-full text-left px-2.5 py-1.5 text-xs rounded hover:bg-accent inline-flex items-center gap-2"
+        >
+          🗜️ All — landscape (.zip)
+        </button>
+      </div>
+
 
     </div>
   );
